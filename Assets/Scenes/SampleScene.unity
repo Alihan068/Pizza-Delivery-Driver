@@ -288,13 +288,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   driverHealth: 100
   turnSpeed: 150
-  moveSpeed: 10
-  baseSpeed: 7
+  moveSpeed: 5
+  baseSpeed: 5
   baseTurn: 150
-  boostSpeed: 5
+  boostSpeed: 1
   boostTurn: 50
-  penaltySpeed: 1.5
+  penaltySpeed: 3
   penaltyTurn: 50
+  turboDuration: 3
 --- !u!212 &29425771
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -483,7 +484,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b0470e3a6c22f40857045fa5087225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  destroyDelay: 1
+  destroyDelay: 0.2
   noPizzaColor:
     serializedVersion: 2
     rgba: 4294967295
@@ -2035,7 +2036,7 @@ AudioSource:
   m_audioClip: {fileID: 8300000, guid: 728f6507e4418734f930f6bed9a58a61, type: 3}
   m_Resource: {fileID: 8300000, guid: 728f6507e4418734f930f6bed9a58a61, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.17
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -5442,14 +5443,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8da588aa8f4a08e4ebb2461380803f6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spawnInterval: 2
-  xPos: 10
-  yPos: 5
+  spawnInterval: 1
+  xPos: 27
+  yPos: 16
   objectList:
   - {fileID: 2305415416348692630, guid: 62454bd1d6db0e34ba3d9b8fedee1fa6, type: 3}
   - {fileID: 8332463306554457787, guid: 07454a09898cb90429872af0eb12c143, type: 3}
   - {fileID: 8372727526587548703, guid: 088423778cbba644990eeaf9a19eda97, type: 3}
   - {fileID: 4298047659620099672, guid: 6a44e14656d80ef4eac7aef72db6ecc4, type: 3}
+  - {fileID: 3941189158922069664, guid: 3383f0473bedce843bad367fe717170c, type: 3}
 --- !u!4 &1429882025
 Transform:
   m_ObjectHideFlags: 0
@@ -5459,7 +5461,7 @@ Transform:
   m_GameObject: {fileID: 1429882023}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 3.3, y: 10.8, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

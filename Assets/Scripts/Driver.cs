@@ -15,20 +15,19 @@ public class Driver : MonoBehaviour {
     [SerializeField] float boostTurn = 75f;
     [SerializeField] float penaltySpeed = 1.5f;
     [SerializeField] float penaltyTurn = 50f;
-    int turboBoost = 1;
+    [SerializeField] float turboDuration = 5f;
+    float turboBoost = 1.0f;
     bool turboMode;
     private IEnumerator coroutine;
     Vector2 movementInput;
 
-    //void Start() { 
-    //StartCoroutine()
-    //}
+  
     void FixedUpdate() {
         float steerAmount = movementInput.x;
         float moveAmount = movementInput.y;
 
         transform.Rotate(0, 0, -steerAmount * turnSpeed * turboBoost * Time.deltaTime);
-        transform.Translate(0, moveAmount * moveSpeed * turboBoost * Time.deltaTime, 0);
+        transform.Translate(0, moveAmount * moveSpeed *(2 * turboBoost) * Time.deltaTime, 0);
     }
 
     void OnMove(InputValue value) {
@@ -40,38 +39,49 @@ public class Driver : MonoBehaviour {
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.CompareTag("Speedboost")) {
             moveSpeed += boostSpeed;
+            Debug.Log("SpeedBuff Value = " + moveSpeed);
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turnboost")) {
             turnSpeed += boostTurn;
+            Debug.Log("TurnBuff Value = " + turnSpeed);
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turboboost")) {
-            turnSpeed += boostTurn;
+            StartCoroutine(turboTimer());
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Debuff") && !turboMode) {
             if (moveSpeed < boostSpeed) {
                 moveSpeed -= penaltySpeed;
+                Debug.Log("SpeedBuff Value = " + moveSpeed);
             }
             if (turnSpeed < boostTurn) {
                 turnSpeed -= penaltyTurn;
+                Debug.Log("TurnBuff Value = " + turnSpeed);
             }
             Debug.Log("Debuffed!");
             Destroy(other.gameObject);
         }
     }
-    private void TurboMode() {
-
-        
+    IEnumerator turboTimer() {
+        Debug.Log("Turbo Mode Started");
+        turboMode = true;
+        turboBoost = 1.5f;
+        yield return new WaitForSeconds(turboDuration);
         turboMode = false;
+        turboBoost = 1;
+        Debug.Log("Turbo Mode ");
+        yield return null;
+        
+        
     }
 
-    private void OnCollisionEnter2D(Collision2D other) {
-        moveSpeed = baseSpeed;
-        turnSpeed = baseTurn;
+    private void OnCollisionEnter2D(Collision2D other) {       
         if (!turboMode) {
             driverHealth -= 5 + (moveSpeed);
+            moveSpeed = baseSpeed;
+            turnSpeed = baseTurn;
         }
         
         if (driverHealth <= 0) {
