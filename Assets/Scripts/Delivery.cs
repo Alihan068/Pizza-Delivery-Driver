@@ -5,8 +5,8 @@ public class Delivery : MonoBehaviour {
     [SerializeField] Color32 noPizzaColor = new Color32(1, 1, 1, 255);
     [SerializeField] Color32 hasPizzaColor = new Color32(1, 1, 1, 255);
 
-    SpriteRenderer spriteRenderer; 
-
+    SpriteRenderer spriteRenderer;
+    int pizzaDelivered = 0;
     bool hasPizza;
 
     private void Start() {
@@ -16,6 +16,7 @@ public class Delivery : MonoBehaviour {
         if (collision.gameObject.CompareTag("Customer") && hasPizza) {
             hasPizza = false;
             spriteRenderer.color = noPizzaColor;
+            pizzaDelivered++;
             Debug.Log("Delivery Complete!");
         }
 

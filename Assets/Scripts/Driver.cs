@@ -6,21 +6,27 @@ using UnityEngine.InputSystem;
 
 public class Driver : MonoBehaviour {
     [SerializeField] float driverHealth = 100;
+
     [SerializeField] float turnSpeed = 150f;
     [SerializeField] float moveSpeed = 10f;
 
     [SerializeField] float baseSpeed = 5f;
     [SerializeField] float baseTurn = 150f;
+
     [SerializeField] float boostSpeed = 1f;
     [SerializeField] float boostTurn = 75f;
+
     [SerializeField] float penaltySpeed = 1.5f;
     [SerializeField] float penaltyTurn = 50f;
+
     [SerializeField] float turboDuration = 5f;
+
     float turboBoost = 1.0f;
     bool turboMode;
-    private IEnumerator coroutine;
-    Vector2 movementInput;
 
+    private IEnumerator Coroutine;
+
+    Vector2 movementInput;
   
     void FixedUpdate() {
         float steerAmount = movementInput.x;
@@ -35,7 +41,6 @@ public class Driver : MonoBehaviour {
 
     }
 
-
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.CompareTag("Speedboost")) {
             moveSpeed += boostSpeed;
@@ -48,7 +53,7 @@ public class Driver : MonoBehaviour {
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turboboost")) {
-            StartCoroutine(turboTimer());
+            StartCoroutine(TurboTimer());
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Debuff") && !turboMode) {
@@ -64,7 +69,8 @@ public class Driver : MonoBehaviour {
             Destroy(other.gameObject);
         }
     }
-    IEnumerator turboTimer() {
+
+    IEnumerator TurboTimer() {
         Debug.Log("Turbo Mode Started");
         turboMode = true;
         turboBoost = 1.5f;
@@ -73,8 +79,6 @@ public class Driver : MonoBehaviour {
         turboBoost = 1;
         Debug.Log("Turbo Mode ");
         yield return null;
-        
-        
     }
 
     private void OnCollisionEnter2D(Collision2D other) {       
