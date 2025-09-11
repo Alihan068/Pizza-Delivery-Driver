@@ -3,11 +3,12 @@ using Unity.VisualScripting;
 using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering;
 
 public class Driver : MonoBehaviour {
     [SerializeField] float driverHealth = 100;
 
-    [SerializeField] float turnSpeed = 150f;
+    [SerializeField] float turnSpeed = 150f; 
     [SerializeField] float moveSpeed = 10f;
 
     [SerializeField] float baseSpeed = 5f;
@@ -21,13 +22,27 @@ public class Driver : MonoBehaviour {
 
     [SerializeField] float turboDuration = 5f;
 
+    [SerializeField] Color32 crashColor = new Color32(1, 1, 1, 255);
+
+    [SerializeField] float baseCamSpeed = 6f;
+    Camera mainCam;
+
+    SpriteRenderer spriteRenderer;
+    Color32 baseColor;
+    Color32 currentColor;
+
     float turboBoost = 1.0f;
     bool turboMode;
 
     private IEnumerator Coroutine;
 
     Vector2 movementInput;
-  
+
+    private void Start() {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        baseColor = spriteRenderer.color;
+        mainCam = FindFirstObjectByType<Camera>();
+    }
     void FixedUpdate() {
         float steerAmount = movementInput.x;
         float moveAmount = movementInput.y;
@@ -38,6 +53,7 @@ public class Driver : MonoBehaviour {
 
     void OnMove(InputValue value) {
         movementInput = value.Get<Vector2>();
+        //spriteRenderer.colorr = baseColor;
 
     }
 
@@ -45,6 +61,7 @@ public class Driver : MonoBehaviour {
         if (other.CompareTag("Speedboost")) {
             moveSpeed += boostSpeed;
             Debug.Log("SpeedBuff Value = " + moveSpeed);
+            mainCam.orthographicSize += 0.1f;
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turnboost")) {
@@ -80,12 +97,21 @@ public class Driver : MonoBehaviour {
         Debug.Log("Turbo Mode ");
         yield return null;
     }
+    private void NormalizeColor() {
+        spriteRenderer.color = currentColor;
+        Debug.Log("NormalizeColor");
 
+    }
     private void OnCollisionEnter2D(Collision2D other) {       
         if (!turboMode) {
             driverHealth -= 5 + (moveSpeed);
             moveSpeed = baseSpeed;
             turnSpeed = baseTurn;
+            mainCam.orthographicSize = baseCamSpeed;
+            currentColor = spriteRenderer.color;
+            spriteRenderer.color = crashColor;
+            Invoke (nameof(NormalizeColor), 1f);
+            
         }
         
         if (driverHealth <= 0) {
@@ -95,5 +121,6 @@ public class Driver : MonoBehaviour {
         Debug.Log("Crash! Health = " + driverHealth);
 
     }
+    
 
 }
