@@ -64,7 +64,7 @@ public class DriverTarget : MonoBehaviour {
             if (arrow.enabled == true) {
                 arrow.enabled = false;
             }
-                Debug.Log("No target yet");
+                //Debug.Log("No target yet");
         }
     }
 }

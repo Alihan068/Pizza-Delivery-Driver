@@ -30,6 +30,7 @@ public class Delivery : MonoBehaviour {
             pizzaDelivered++;
             gameUIManager.UpdatePizzaText(pizzaDelivered);
             TryPlayAudioClip(pizzaDeliverClip);
+            collision.gameObject.GetComponent<Customer>().ReceivePizza();
             Debug.Log("Delivery Complete!");
         }
 
