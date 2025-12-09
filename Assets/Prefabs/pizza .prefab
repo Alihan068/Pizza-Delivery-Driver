@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6250403473680877476}
   - component: {fileID: 7404078683736057483}
   - component: {fileID: 8052751489245036525}
+  - component: {fileID: 601994141520937691}
   m_Layer: 0
   m_Name: 'pizza '
   m_TagString: Pizza
@@ -124,3 +125,16 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.36767578
+--- !u!114 &601994141520937691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3941189158922069664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f151c48fd8d86cb42b2b4c131cebcb5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  destroyAfterSeconds: 15

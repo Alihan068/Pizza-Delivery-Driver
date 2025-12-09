@@ -38,10 +38,15 @@ public class Driver : MonoBehaviour {
 
     Vector2 movementInput;
 
+    GameUIManager gameUIManager;
+    AudioSource audioSource;
+
     private void Start() {
+        gameUIManager = FindFirstObjectByType<GameUIManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         baseColor = spriteRenderer.color;
         mainCam = FindFirstObjectByType<Camera>();
+        audioSource = GetComponent<AudioSource>();
     }
     void FixedUpdate() {
         float steerAmount = movementInput.x;
@@ -105,19 +110,23 @@ public class Driver : MonoBehaviour {
     private void OnCollisionEnter2D(Collision2D other) {       
         if (!turboMode) {
             driverHealth -= 5 + (moveSpeed);
+
+            if (driverHealth <= 0) {
+                Debug.Log("You're dead");
+                Destroy(gameObject);
+            }
+
             moveSpeed = baseSpeed;
             turnSpeed = baseTurn;
             mainCam.orthographicSize = baseCamSpeed;
             currentColor = spriteRenderer.color;
             spriteRenderer.color = crashColor;
             Invoke (nameof(NormalizeColor), 1f);
-            
+            gameUIManager.UpdateDriverHpBar(driverHealth);
+
         }
         
-        if (driverHealth <= 0) {
-            Debug.Log("You're dead");
-            Destroy(gameObject);
-        }
+        
         Debug.Log("Crash! Health = " + driverHealth);
 
     }
