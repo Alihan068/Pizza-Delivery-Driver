@@ -8,9 +8,12 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI pizzaCount;
 
     [SerializeField] Slider healthbar;
+    [SerializeField] AudioClip gameOverClip;
 
+    AudioSource audioSource;
 
     private void Start() {
+        audioSource = GetComponent<AudioSource>();
         scoreText.text = "Score = 0";
         pizzaCount.text = "= 0";
 
@@ -26,5 +29,12 @@ public class GameUIManager : MonoBehaviour
 
     public void UpdateDriverHpBar(float hp) {
         healthbar.value = hp;
+    }
+
+    public void PlayGameOverSound() {
+        if (audioSource != null && gameOverClip != null) {
+            audioSource.Stop();
+            audioSource.PlayOneShot(gameOverClip);
+        }
     }
 }

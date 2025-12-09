@@ -39,7 +39,10 @@ public class Driver : MonoBehaviour {
     Vector2 movementInput;
 
     GameUIManager gameUIManager;
+
     AudioSource audioSource;
+    [SerializeField] AudioClip[] crashSound;
+    [SerializeField] AudioClip boostSound;
 
     private void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
@@ -49,6 +52,8 @@ public class Driver : MonoBehaviour {
         audioSource = GetComponent<AudioSource>();
     }
     void FixedUpdate() {
+        if (!gameObject.activeInHierarchy) return;
+            
         float steerAmount = movementInput.x;
         float moveAmount = movementInput.y;
 
@@ -110,12 +115,14 @@ public class Driver : MonoBehaviour {
     private void OnCollisionEnter2D(Collision2D other) {       
         if (!turboMode) {
             driverHealth -= 5 + (moveSpeed);
+            TryPlayAudioClipFromArray(crashSound);
 
             if (driverHealth <= 0) {
                 Debug.Log("You're dead");
+                gameUIManager.PlayGameOverSound();
                 Destroy(gameObject);
             }
-
+            
             moveSpeed = baseSpeed;
             turnSpeed = baseTurn;
             mainCam.orthographicSize = baseCamSpeed;
@@ -130,6 +137,21 @@ public class Driver : MonoBehaviour {
         Debug.Log("Crash! Health = " + driverHealth);
 
     }
-    
+
+    public void TryPlayAudioClip(AudioClip clip) {
+        if (clip != null && audioSource != null)
+            audioSource.PlayOneShot(clip);
+        else
+            Debug.LogWarning("AudioClip is not assigned.");
+    }
+    public void TryPlayAudioClipFromArray(AudioClip[] clips) {
+        if (clips != null && clips.Length > 0 && audioSource != null) {
+            AudioClip clip = clips[Random.Range(0, clips.Length)];
+            audioSource.PlayOneShot(clip);
+        }
+        else
+            Debug.LogWarning("AudioClip array is not assigned or empty.");
+    }
+
 
 }

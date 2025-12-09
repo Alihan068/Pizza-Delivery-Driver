@@ -308,6 +308,9 @@ MonoBehaviour:
     serializedVersion: 2
     rgba: 4278190335
   baseCamSpeed: 7
+  crashSound: []
+  boostSound: {fileID: 0}
+  deathSound: {fileID: 0}
 --- !u!212 &29425771
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -503,9 +506,9 @@ MonoBehaviour:
   hasPizzaColor:
     serializedVersion: 2
     rgba: 4278239520
-  pizzaCollectClip: {fileID: 0}
-  pizzaDeliverClip: {fileID: 0}
-  pizzaFailClip: {fileID: 0}
+  pizzaCollectClip: {fileID: 8300000, guid: 88b3da84e85981f498b52317e8146935, type: 3}
+  pizzaDeliverClip: {fileID: 8300000, guid: 52320e590bf774734a288886eba557ba, type: 3}
+  pizzaFailClip: {fileID: 8300000, guid: 72127805eb2bc4e7fbf2e02eca266cfa, type: 3}
 --- !u!1001 &47876436
 PrefabInstance:
   m_ObjectHideFlags: 0
