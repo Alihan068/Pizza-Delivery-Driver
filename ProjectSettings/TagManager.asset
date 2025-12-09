@@ -11,6 +11,7 @@ TagManager:
   - Turnboost
   - Debuff
   - Turboboost
+  - FxTemporaire
   layers:
   - Default
   - TransparentFX
@@ -19,7 +20,7 @@ TagManager:
   - Water
   - UI
   - Obstacle
-  - 
+  - Player
   - 
   - 
   - 

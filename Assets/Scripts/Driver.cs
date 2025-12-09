@@ -8,11 +8,11 @@ using UnityEngine.Rendering;
 public class Driver : MonoBehaviour {
     [SerializeField] float driverHealth = 100;
 
-    [SerializeField] float turnSpeed = 150f; 
-    [SerializeField] float moveSpeed = 10f;
+    [SerializeField] float baseTurn = 150f;
+    float turnSpeed;
 
     [SerializeField] float baseSpeed = 5f;
-    [SerializeField] float baseTurn = 150f;
+    float moveSpeed;
 
     [SerializeField] float boostSpeed = 1f;
     [SerializeField] float boostTurn = 75f;
@@ -38,18 +38,25 @@ public class Driver : MonoBehaviour {
 
     Vector2 movementInput;
 
+    Delivery delivery;
+
     GameUIManager gameUIManager;
 
     AudioSource audioSource;
     [SerializeField] AudioClip[] crashSound;
     [SerializeField] AudioClip boostSound;
 
+
     private void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        baseColor = spriteRenderer.color;
+        delivery = GetComponent<Delivery>();    
         mainCam = FindFirstObjectByType<Camera>();
         audioSource = GetComponent<AudioSource>();
+        baseColor = spriteRenderer.color;
+
+        turnSpeed = baseTurn;
+        moveSpeed = baseSpeed;
     }
     void FixedUpdate() {
         if (!gameObject.activeInHierarchy) return;
@@ -108,7 +115,7 @@ public class Driver : MonoBehaviour {
         yield return null;
     }
     private void NormalizeColor() {
-        spriteRenderer.color = currentColor;
+        spriteRenderer.color = baseColor;
         Debug.Log("NormalizeColor");
 
     }
@@ -116,6 +123,7 @@ public class Driver : MonoBehaviour {
         if (!turboMode) {
             driverHealth -= 5 + (moveSpeed);
             TryPlayAudioClipFromArray(crashSound);
+            delivery.havePizzaStatus(false);
 
             if (driverHealth <= 0) {
                 Debug.Log("You're dead");
@@ -128,7 +136,7 @@ public class Driver : MonoBehaviour {
             mainCam.orthographicSize = baseCamSpeed;
             currentColor = spriteRenderer.color;
             spriteRenderer.color = crashColor;
-            Invoke (nameof(NormalizeColor), 1f);
+            Invoke (nameof(NormalizeColor), 0.5f);
             gameUIManager.UpdateDriverHpBar(driverHealth);
 
         }
