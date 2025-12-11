@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 4102993644622792386}
   - component: {fileID: 4107873984659738817}
   - component: {fileID: -2659301549564148835}
-  - component: {fileID: 6588680040327784303}
   - component: {fileID: -6140598364487466204}
+  - component: {fileID: 6143913146210721927}
   m_Layer: 0
   m_Name: TurboBoost
   m_TagString: Turboboost
@@ -79,8 +79,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 3625043607559282579, guid: 19fb86013d8c24d6cb8410c0aadf30fa, type: 3}
-  m_Color: {r: 0, g: 0.89501095, b: 1, a: 1}
+  m_Sprite: {fileID: -6090352950688134544, guid: 7094c917893681047936c64e701033e6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -102,7 +102,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a00f41ece9ccaa4d9be7995c9de63db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!60 &6588680040327784303
+  effectClip: {fileID: 0}
+--- !u!114 &-6140598364487466204
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4298047659620099672}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f151c48fd8d86cb42b2b4c131cebcb5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  destroyAfterSeconds: 10
+--- !u!60 &6143913146210721927
 PolygonCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -140,7 +154,7 @@ PolygonCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 0.5}
+    oldSize: {x: 0.4223485, y: 0.5776515}
     newSize: {x: 1, y: 0.5}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
@@ -148,21 +162,10 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 0.25}
-      - {x: -0.5, y: 0}
-      - {x: 0, y: -0.25}
-      - {x: 0.5, y: 0}
+    - - {x: 0, y: -0.27}
+      - {x: -0.2, y: -0.15}
+      - {x: -0.05, y: 0.1}
+      - {x: 0.11, y: 0.22}
+      - {x: 0.18, y: 0.17}
+      - {x: 0.15, y: -0.02}
   m_UseDelaunayMesh: 0
---- !u!114 &-6140598364487466204
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4298047659620099672}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f151c48fd8d86cb42b2b4c131cebcb5d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  destroyAfterSeconds: 5

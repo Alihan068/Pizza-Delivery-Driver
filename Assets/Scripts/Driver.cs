@@ -6,6 +6,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 
 public class Driver : MonoBehaviour {
+
+    [Header("Driver Stats")]
     [SerializeField] float driverHealth = 100;
 
     [SerializeField] float baseTurn = 150f;
@@ -14,6 +16,9 @@ public class Driver : MonoBehaviour {
     [SerializeField] float baseSpeed = 5f;
     float moveSpeed;
 
+    [SerializeField] float baseCamSize = 6f;
+
+    [Header("Powerup / Debuff Values")]
     [SerializeField] float boostSpeed = 1f;
     [SerializeField] float boostTurn = 75f;
 
@@ -24,7 +29,6 @@ public class Driver : MonoBehaviour {
 
     [SerializeField] Color32 crashColor = new Color32(1, 1, 1, 255);
 
-    [SerializeField] float baseCamSpeed = 6f;
     Camera mainCam;
 
     SpriteRenderer spriteRenderer;
@@ -39,24 +43,39 @@ public class Driver : MonoBehaviour {
     Vector2 movementInput;
 
     Delivery delivery;
-
     GameUIManager gameUIManager;
+    ScoreHandler scoreHandler;
+
+    [Header("Score Rewards/Penalties")]
+
+    [SerializeField] int flatScorePerDelivery = 10;
+    [SerializeField] int penaltyPerDebuff = -25;
+    [SerializeField] int penaltyPerCrash = -50;
+    [SerializeField] int extraPenaltyPerWastedPizza = -50;
+
+    [Header("Audio")]
 
     AudioSource audioSource;
+
     [SerializeField] AudioClip[] crashSound;
     [SerializeField] AudioClip boostSound;
+
+    [SerializeField] GameObject wastedPizza;
 
 
     private void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         delivery = GetComponent<Delivery>();    
+        scoreHandler = FindFirstObjectByType<ScoreHandler>();
         mainCam = FindFirstObjectByType<Camera>();
         audioSource = GetComponent<AudioSource>();
         baseColor = spriteRenderer.color;
 
         turnSpeed = baseTurn;
         moveSpeed = baseSpeed;
+
+        UpdateUIMethod();
     }
     void FixedUpdate() {
         if (!gameObject.activeInHierarchy) return;
@@ -75,10 +94,11 @@ public class Driver : MonoBehaviour {
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
+        
         if (other.CompareTag("Speedboost")) {
             moveSpeed += boostSpeed;
             Debug.Log("SpeedBuff Value = " + moveSpeed);
-            mainCam.orthographicSize += 0.1f;
+            //mainCam.orthographicSize += 0.1f;
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turnboost")) {
@@ -91,6 +111,7 @@ public class Driver : MonoBehaviour {
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Debuff") && !turboMode) {
+            scoreHandler.AddScore(penaltyPerDebuff);
             if (moveSpeed < boostSpeed) {
                 moveSpeed -= penaltySpeed;
                 Debug.Log("SpeedBuff Value = " + moveSpeed);
@@ -102,6 +123,7 @@ public class Driver : MonoBehaviour {
             Debug.Log("Debuffed!");
             Destroy(other.gameObject);
         }
+        UpdateUIMethod();
     }
 
     IEnumerator TurboTimer() {
@@ -111,7 +133,7 @@ public class Driver : MonoBehaviour {
         yield return new WaitForSeconds(turboDuration);
         turboMode = false;
         turboBoost = 1;
-        Debug.Log("Turbo Mode ");
+        Debug.Log("Turbo Mode Finished");
         yield return null;
     }
     private void NormalizeColor() {
@@ -119,31 +141,46 @@ public class Driver : MonoBehaviour {
         Debug.Log("NormalizeColor");
 
     }
-    private void OnCollisionEnter2D(Collision2D other) {       
+    private void OnCollisionEnter2D(Collision2D other) {   
+        if (other.gameObject.CompareTag("Border")) {
+         return;
+        }
         if (!turboMode) {
             driverHealth -= 5 + (moveSpeed);
             TryPlayAudioClipFromArray(crashSound);
-            delivery.havePizzaStatus(false);
 
             if (driverHealth <= 0) {
                 Debug.Log("You're dead");
                 gameUIManager.PlayGameOverSound();
                 Destroy(gameObject);
             }
+
+            if (delivery.hasPizza) {
+                Instantiate(wastedPizza, transform.position, Quaternion.identity);
+                scoreHandler.AddScore(extraPenaltyPerWastedPizza);
+            }
+
+            delivery.havePizzaStatus(false);
+
             
+            scoreHandler.AddScore(penaltyPerCrash);
             moveSpeed = baseSpeed;
             turnSpeed = baseTurn;
-            mainCam.orthographicSize = baseCamSpeed;
             currentColor = spriteRenderer.color;
             spriteRenderer.color = crashColor;
             Invoke (nameof(NormalizeColor), 0.5f);
-            gameUIManager.UpdateDriverHpBar(driverHealth);
+            UpdateUIMethod();
 
         }
         
         
         Debug.Log("Crash! Health = " + driverHealth);
 
+    }
+
+    void UpdateUIMethod() {
+        gameUIManager.UpdateStatPanel(driverHealth, moveSpeed, turnSpeed);
+        mainCam.orthographicSize = baseCamSize + (moveSpeed / 10);
     }
 
     public void TryPlayAudioClip(AudioClip clip) {

@@ -8,6 +8,7 @@ public class Customer : MonoBehaviour {
 
     [SerializeField] float waitTime = 40f;
     [SerializeField] float waitTimeVariance = 10f;
+    public float timeLeft;
     [SerializeField] GameObject pizzaInHand;
     [SerializeField] Sprite[] CustomerBodyVariety;
 
@@ -48,13 +49,15 @@ public class Customer : MonoBehaviour {
         StopCoroutine(leaveCoroutine);
         timeText.text = "Thank You!";
         customerManager.CustomerRoutine(this.gameObject);
+        ScoreHandler scoreHandler = FindFirstObjectByType<ScoreHandler>();
+        scoreHandler.AddScore(Mathf.RoundToInt(timeLeft * 10));
     }
 
     IEnumerator LeaveAfterTime() {
 
 
         for (int i = 0; i <= waitTime; i++) {
-            float timeLeft = waitTime - i;
+            timeLeft = waitTime - i;
             if (fillImage != null) {
                 fillImage.fillAmount = timeLeft / waitTime;
             }
@@ -69,5 +72,6 @@ public class Customer : MonoBehaviour {
 
     private void OnDisable() {
         spriteRenderer = null;
+        StopAllCoroutines();
     }
 }

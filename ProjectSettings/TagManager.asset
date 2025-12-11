@@ -12,6 +12,7 @@ TagManager:
   - Debuff
   - Turboboost
   - FxTemporaire
+  - Border
   layers:
   - Default
   - TransparentFX

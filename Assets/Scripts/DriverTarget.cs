@@ -1,8 +1,11 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class DriverTarget : MonoBehaviour {
     [SerializeField] float scanFrequency = 0.5f;
+    
+
     string targetTag;
     GameObject currentTarget;
     SpriteRenderer arrow;

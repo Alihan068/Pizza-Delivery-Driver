@@ -7,7 +7,11 @@ public class Collectable : MonoBehaviour {
 
     void OnEnable() {
         driver = FindFirstObjectByType<Driver>();
-    }
+
+        transform.rotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));
+
+    
+}
     private void OnTriggerEnter2D(Collider2D collision) {
         if(collision.gameObject.CompareTag("Player")) {
             driver.TryPlayAudioClip(effectClip);
