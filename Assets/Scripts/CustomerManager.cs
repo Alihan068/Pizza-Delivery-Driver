@@ -31,7 +31,7 @@ public class CustomerManager : MonoBehaviour {
         if (activeCustomers < 0) activeCustomers = 0;
 
         if (deliveryScript != null && activeCustomers < deliveryScript.carryPizzaAmount) {
-            deliveryScript.LosePizza();
+            deliveryScript.LosePizza(true);
         }
 
         StartCoroutine(CustomerRespawnRoutine(customer, Random.Range((int)minRespawnTime, (int)maxRespawnTime)));

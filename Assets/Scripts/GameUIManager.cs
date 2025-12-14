@@ -2,44 +2,59 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GameUIManager : MonoBehaviour
-{
+public class GameUIManager : MonoBehaviour {
+    [Header("UI Elements")]
     [SerializeField] TextMeshProUGUI scoreText;
-    [SerializeField] TextMeshProUGUI pizzaCount;
+    [SerializeField] TextMeshProUGUI pizzaCountText;
+    [SerializeField] TextMeshProUGUI timerText;
 
     [SerializeField] Slider healthbar;
-    [SerializeField] AudioClip gameOverClip;
-
     [SerializeField] TextMeshProUGUI speedText;
     [SerializeField] TextMeshProUGUI steeringText;
 
-    [SerializeField] TextMeshProUGUI LeastTimeCustomerDistance;
-    [SerializeField] TextMeshProUGUI LeastTİmeCustomerRemainingTime;
-
+    [Header("Audio")]
+    [SerializeField] AudioClip gameOverClip;
     AudioSource audioSource;
 
-    ScoreHandler scoreHandler;
+    ScoreHandler scoreHandler; 
 
     private void Start() {
         audioSource = GetComponent<AudioSource>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
-        scoreText.text = "Score = 0";
-        pizzaCount.text = "= 0";
+
+        scoreText.text = "Score: 0";
+        pizzaCountText.text = "= 0";
+        if (timerText != null) timerText.text = "00:00";
 
         healthbar.value = healthbar.maxValue;
     }
 
     public void UpdateScoreText() {
-        scoreText.text = "Score: = " + scoreHandler.score;
+        //Take score from ScoreHandler
+        if (scoreHandler != null) {
+            scoreText.text = "Score: " + scoreHandler.currentScore;
+        }
     }
+
     public void UpdatePizzaText(int deliveredPizza) {
-        pizzaCount.text = "= " + deliveredPizza;
+        pizzaCountText.text = "= " + deliveredPizza;
+    }
+
+    // Display timer in MM:SS format
+    public void UpdateTimerText(float timeInSeconds) {
+        if (timerText == null) return;
+
+        float minutes = Mathf.FloorToInt(timeInSeconds / 60);
+        float seconds = Mathf.FloorToInt(timeInSeconds % 60);
+
+        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
     public void UpdateStatPanel(float hp, float speed, float steering) {
         healthbar.value = hp;
-        steeringText.text = "Steering: \n" + (steering / 10);
-        speedText.text = "Speed: \n" + speed;
+        // Divide steering by 10 for display
+        steeringText.text = "Steering: \n" + (steering / 10).ToString("F1");
+        speedText.text = "Speed: \n" + speed.ToString("F1");
     }
 
     public void PlayGameOverSound() {

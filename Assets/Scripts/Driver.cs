@@ -1,202 +1,161 @@
-using System.Collections;
-using Unity.VisualScripting;
-using Unity.VisualScripting.FullSerializer;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering;
 
 public class Driver : MonoBehaviour {
 
-    [Header("Driver Stats")]
-    [SerializeField] float driverHealth = 100;
+    [Header("Stats (From GameManager)")]
+    [SerializeField] float currentHealth;
+    [SerializeField] float moveSpeed;
+    [SerializeField] float turnSpeed;
+    [SerializeField] float armorPercent; // YENİ: Hasar azaltma oranı
 
-    [SerializeField] float baseTurn = 150f;
-    float turnSpeed;
+    private float baseMoveSpeed;
+    private float baseTurnSpeed;
 
-    [SerializeField] float baseSpeed = 5f;
-    float moveSpeed;
-
+    [Header("Settings")]
     [SerializeField] float baseCamSize = 6f;
-
-    [Header("Powerup / Debuff Values")]
-    [SerializeField] float boostSpeed = 1f;
-    [SerializeField] float boostTurn = 75f;
-
-    [SerializeField] float penaltySpeed = 1.5f;
-    [SerializeField] float penaltyTurn = 50f;
-
     [SerializeField] float turboDuration = 5f;
 
-    [SerializeField] Color32 crashColor = new Color32(1, 1, 1, 255);
-
-    Camera mainCam;
-
-    SpriteRenderer spriteRenderer;
+    [Header("Visuals")]
+    [SerializeField] Color32 crashColor = new Color32(255, 0, 0, 255);
     Color32 baseColor;
-    Color32 currentColor;
+    SpriteRenderer spriteRenderer;
 
+    // State
     float turboBoost = 1.0f;
     bool turboMode;
-
-    private IEnumerator Coroutine;
-
     Vector2 movementInput;
 
+    // References
+    Camera mainCam;
     Delivery delivery;
     GameUIManager gameUIManager;
     ScoreHandler scoreHandler;
-
-    [Header("Score Rewards/Penalties")]
-
-    [SerializeField] int flatScorePerDelivery = 10;
-    [SerializeField] int penaltyPerDebuff = -25;
-    [SerializeField] int penaltyPerCrash = -50;
-    [SerializeField] int extraPenaltyPerWastedPizza = -50;
-
-    [Header("Audio")]
-
     AudioSource audioSource;
 
+    [Header("Audio & Effects")]
     [SerializeField] AudioClip[] crashSound;
-    [SerializeField] AudioClip boostSound;
-
     [SerializeField] GameObject wastedPizza;
-
 
     private void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        delivery = GetComponent<Delivery>();    
+        delivery = GetComponent<Delivery>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
-        mainCam = FindFirstObjectByType<Camera>();
+        mainCam = Camera.main;
         audioSource = GetComponent<AudioSource>();
         baseColor = spriteRenderer.color;
 
-        turnSpeed = baseTurn;
-        moveSpeed = baseSpeed;
-
+        InitializeStats();
         UpdateUIMethod();
     }
+
+    void InitializeStats() {
+        if (GameManager.Instance != null) {
+            baseMoveSpeed = GameManager.Instance.GetSpeed();
+            baseTurnSpeed = GameManager.Instance.GetTurn();
+            currentHealth = GameManager.Instance.GetHealth();
+            armorPercent = GameManager.Instance.GetArmor(); 
+        }
+        else {
+            baseMoveSpeed = 10f;
+            baseTurnSpeed = 150f;
+            currentHealth = 100f;
+            armorPercent = 0f;
+        }
+
+        moveSpeed = baseMoveSpeed;
+        turnSpeed = baseTurnSpeed;
+    }
+
     void FixedUpdate() {
         if (!gameObject.activeInHierarchy) return;
-            
+
         float steerAmount = movementInput.x;
         float moveAmount = movementInput.y;
 
-        transform.Rotate(0, 0, -steerAmount * turnSpeed * turboBoost * Time.deltaTime);
-        transform.Translate(0, moveAmount * moveSpeed *(2 * turboBoost) * Time.deltaTime, 0);
+        transform.Rotate(0, 0, -steerAmount * turnSpeed * Time.deltaTime);
+        transform.Translate(0, moveAmount * (moveSpeed * turboBoost) * Time.deltaTime, 0);
     }
 
     void OnMove(InputValue value) {
         movementInput = value.Get<Vector2>();
-        //spriteRenderer.colorr = baseColor;
-
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
-        
         if (other.CompareTag("Speedboost")) {
-            moveSpeed += boostSpeed;
-            Debug.Log("SpeedBuff Value = " + moveSpeed);
-            //mainCam.orthographicSize += 0.1f;
-            Destroy(other.gameObject);
-        }
-        else if (other.CompareTag("Turnboost")) {
-            turnSpeed += boostTurn;
-            Debug.Log("TurnBuff Value = " + turnSpeed);
+            moveSpeed += 5f;
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turboboost")) {
             StartCoroutine(TurboTimer());
             Destroy(other.gameObject);
         }
-        else if (other.CompareTag("Debuff") && !turboMode) {
-            scoreHandler.AddScore(penaltyPerDebuff);
-            if (moveSpeed < boostSpeed) {
-                moveSpeed -= penaltySpeed;
-                Debug.Log("SpeedBuff Value = " + moveSpeed);
-            }
-            if (turnSpeed < boostTurn) {
-                turnSpeed -= penaltyTurn;
-                Debug.Log("TurnBuff Value = " + turnSpeed);
-            }
-            Debug.Log("Debuffed!");
-            Destroy(other.gameObject);
-        }
         UpdateUIMethod();
     }
 
     IEnumerator TurboTimer() {
-        Debug.Log("Turbo Mode Started");
         turboMode = true;
         turboBoost = 1.5f;
         yield return new WaitForSeconds(turboDuration);
         turboMode = false;
-        turboBoost = 1;
-        Debug.Log("Turbo Mode Finished");
-        yield return null;
+        turboBoost = 1f;
     }
+
     private void NormalizeColor() {
         spriteRenderer.color = baseColor;
-        Debug.Log("NormalizeColor");
-
     }
-    private void OnCollisionEnter2D(Collision2D other) {   
-        if (other.gameObject.CompareTag("Border")) {
-         return;
-        }
+
+    private void OnCollisionEnter2D(Collision2D other) {
+        if (other.gameObject.CompareTag("Border")) return;
+
         if (!turboMode) {
-            driverHealth -= 5 + (moveSpeed);
+
+            float rawDamage = 5 + (moveSpeed * 0.5f);
+
+
+            float finalDamage = rawDamage * (1.0f - armorPercent);
+
+            currentHealth -= finalDamage;
+
             TryPlayAudioClipFromArray(crashSound);
 
-            if (driverHealth <= 0) {
-                Debug.Log("You're dead");
+            if (currentHealth <= 0) {
                 gameUIManager.PlayGameOverSound();
+                if (scoreHandler != null) scoreHandler.EndLevel(false);
                 Destroy(gameObject);
+                return;
             }
 
-            if (delivery.carryPizzaAmount >= 1) {
-                Instantiate(wastedPizza, transform.position, Quaternion.identity);
-                scoreHandler.AddScore(extraPenaltyPerWastedPizza);
+            if (delivery != null) {
+                delivery.AttemptDropPizza(transform.position);
             }
 
-            delivery.havePizzaStatus(false);
+            moveSpeed = baseMoveSpeed;
+            turnSpeed = baseTurnSpeed;
 
-            
-            scoreHandler.AddScore(penaltyPerCrash);
-            moveSpeed = baseSpeed;
-            turnSpeed = baseTurn;
-            currentColor = spriteRenderer.color;
             spriteRenderer.color = crashColor;
-            Invoke (nameof(NormalizeColor), 0.5f);
+            Invoke(nameof(NormalizeColor), 0.5f);
             UpdateUIMethod();
-
         }
-        
-        
-        Debug.Log("Crash! Health = " + driverHealth);
-
     }
 
     void UpdateUIMethod() {
-        gameUIManager.UpdateStatPanel(driverHealth, moveSpeed, turnSpeed);
-        mainCam.orthographicSize = baseCamSize + (moveSpeed / 10);
+        if (gameUIManager != null)
+            gameUIManager.UpdateStatPanel(currentHealth, moveSpeed, turnSpeed);
+        if (mainCam != null)
+            mainCam.orthographicSize = baseCamSize + (moveSpeed / 10);
     }
 
-    public void TryPlayAudioClip(AudioClip clip) {
-        if (clip != null && audioSource != null)
-            audioSource.PlayOneShot(clip);
-        else
-            Debug.LogWarning("AudioClip is not assigned.");
-    }
     public void TryPlayAudioClipFromArray(AudioClip[] clips) {
         if (clips != null && clips.Length > 0 && audioSource != null) {
-            AudioClip clip = clips[Random.Range(0, clips.Length)];
+            audioSource.PlayOneShot(clips[Random.Range(0, clips.Length)]);
+        }
+    }
+    public void TryPlayAudioClip(AudioClip clip) {
+        if (clip != null && audioSource != null) {
             audioSource.PlayOneShot(clip);
         }
-        else
-            Debug.LogWarning("AudioClip array is not assigned or empty.");
     }
-
-
 }
