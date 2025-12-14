@@ -769,7 +769,8 @@ MonoBehaviour:
   pizzaDeliverClip: {fileID: 8300000, guid: 52320e590bf774734a288886eba557ba, type: 3}
   pizzaFailClip: {fileID: 8300000, guid: 72127805eb2bc4e7fbf2e02eca266cfa, type: 3}
   pizzaObject: {fileID: 605257179}
-  hasPizza: 0
+  carryPizzaAmount: 0
+  maxCarryPizzaAmount: 2
 --- !u!82 &29425778
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1101,7 +1102,7 @@ Transform:
   m_GameObject: {fileID: 68638900}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: -8.010001, y: -1, z: 0}
+  m_LocalPosition: {x: -8, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2512,7 +2513,7 @@ Transform:
   m_GameObject: {fileID: 292802179}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 11.971377, y: -8.537399, z: 0}
+  m_LocalPosition: {x: 11.971377, y: -8.598, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3615,7 +3616,7 @@ Transform:
   m_GameObject: {fileID: 594104357}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -9.015801, y: -13.210001, z: 0}
+  m_LocalPosition: {x: -9, y: -13.77, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7587,7 +7588,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 51.05
+  m_fontSize: 27.9
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -7665,7 +7666,7 @@ Transform:
   m_GameObject: {fileID: 1129809945}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 8.01, y: -1, z: 0}
+  m_LocalPosition: {x: 7.97, y: -1, z: 0}
   m_LocalScale: {x: 1, y: -1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8274,7 +8275,7 @@ Transform:
   m_GameObject: {fileID: 1202668301}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 23.119999, y: -8.300001, z: 0}
+  m_LocalPosition: {x: 23.119999, y: -8.3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9219,7 +9220,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 51.05
+  m_fontSize: 27.9
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

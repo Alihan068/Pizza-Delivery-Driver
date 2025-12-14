@@ -8,9 +8,14 @@ public class CustomerManager : MonoBehaviour {
     [SerializeField] float minRespawnTime = 10f;
     [SerializeField] float maxRespawnTime = 15f;
 
+    public int activeCustomers = 0;
+
     GameObject[] allCustomers;
+    Delivery deliveryScript;
 
     void Start() {
+        deliveryScript = FindFirstObjectByType<Delivery>();
+
         allCustomers = GameObject.FindGameObjectsWithTag("Customer");
         foreach (GameObject customer in allCustomers) {
             customer.SetActive(false);
@@ -18,6 +23,13 @@ public class CustomerManager : MonoBehaviour {
     }
 
     public void CustomerRoutine(GameObject customer) {
+        activeCustomers--;
+        if (activeCustomers < 0) activeCustomers = 0;
+
+        if (deliveryScript != null && activeCustomers < deliveryScript.carryPizzaAmount) {
+            deliveryScript.LosePizza();
+        }
+
         StartCoroutine(CustomerRespawnRoutine(customer, Random.Range((int)minRespawnTime, (int)maxRespawnTime)));
     }
 
@@ -37,9 +49,11 @@ public class CustomerManager : MonoBehaviour {
                 inactiveCustomers.Add(customer);               
             } else return;
         }
-        if (inactiveCustomers.Count ==0) return;
+        if (inactiveCustomers.Count == 0) return;
 
         inactiveCustomers[Random.Range(0, inactiveCustomers.Count)].SetActive(true);
+
+        activeCustomers++;
 
     }
 }

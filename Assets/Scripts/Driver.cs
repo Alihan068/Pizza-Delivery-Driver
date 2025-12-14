@@ -155,7 +155,7 @@ public class Driver : MonoBehaviour {
                 Destroy(gameObject);
             }
 
-            if (delivery.hasPizza) {
+            if (delivery.carryPizzaAmount >= 1) {
                 Instantiate(wastedPizza, transform.position, Quaternion.identity);
                 scoreHandler.AddScore(extraPenaltyPerWastedPizza);
             }

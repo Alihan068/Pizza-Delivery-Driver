@@ -43,6 +43,8 @@ public class Customer : MonoBehaviour {
     }
 
     public void ReceivePizza() {
+        Collider2D collider = GetComponent<Collider2D>();
+        collider.enabled = false;
         if (pizzaInHand != null) {
             pizzaInHand.SetActive(true);
         }

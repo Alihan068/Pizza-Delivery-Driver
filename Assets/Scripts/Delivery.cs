@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class Delivery : MonoBehaviour {
@@ -17,7 +17,8 @@ public class Delivery : MonoBehaviour {
 
     [SerializeField] GameObject pizzaObject;
     int pizzaDelivered = 0;
-    public bool hasPizza;
+    public float carryPizzaAmount;
+    public float maxCarryPizzaAmount = 2;
 
     private void Start() {
         customerManager = FindFirstObjectByType<CustomerManager>();
@@ -26,50 +27,76 @@ public class Delivery : MonoBehaviour {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         pizzaObject.SetActive(false);
 
-        driverTarget.SearchSetNavigation("Pizza");           
+        driverTarget.SearchSetNavigation("Pizza");
     }
 
     private void OnTriggerEnter2D(Collider2D collision) {
-        if (collision.gameObject.CompareTag("Customer") && hasPizza) {
-            havePizzaStatus(false);
+
+        if (collision.gameObject.CompareTag("Customer") && carryPizzaAmount > 0) {
+            DeliverPizza();
             pizzaDelivered++;
             gameUIManager.UpdatePizzaText(pizzaDelivered);
             TryPlayAudioClip(pizzaDeliverClip);
             collision.gameObject.GetComponent<Customer>().ReceivePizza();
-            //Debug.Log("Delivery Complete!");
         }
 
-        if (collision.gameObject.CompareTag("Pizza") && !hasPizza) {
-            havePizzaStatus(true);
-            Destroy(collision.gameObject, destroyDelay);
-            TryPlayAudioClip(pizzaCollectClip);
-            //Debug.Log("Pizza Picked Up");
+        if (collision.gameObject.CompareTag("Pizza")) {
+            if (carryPizzaAmount < maxCarryPizzaAmount) {
+                PickupPizza();
+                Destroy(collision.gameObject, destroyDelay);
+                TryPlayAudioClip(pizzaCollectClip);
+            }
+            else {
+                TryPlayAudioClip(pizzaFailClip);
+            }
         }
-        else if (hasPizza && collision.gameObject.CompareTag("Pizza")) {
-            TryPlayAudioClip(pizzaFailClip);
-            //Debug.Log("Already carrying Pizza");
-        }
-        else { 
-        return;
-        }
+    }
 
-        void TryPlayAudioClip(AudioClip clip) {
-            if (clip != null && audioSource != null)
-                audioSource.PlayOneShot(clip);
-            else
-                Debug.LogWarning("AudioClip is not assigned.");
-        }
+    void TryPlayAudioClip(AudioClip clip) {
+        if (clip != null && audioSource != null)
+            audioSource.PlayOneShot(clip);
     }
 
     public void havePizzaStatus(bool havePizza) {
         pizzaObject.SetActive(havePizza);
-        hasPizza = havePizza;
+
         if (havePizza) {
             driverTarget.SearchSetNavigation("Customer");
-            customerManager.GetCustomer();
         }
         else {
+            carryPizzaAmount = 0;
             driverTarget.SearchSetNavigation("Pizza");
         }
+    }
+
+    public void DeliverPizza() {
+        carryPizzaAmount -= 1;
+
+        if (carryPizzaAmount <= 0) {
+            carryPizzaAmount = 0;
+            havePizzaStatus(false);
+        }
+    }
+
+    public void LosePizza() {
+        if (carryPizzaAmount > 0) {
+            carryPizzaAmount -= 1;
+            Debug.Log("Lost Pizza because customer is left!");
+
+            if (carryPizzaAmount <= 0) {
+                carryPizzaAmount = 0;
+                havePizzaStatus(false);
+            }
+        }
+    }
+
+    public void PickupPizza() {
+        carryPizzaAmount += 1;
+
+        if (carryPizzaAmount > customerManager.activeCustomers) {
+            customerManager.GetCustomer();
+        }
+
+        havePizzaStatus(true);
     }
 }
