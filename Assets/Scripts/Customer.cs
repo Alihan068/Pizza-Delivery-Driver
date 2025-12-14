@@ -19,8 +19,11 @@ public class Customer : MonoBehaviour {
     Coroutine leaveCoroutine;
     CustomerManager customerManager;
     GameUIManager gameUIManager;
+    Collider2D bodyCollider;
 
     private void OnEnable() {
+        bodyCollider = GetComponent<Collider2D>();
+        bodyCollider.enabled = true;
         waitTime = waitTime + Random.Range(-waitTimeVariance, waitTimeVariance);
         spriteRenderer = GetComponent<SpriteRenderer>();
 
@@ -43,8 +46,7 @@ public class Customer : MonoBehaviour {
     }
 
     public void ReceivePizza() {
-        Collider2D collider = GetComponent<Collider2D>();
-        collider.enabled = false;
+        bodyCollider.enabled = false;
         if (pizzaInHand != null) {
             pizzaInHand.SetActive(true);
         }

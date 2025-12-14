@@ -1943,7 +1943,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   indicatorPrefab: {fileID: 8018350886232496261, guid: e12b0abbcc8729e42b6bede2dfc1dc8e, type: 3}
   uiCanvasParent: {fileID: 135626399}
-  scanFrequency: 1
 --- !u!4 &163327822 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2154176196238349561, guid: 6825df09da2e6d04284231f67e12724f, type: 3}
@@ -2325,7 +2324,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3060101287081455378, guid: 5466873be090102468224fc5c608f893, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -15.599998
+      value: -15.8
       objectReference: {fileID: 0}
     - target: {fileID: 3060101287081455378, guid: 5466873be090102468224fc5c608f893, type: 3}
       propertyPath: m_LocalPosition.z
@@ -9789,6 +9788,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minRespawnTime: 15
   maxRespawnTime: 30
+  activeCustomers: 0
 --- !u!114 &1429882027
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -124053,7 +124053,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8931806187195519727, guid: 431ce698879eb3a4f994ba461eaba16f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -12.919999
+      value: -13.18
       objectReference: {fileID: 0}
     - target: {fileID: 8931806187195519727, guid: 431ce698879eb3a4f994ba461eaba16f, type: 3}
       propertyPath: m_LocalPosition.z
