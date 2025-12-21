@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bf817bec05bf8244b8d635bc77788a7, type: 3}
+  m_Name: ScooterData
+  m_EditorClassIdentifier: 
+  vehicleName: Scooter
+  vehiclePrefab: {fileID: 3882002878805238368, guid: e7058982c990a614ba59327358d5bbf8, type: 3}
+  price: 0
+  baseSpeed: 3
+  speedStep: 1.5
+  maxSpeedLevel: 10
+  baseTurn: 150
+  turnStep: 10
+  maxTurnLevel: 10
+  baseHealth: 50
+  healthStep: 5
+  maxHealthLevel: 10
+  baseArmor: 0
+  armorStep: 0.05
+  maxArmorLevel: 5
+  baseCapacity: 1
+  capacityStep: 1
+  maxCapacityLevel: 8
+  baseProtection: 0
+  protectionStep: 0.1
+  maxProtectionLevel: 5

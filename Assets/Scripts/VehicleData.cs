@@ -4,30 +4,36 @@
 public class VehicleData : ScriptableObject {
     [Header("Identity")]
     public string vehicleName;
+    public GameObject vehiclePrefab;
     public int price;
 
-    [Header("Engine (Speed)")]
-    public float minSpeed = 10f;
-    public float maxSpeed = 25f;
+    [Header("Speed")]
+    public float baseSpeed = 3f;
+    public float speedStep = 1.5f;
+    public int maxSpeedLevel = 5;
 
-    [Header("Handling (Turn)")]
-    public float minTurn = 150f;
-    public float maxTurn = 300f;
+    [Header("Turn")]
+    public float baseTurn = 150f;
+    public float turnStep = 10f;
+    public int maxTurnLevel = 10;
 
-    [Header("Chassis (Health)")]
-    public float minHealth = 100f;
-    public float maxHealth = 300f;
+    [Header("Health")]
+    public float baseHealth = 100f;
+    public float healthStep = 20f;
+    public int maxHealthLevel = 10;
 
     [Header("Armor (Damage Reduction %)")]
-    [Range(0, 1)] public float minArmor = 0f;   
-    [Range(0, 1)] public float maxArmor = 0.5f; 
+    [Range(0, 1)] public float baseArmor = 0f;
+    [Range(0, 0.1f)] public float armorStep = 0.05f;
+    public int maxArmorLevel = 5;
 
-    [Header("Storage (Capacity)")]
-    public int minCapacity = 2;
-    public int maxCapacity = 10;
+    [Header("Capacity (Pizza Storage)")]
+    public int baseCapacity = 2;
+    public int capacityStep = 1;
+    public int maxCapacityLevel = 8;
 
-    [Header("Stabilizer (Pizza Protection %)")]
-    // Çarpışma anında pizzanın düşmeme şansı
-    [Range(0, 1)] public float minProtection = 0f;   
-    [Range(0, 1)] public float maxProtection = 0.8f; 
+    [Header("Protection (Drop Chance %)")]
+    [Range(0, 1)] public float baseProtection = 0f;
+    [Range(0, 0.1f)] public float protectionStep = 0.1f;
+    public int maxProtectionLevel = 5;
 }

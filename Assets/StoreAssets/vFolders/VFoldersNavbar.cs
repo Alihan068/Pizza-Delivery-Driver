@@ -412,6 +412,9 @@ namespace VFolders
                 var searchFieldRect = navbarRect.SetHeightFromMid(20).AddWidth(-33).SetWidthFromRight(240f.Min(window.position.width - (isOneColumn ? 195 : 223))).Move(-1, 2);
                 var searchOptionsRect = navbarRect.SetHeightFromMid(20).SetXMax(searchFieldRect.x).SetWidthFromRight(123);
 
+#if UNITY_6000_3_OR_NEWER
+                searchOptionsRect = searchOptionsRect.AddWidthFromRight(23);
+#endif
 
 
 
@@ -431,10 +434,12 @@ namespace VFolders
 
                 window.InvokeMethod("AssetLabelsDropDown");
 
+#if UNITY_6000_3_OR_NEWER
+                window.InvokeMethod("LogTypeDropDown");
+#endif
+
                 if (!isOneColumn)
                     window.InvokeMethod("ButtonSaveFilter");
-
-
                 window.InvokeMethod("ToggleHiddenPackagesVisibility");
 
                 Space(4);
@@ -442,11 +447,15 @@ namespace VFolders
 
 
 
+                var buttonCount = isOneColumn ? 3 : 4;
+#if UNITY_6000_3_OR_NEWER
+                buttonCount++;
+#endif
 
                 var maskRect = searchOptionsRect.SetWidth(1).SetX(masksStartX - 1).MoveY(-3);
                 var maskColor = Greyscale(isDarkTheme ? .235f : .8f);
 
-                for (int i = 0; i < (isOneColumn ? 3 : 4); i++)
+                for (int i = 0; i < buttonCount; i++)
                 {
                     maskRect.Draw(maskColor);
                     maskRect = maskRect.MoveX(26);

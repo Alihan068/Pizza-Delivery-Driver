@@ -8,7 +8,7 @@ public class Driver : MonoBehaviour {
     [SerializeField] float currentHealth;
     [SerializeField] float moveSpeed;
     [SerializeField] float turnSpeed;
-    [SerializeField] float armorPercent; // YENİ: Hasar azaltma oranı
+    [SerializeField] float armorPercent;
 
     private float baseMoveSpeed;
     private float baseTurnSpeed;

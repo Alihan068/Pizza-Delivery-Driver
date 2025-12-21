@@ -1674,7 +1674,7 @@ namespace VFolders
 
 
 
-        const string version = "2.1.11";
+        const string version = "2.1.12";
 
     }
 

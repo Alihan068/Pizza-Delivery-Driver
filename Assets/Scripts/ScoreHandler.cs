@@ -24,7 +24,7 @@ public class ScoreHandler : MonoBehaviour {
     void Update() {
         if (!isGameActive) return;
 
-        // Timer Logic
+        
         if (currentTimer > 0) {
             currentTimer -= Time.deltaTime;
 
@@ -34,9 +34,9 @@ public class ScoreHandler : MonoBehaviour {
             }
         }
         else {
-            // Süre Bitti!
+            
             currentTimer = 0;
-            EndLevel(true); // true = Başarıyla süre bitti
+            EndLevel(true); 
         }
     }
 
@@ -60,18 +60,18 @@ public class ScoreHandler : MonoBehaviour {
         }
     }
 
-    // End Level
+    
     public void EndLevel(bool timeRanOut) {
         if (!isGameActive) return;
 
         isGameActive = false;
         Debug.Log(timeRanOut ? "Süre Bitti - Level Tamamlandı!" : "Oyun Bitti - Can Kalmadı!");
 
-        // Transfer money to GameManager
+        
         if (GameManager.Instance != null) {
             GameManager.Instance.AddMoneyToBank(currentMoney);
         }
 
-        // gameUIManager.ShowGameOverPanel(); 
+        
     }
 }

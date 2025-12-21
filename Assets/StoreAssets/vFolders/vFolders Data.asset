@@ -21,6 +21,7 @@ MonoBehaviour:
     - ff5027d4d912ced41aff5be30cee7fce
     - 56a02189ccb86754d9037bce9afcc674
     - 109e9bdd0fcc649c5bc59085c35bdc83
+    - 1aa299909cdb3164f9917fb1f5387213
     values:
     - iconNameOrGuid: AudioClip Icon
       colorIndex: 1
@@ -48,6 +49,10 @@ MonoBehaviour:
       isColorRecursive: 0
     - iconNameOrGuid: SceneAsset Icon
       colorIndex: 0
+      isIconRecursive: 0
+      isColorRecursive: 0
+    - iconNameOrGuid: 
+      colorIndex: 1
       isIconRecursive: 0
       isColorRecursive: 0
   bookmarks: []

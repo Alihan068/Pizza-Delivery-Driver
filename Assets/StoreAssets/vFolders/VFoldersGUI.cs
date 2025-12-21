@@ -674,15 +674,22 @@ namespace VFolders
                     if (!curEvent.isMouseUp) return;
 
                     var selectedGuids = isListArea
-                                               ?
-                                               Selection.objects.Where(r => r is DefaultAsset).Select(r => r.GetPath().ToGuid())
-                                               :
+                                        ?
+                                        Selection.objects.Where(r => r is DefaultAsset).Select(r => r.GetPath().ToGuid())
+                                        :
 #if UNITY_2021_1_OR_NEWER
-                                               treeViewController.GetFieldValue("m_CachedSelection").GetFieldValue<List<int>>("m_List")
+                                        treeViewController.GetFieldValue("m_CachedSelection").GetIdList("m_List")
 #else
-                                               treeViewController?.GetMemberValue("state").GetMemberValue<List<int>>("selectedIDs")
+                                        treeViewController?.GetMemberValue("state").GetMemberValue<List<int>>("selectedIDs")
 #endif
+
+
+#if UNITY_6000_3_OR_NEWER
+                                 .Select(id => treeViewController.InvokeMethod("FindItem", (EntityId)id))
+#else
                                  .Select(id => treeViewController.InvokeMethod("FindItem", id))
+#endif
+
                                  .Where(r => r?.GetType().Name == "FolderTreeItem")
                                  .Select(r => r.GetPropertyValue<string>("Guid"))
                                  .Where(r => r != null);

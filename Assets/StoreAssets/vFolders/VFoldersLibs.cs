@@ -1969,11 +1969,12 @@ namespace VFolders.Libs
         {
 #if UNITY_6000_3_OR_NEWER
 
-            var outputEntityIds = outputInstanceIDs.Select(r => (EntityId)r).ToArray();
+            var outputEntityIds = new EntityId[outputInstanceIDs.Length];
 
             GlobalObjectId.GlobalObjectIdentifiersToEntityIdsSlow(identifiers, outputEntityIds);
 
-            outputInstanceIDs = outputEntityIds.Select(r => (int)r).ToArray();
+            for (int i = 0; i < outputEntityIds.Length; i++)
+                outputInstanceIDs[i] = (int)outputEntityIds[i];
 
 #else
 

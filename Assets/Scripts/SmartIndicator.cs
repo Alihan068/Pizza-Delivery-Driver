@@ -56,28 +56,28 @@ public class SmartIndicator : MonoBehaviour {
                            screenPoint.y < edgePadding ||
                            screenPoint.y > Screen.height - edgePadding;
 
-        if (isOffScreen) {
-            canvasGroup.alpha = 1f; //Show indicator
+        if (isOffScreen) { //1 Show/0 Hide indicator
+            canvasGroup.alpha = 1f; 
             UpdatePosition(screenPoint);
             UpdateVisuals();
         }
         else {
-            canvasGroup.alpha = 0f; //Hide indicator
+            canvasGroup.alpha = 0f; 
         }
     }
 
     void UpdatePosition(Vector3 screenPoint) {
-        //Flip if behind camera
+        
         if (screenPoint.z < 0) screenPoint *= -1;
 
         Vector3 screenCenter = new Vector3(Screen.width, Screen.height, 0) * 0.5f;
         Vector3 direction = (screenPoint - screenCenter).normalized;
 
-        // Calculate boundaries
+        
         Vector2 screenBounds = new Vector2(Screen.width, Screen.height) * 0.5f;
         screenBounds -= new Vector2(edgePadding, edgePadding);
 
-        //Calculate clamping intersection
+        
         float divX = (direction.x != 0) ? screenBounds.x / Mathf.Abs(direction.x) : screenBounds.x;
         float divY = (direction.y != 0) ? screenBounds.y / Mathf.Abs(direction.y) : screenBounds.y;
 
