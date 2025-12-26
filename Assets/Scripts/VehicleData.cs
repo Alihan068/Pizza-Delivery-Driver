@@ -2,10 +2,19 @@
 
 [CreateAssetMenu(fileName = "NewVehicleData", menuName = "PizzaGame/Vehicle Data")]
 public class VehicleData : ScriptableObject {
-    [Header("Identity")]
+    [Header("Identity & Visuals")]
     public string vehicleName;
     public GameObject vehiclePrefab;
+    public Sprite vehicleIcon;
     public int price;
+
+    [Header("Descriptions")]
+    [TextArea] public string speedDesc = "Increases max speed.";
+    [TextArea] public string turnDesc = "Better handling in corners.";
+    [TextArea] public string healthDesc = "More durability against crashes.";
+    [TextArea] public string armorDesc = "Reduces damage taken.";
+    [TextArea] public string capacityDesc = "Carry more pizzas.";
+    [TextArea] public string protectionDesc = "Chance to save pizza on crash.";
 
     [Header("Speed")]
     public float baseSpeed = 3f;

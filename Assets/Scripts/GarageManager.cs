@@ -1,63 +1,89 @@
 ﻿using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class GarageManager : MonoBehaviour {
     [Header("UI References")]
     public TextMeshProUGUI totalMoneyText;
     public TextMeshProUGUI currentVehicleNameText;
+    public Image chosenVehicleImage;
 
-    [Header("Stat Texts")]
-    public TextMeshProUGUI speedLvlText;
-    public TextMeshProUGUI turnLvlText;
-    public TextMeshProUGUI healthLvlText;
-    public TextMeshProUGUI armorLvlText;
-    public TextMeshProUGUI capacityLvlText;
-    public TextMeshProUGUI protectionLvlText;
-
-    [Header("Cost Texts")]
-    public TextMeshProUGUI speedCostText;
-    public TextMeshProUGUI turnCostText;
-    public TextMeshProUGUI healthCostText;
-    public TextMeshProUGUI armorCostText;
-    public TextMeshProUGUI capacityCostText;
-    public TextMeshProUGUI protectionCostText;
+    [Header("Stat Panels")]
+    // Assign the objects with StatDisplay script here in the Inspector
+    public StatDisplay speedPanel;
+    public StatDisplay turnPanel;
+    public StatDisplay healthPanel;
+    public StatDisplay armorPanel;
+    public StatDisplay capacityPanel;
+    public StatDisplay protectionPanel;
 
     void Start() {
         UpdateUI();
     }
 
     void UpdateUI() {
-        totalMoneyText.text = "$ " + GameManager.Instance.totalMoney;
+        //Money
+        if (totalMoneyText != null)
+            totalMoneyText.text = "$ " + GameManager.Instance.totalMoney;
 
-        if (GameManager.Instance.currentVehicle != null)
-            currentVehicleNameText.text = GameManager.Instance.currentVehicle.vehicleName;
-
+        // Get Current Vehicle Data
+        var currentVehicle = GameManager.Instance.currentVehicle;
         var saveData = GameManager.Instance.GetCurrentVehicleSave();
-        var data = GameManager.Instance.currentVehicle;
 
-        if (saveData == null || data == null) return;
+        if (saveData == null || currentVehicle == null) return;
 
-        UpdateSingleStatUI(saveData.speedLevel, data.maxSpeedLevel, speedLvlText, speedCostText);
-        UpdateSingleStatUI(saveData.turnLevel, data.maxTurnLevel, turnLvlText, turnCostText);
-        UpdateSingleStatUI(saveData.healthLevel, data.maxHealthLevel, healthLvlText, healthCostText);
-        UpdateSingleStatUI(saveData.armorLevel, data.maxArmorLevel, armorLvlText, armorCostText);
-        UpdateSingleStatUI(saveData.capacityLevel, data.maxCapacityLevel, capacityLvlText, capacityCostText);
-        UpdateSingleStatUI(saveData.protectionLevel, data.maxProtectionLevel, protectionLvlText, protectionCostText);
-    }
+        // Update Vehicle Name
+        currentVehicleNameText.text = currentVehicle.vehicleName;
 
-    void UpdateSingleStatUI(int currentLevel, int maxLevel, TextMeshProUGUI lvlText, TextMeshProUGUI costText) {
-        lvlText.text = "Lvl " + currentLevel + "/" + maxLevel;
+        // Update Vehicle Image Logic
+        Sprite displaySprite = null;
 
-        if (currentLevel >= maxLevel) {
-            costText.text = "MAX";
-            costText.color = Color.red;
+        if (currentVehicle.vehicleIcon != null) {
+            displaySprite = currentVehicle.vehicleIcon;
+        }
+        else if (currentVehicle.vehiclePrefab != null) {
+            SpriteRenderer sr = currentVehicle.vehiclePrefab.GetComponent<SpriteRenderer>();
+            if (sr != null) {
+                displaySprite = sr.sprite;
+            }
+        }
+
+        // Apply Image of the vehhicle to UI
+        if (displaySprite != null) {
+            chosenVehicleImage.sprite = displaySprite;
+            chosenVehicleImage.enabled = true;
+            chosenVehicleImage.preserveAspect = true;
         }
         else {
-            int cost = GameManager.Instance.GetUpgradeCost(currentLevel);
-            costText.text = "$ " + cost;
-            costText.color = Color.white;
+            chosenVehicleImage.enabled = false;
         }
+
+        // --- Update Stat Panels ---
+
+        // Speed
+        speedPanel.Setup("Speed", currentVehicle.speedDesc, saveData.speedLevel, currentVehicle.maxSpeedLevel,
+            GameManager.Instance.GetUpgradeCost(saveData.speedLevel), saveData.speedLevel >= currentVehicle.maxSpeedLevel);
+
+        // Turn (Handling)
+        turnPanel.Setup("Handling", currentVehicle.turnDesc, saveData.turnLevel, currentVehicle.maxTurnLevel,
+            GameManager.Instance.GetUpgradeCost(saveData.turnLevel), saveData.turnLevel >= currentVehicle.maxTurnLevel);
+
+        // Health (Chassis)
+        healthPanel.Setup("Chassis", currentVehicle.healthDesc, saveData.healthLevel, currentVehicle.maxHealthLevel,
+            GameManager.Instance.GetUpgradeCost(saveData.healthLevel), saveData.healthLevel >= currentVehicle.maxHealthLevel);
+
+        // Armor
+        armorPanel.Setup("Armor", currentVehicle.armorDesc, saveData.armorLevel, currentVehicle.maxArmorLevel,
+            GameManager.Instance.GetUpgradeCost(saveData.armorLevel), saveData.armorLevel >= currentVehicle.maxArmorLevel);
+
+        // Capacity
+        capacityPanel.Setup("Storage", currentVehicle.capacityDesc, saveData.capacityLevel, currentVehicle.maxCapacityLevel,
+            GameManager.Instance.GetUpgradeCost(saveData.capacityLevel), saveData.capacityLevel >= currentVehicle.maxCapacityLevel);
+
+        // Protection (Stabilizer)
+        protectionPanel.Setup("Stabilizer", currentVehicle.protectionDesc, saveData.protectionLevel, currentVehicle.maxProtectionLevel,
+            GameManager.Instance.GetUpgradeCost(saveData.protectionLevel), saveData.protectionLevel >= currentVehicle.maxProtectionLevel);
     }
 
     public void OnClickUpgrade(string statName) {
