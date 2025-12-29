@@ -8,13 +8,14 @@ public class ScoreHandler : MonoBehaviour {
 
     [Header("Session Data")]
     public int currentScore = 0;
-    public int currentMoney = 0;
 
     GameUIManager gameUIManager;
+    GameManager gameManager;
 
     void Start() {
+        gameManager = FindFirstObjectByType<GameManager>();
         gameUIManager = FindFirstObjectByType<GameUIManager>();
-
+        
         // Convert minutes to seconds
         currentTimer = levelDurationInMinutes * 60;
 
@@ -49,14 +50,16 @@ public class ScoreHandler : MonoBehaviour {
 
     public void AddMoney(int amount) {
         if (!isGameActive) return;
-
-        currentMoney += amount;
-        // Add UI update in future if needed
+        if (gameManager != null) {
+            gameManager.AddMoneyToBank(amount);
+            UpdateUI();
+        }
     }
+
 
     void UpdateUI() {
         if (gameUIManager != null) {
-            gameUIManager.UpdateScoreText();
+            gameUIManager.UpdateScoreDisplays();
         }
     }
 
@@ -66,12 +69,6 @@ public class ScoreHandler : MonoBehaviour {
 
         isGameActive = false;
         Debug.Log(timeRanOut ? "Süre Bitti - Level Tamamlandı!" : "Oyun Bitti - Can Kalmadı!");
-
-        
-        if (GameManager.Instance != null) {
-            GameManager.Instance.AddMoneyToBank(currentMoney);
-        }
-
         
     }
 }

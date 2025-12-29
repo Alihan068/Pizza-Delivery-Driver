@@ -1,10 +1,12 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class GameUIManager : MonoBehaviour {
     [Header("UI Elements")]
     [SerializeField] TextMeshProUGUI scoreText;
+    [SerializeField] TextMeshProUGUI moneyText;
     [SerializeField] TextMeshProUGUI pizzaCountText;
     [SerializeField] TextMeshProUGUI timerText;
 
@@ -16,23 +18,26 @@ public class GameUIManager : MonoBehaviour {
     [SerializeField] AudioClip gameOverClip;
     AudioSource audioSource;
 
+    GameManager gameManager;
     ScoreHandler scoreHandler; 
 
     private void Start() {
         audioSource = GetComponent<AudioSource>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
+        gameManager = FindFirstObjectByType<GameManager>();
 
-        scoreText.text = "Score: 0";
+        scoreText.text = "= 0";
         pizzaCountText.text = "= 0";
         if (timerText != null) timerText.text = "00:00";
 
         healthbar.value = healthbar.maxValue;
     }
 
-    public void UpdateScoreText() {
+    public void UpdateScoreDisplays() {
         //Take score from ScoreHandler
         if (scoreHandler != null) {
-            scoreText.text = "Score: " + scoreHandler.currentScore;
+            scoreText.text = "= " + scoreHandler.currentScore;
+            moneyText.text = "= " + gameManager.totalMoney;
         }
     }
 

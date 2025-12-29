@@ -20,14 +20,13 @@ public class PlayerSpawner : MonoBehaviour {
 
                 
 
-                Debug.Log("Kamera hedefi ayarlandı: " + player.name);
             }
             else {
-                Debug.LogError("HATA: SpawnPoint objesindeki 'Virtual Camera' slotu boş!");
+                Debug.LogError("'Virtual Camera' slotu is emtpy in spawnObject");
             }
         }
         else {
-            Debug.LogError("GameManager veya Seçili Araç Bulunamadı!");
+            Debug.LogError("GameManager cant be found");
         }
     }
 }

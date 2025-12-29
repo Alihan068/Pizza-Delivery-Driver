@@ -6,7 +6,7 @@ public class GameManager : MonoBehaviour {
     public static GameManager Instance;
 
     [Header("Economy")]
-    public int totalMoney = 0;
+    public int totalMoney = 100;
 
     [Header("Vehicle Database")]
     public VehicleData[] allVehicles;
@@ -45,6 +45,7 @@ public class GameManager : MonoBehaviour {
 
     public void AddMoneyToBank(int amount) {
         totalMoney += amount;
+        Debug.Log("Added $" + amount + " to bank. Total Money: $" + totalMoney);
     }
 
     private float CalculateStat(float baseVal, float step, int currentLevel) {

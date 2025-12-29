@@ -8,13 +8,19 @@ public class Customer : MonoBehaviour {
 
     [SerializeField] float waitTime = 40f;
     [SerializeField] float waitTimeVariance = 10f;
+
+    [SerializeField] int moneyReward = 10;
+    [SerializeField] int moneyRewardVariance = 5;
+
     public float timeLeft;
+
     [SerializeField] GameObject pizzaInHand;
     [SerializeField] Sprite[] CustomerBodyVariety;
 
     [SerializeField] Image fillImage;
     TextMeshProUGUI timeText;
 
+    GameManager gameManager;
     SpriteRenderer spriteRenderer;
     Coroutine leaveCoroutine;
     CustomerManager customerManager;
@@ -33,7 +39,9 @@ public class Customer : MonoBehaviour {
 
         if (CustomerBodyVariety.Length > 0)
             spriteRenderer.sprite = CustomerBodyVariety[Random.Range(0, CustomerBodyVariety.Length)];
-
+        
+        gameManager = FindFirstObjectByType<GameManager>();
+        gameUIManager = FindFirstObjectByType<GameUIManager>();
         customerManager = FindFirstObjectByType<CustomerManager>();
         timeText = GetComponentInChildren<TextMeshProUGUI>();
 
@@ -55,6 +63,13 @@ public class Customer : MonoBehaviour {
         customerManager.CustomerRoutine(this.gameObject);
         ScoreHandler scoreHandler = FindFirstObjectByType<ScoreHandler>();
         scoreHandler.AddScore(Mathf.RoundToInt(timeLeft * 10));
+
+        int reward = moneyReward + Random.Range(-moneyRewardVariance, moneyRewardVariance);
+
+        scoreHandler.AddMoney(moneyReward + Mathf.RoundToInt(timeLeft / 2));
+        Debug.Log("Customer rewarded player with $" + reward + "\n +Tipped" + timeLeft/2);
+
+        
     }
 
     IEnumerator LeaveAfterTime() {
@@ -73,6 +88,7 @@ public class Customer : MonoBehaviour {
         customerManager.CustomerRoutine(this.gameObject);
         leaveCoroutine = null;
     }
+
 
     private void OnDisable() {
         spriteRenderer = null;
