@@ -22,10 +22,12 @@ public class Customer : MonoBehaviour {
 
     GameManager gameManager;
     SpriteRenderer spriteRenderer;
-    Coroutine leaveCoroutine;
+    ScoreHandler scoreHandler;
     CustomerManager customerManager;
     GameUIManager gameUIManager;
+
     Collider2D bodyCollider;
+    Coroutine leaveCoroutine;
 
     private void OnEnable() {
         bodyCollider = GetComponent<Collider2D>();
@@ -42,6 +44,8 @@ public class Customer : MonoBehaviour {
         
         gameManager = FindFirstObjectByType<GameManager>();
         gameUIManager = FindFirstObjectByType<GameUIManager>();
+        scoreHandler = FindFirstObjectByType<ScoreHandler>();
+
         customerManager = FindFirstObjectByType<CustomerManager>();
         timeText = GetComponentInChildren<TextMeshProUGUI>();
 
@@ -61,7 +65,6 @@ public class Customer : MonoBehaviour {
         StopCoroutine(leaveCoroutine);
         timeText.text = "Thank You!";
         customerManager.CustomerRoutine(this.gameObject);
-        ScoreHandler scoreHandler = FindFirstObjectByType<ScoreHandler>();
         scoreHandler.AddScore(Mathf.RoundToInt(timeLeft * 10));
 
         int reward = moneyReward + Random.Range(-moneyRewardVariance, moneyRewardVariance);
@@ -87,6 +90,10 @@ public class Customer : MonoBehaviour {
         }
         customerManager.CustomerRoutine(this.gameObject);
         leaveCoroutine = null;
+
+        int penalty = Mathf.RoundToInt((moneyReward + Random.Range(-moneyRewardVariance, moneyRewardVariance)/2));
+
+        scoreHandler.AddMoney(-moneyReward);
     }
 
 
