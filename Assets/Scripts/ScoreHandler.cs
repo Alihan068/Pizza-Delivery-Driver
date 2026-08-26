@@ -2,19 +2,21 @@
 
 public class ScoreHandler : MonoBehaviour {
     [Header("Game Settings")]
-    [SerializeField] float levelDurationInMinutes = 5f; 
+    [SerializeField] float levelDurationInMinutes = 3f; 
     private float currentTimer;
     private bool isGameActive = true;
 
     [Header("Session Data")]
     public int currentScore = 0;
+    public int sessionEarnings { get; private set; }
+    public int missedCustomers { get; private set; }
 
     GameUIManager gameUIManager;
-    GameManager gameManager;
+    SessionResultPanel resultPanel;
 
     void Start() {
-        gameManager = FindFirstObjectByType<GameManager>();
         gameUIManager = FindFirstObjectByType<GameUIManager>();
+        resultPanel = FindFirstObjectByType<SessionResultPanel>(FindObjectsInactive.Include);
         
         // Convert minutes to seconds
         currentTimer = levelDurationInMinutes * 60;
@@ -37,7 +39,7 @@ public class ScoreHandler : MonoBehaviour {
         else {
             
             currentTimer = 0;
-            EndLevel(true); 
+            EndLevel(EndReason.TimeUp); 
         }
     }
 
@@ -50,10 +52,12 @@ public class ScoreHandler : MonoBehaviour {
 
     public void AddMoney(int amount) {
         if (!isGameActive) return;
-        if (gameManager != null) {
-            gameManager.AddMoneyToBank(amount);
-            UpdateUI();
-        }
+        sessionEarnings += amount;
+        UpdateUI();
+    }
+
+    public void RegisterMissedCustomer() {
+        missedCustomers++;
     }
 
 
@@ -64,11 +68,24 @@ public class ScoreHandler : MonoBehaviour {
     }
 
     
-    public void EndLevel(bool timeRanOut) {
+    public void EndLevel(EndReason reason) {
         if (!isGameActive) return;
 
         isGameActive = false;
-        Debug.Log(timeRanOut ? "Süre Bitti - Level Tamamlandı!" : "Oyun Bitti - Can Kalmadı!");
-        
+
+        Driver driver = FindFirstObjectByType<Driver>();
+        float hp = driver != null ? driver.currentHealth : 0f;
+        float maxHp = driver != null ? driver.maxHealth : 0f;
+
+        Delivery delivery = FindFirstObjectByType<Delivery>();
+        int delivered = delivery != null ? delivery.pizzaDelivered : 0;
+
+        SessionResult result = GameManager.Instance.SettleSession(sessionEarnings, hp, maxHp, reason);
+
+        if (resultPanel != null) {
+            resultPanel.Show(result, delivered, missedCustomers, currentScore);
+        }
+
+        Time.timeScale = 0f;
     }
 }

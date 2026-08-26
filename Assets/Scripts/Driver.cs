@@ -5,7 +5,8 @@ using UnityEngine.InputSystem;
 public class Driver : MonoBehaviour {
 
     [Header("Stats (From GameManager)")]
-    [SerializeField] float currentHealth;
+    public float currentHealth;
+    public float maxHealth;
     [SerializeField] float moveSpeed;
     [SerializeField] float turnSpeed;
     [SerializeField] float armorPercent;
@@ -25,6 +26,7 @@ public class Driver : MonoBehaviour {
     // State
     float turboBoost = 1.0f;
     bool turboMode;
+    bool isDisabled;
     Vector2 movementInput;
 
     // References
@@ -65,12 +67,14 @@ public class Driver : MonoBehaviour {
             armorPercent = 0f;
         }
 
+        maxHealth = currentHealth;
         moveSpeed = baseMoveSpeed;
         turnSpeed = baseTurnSpeed;
     }
 
     void FixedUpdate() {
         if (!gameObject.activeInHierarchy) return;
+        if (isDisabled) return;
 
         float steerAmount = movementInput.x;
         float moveAmount = movementInput.y;
@@ -108,6 +112,7 @@ public class Driver : MonoBehaviour {
     }
 
     private void OnCollisionEnter2D(Collision2D other) {
+        if (isDisabled) return;
         if (other.gameObject.CompareTag("Border")) return;
 
         if (!turboMode) {
@@ -122,9 +127,16 @@ public class Driver : MonoBehaviour {
             TryPlayAudioClipFromArray(crashSound);
 
             if (currentHealth <= 0) {
-                gameUIManager.PlayGameOverSound();
-                if (scoreHandler != null) scoreHandler.EndLevel(false);
-                Destroy(gameObject);
+                currentHealth = 0;
+                isDisabled = true;
+                movementInput = Vector2.zero;
+
+                var playerInput = GetComponent<PlayerInput>();
+                if (playerInput != null) playerInput.enabled = false;
+
+                if (gameUIManager != null) gameUIManager.PlayGameOverSound();
+                UpdateUIMethod();
+                if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Wrecked);
                 return;
             }
 

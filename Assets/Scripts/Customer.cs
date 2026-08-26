@@ -91,6 +91,8 @@ public class Customer : MonoBehaviour {
         customerManager.CustomerRoutine(this.gameObject);
         leaveCoroutine = null;
 
+        if (scoreHandler != null) scoreHandler.RegisterMissedCustomer();
+
         int penalty = Mathf.RoundToInt((moneyReward + Random.Range(-moneyRewardVariance, moneyRewardVariance)/2));
 
         scoreHandler.AddMoney(-moneyReward);

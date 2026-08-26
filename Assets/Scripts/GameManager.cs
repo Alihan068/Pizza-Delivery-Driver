@@ -8,6 +8,12 @@ public class GameManager : MonoBehaviour {
     [Header("Economy")]
     public int totalMoney = 100;
 
+    [Header("Session Settlement")]
+    [SerializeField] float repairCostPerHP = 0.7f;
+    [SerializeField] float repairValueRate = 0.03f;
+    [SerializeField] float deathEarningsKeep = 0.5f;
+    [SerializeField] float repairBankSafetyRate = 0.5f;
+
     [Header("Vehicle Database")]
     public VehicleData[] allVehicles;
     public VehicleData currentVehicle;
@@ -44,7 +50,7 @@ public class GameManager : MonoBehaviour {
     }
 
     public void AddMoneyToBank(int amount) {
-        totalMoney += amount;
+        totalMoney = Mathf.Max(0, totalMoney + amount);
         Debug.Log("Added $" + amount + " to bank. Total Money: $" + totalMoney);
     }
 
@@ -134,6 +140,7 @@ public class GameManager : MonoBehaviour {
 
         if (totalMoney >= cost) {
             totalMoney -= cost;
+            save.moneySpent += cost;
 
             switch (statName) {
                 case "Speed": save.speedLevel++; break;
@@ -156,5 +163,49 @@ public class GameManager : MonoBehaviour {
         if (newIndex >= allVehicles.Length) newIndex = 0;
 
         currentVehicle = allVehicles[newIndex];
+    }
+
+    public int GetVehicleValue() {
+        var save = GetCurrentVehicleSave();
+        int spent = save != null ? save.moneySpent : 0;
+        int price = currentVehicle != null ? currentVehicle.price : 0;
+        return spent + price;
+    }
+
+    public int CalculateRepairCost(float currentHealth, float maxHealth, bool died) {
+        if (maxHealth <= 0f) return 0;
+        float hpLost = died ? maxHealth : Mathf.Clamp(maxHealth - currentHealth, 0f, maxHealth);
+        float damageRatio = hpLost / maxHealth;
+        return Mathf.RoundToInt(hpLost * repairCostPerHP + GetVehicleValue() * repairValueRate * damageRatio);
+    }
+
+    public SessionResult SettleSession(int sessionEarnings, float currentHealth, float maxHealth, EndReason reason) {
+        int bankBefore = totalMoney;
+
+        int kept;
+        switch (reason) {
+            case EndReason.Wrecked: kept = Mathf.FloorToInt(sessionEarnings * deathEarningsKeep); break;
+            case EndReason.Abandoned: kept = 0; break;
+            default: kept = sessionEarnings; break;
+        }
+        kept = Mathf.Max(0, kept);
+
+        bool died = (reason == EndReason.Wrecked);
+        int repairRaw = CalculateRepairCost(currentHealth, maxHealth, died);
+
+        int maxCharge = kept + Mathf.FloorToInt(bankBefore * repairBankSafetyRate);
+        int repair = Mathf.Clamp(repairRaw, 0, maxCharge);
+
+        totalMoney = Mathf.Max(0, bankBefore + kept - repair);
+
+        return new SessionResult {
+            reason = reason,
+            grossEarnings = sessionEarnings,
+            keptEarnings = kept,
+            repairCost = repair,
+            repairBeforeClamp = repairRaw,
+            bankBefore = bankBefore,
+            bankAfter = totalMoney
+        };
     }
 }

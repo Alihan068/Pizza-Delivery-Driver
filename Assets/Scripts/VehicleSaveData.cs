@@ -12,6 +12,8 @@ public class VehicleSaveData {
     public int capacityLevel;
     public int protectionLevel;
 
+    public int moneySpent;
+
     public VehicleSaveData(string name, bool unlocked) {
         vehicleName = name;
         isUnlocked = unlocked;
@@ -21,5 +23,6 @@ public class VehicleSaveData {
         armorLevel = 0;
         capacityLevel = 0;
         protectionLevel = 0;
+        moneySpent = 0;
     }
 }

@@ -23,7 +23,7 @@ public class Delivery : MonoBehaviour {
     [SerializeField] AudioClip pizzaDeliverClip;
     [SerializeField] AudioClip pizzaFailClip;
 
-    int pizzaDelivered = 0;
+    public int pizzaDelivered = 0;
 
     private void Start() {
         customerManager = FindFirstObjectByType<CustomerManager>();

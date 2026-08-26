@@ -19,6 +19,7 @@ public class GarageManager : MonoBehaviour {
     public StatDisplay protectionPanel;
 
     void Start() {
+        Time.timeScale = 1f;
         UpdateUI();
     }
 

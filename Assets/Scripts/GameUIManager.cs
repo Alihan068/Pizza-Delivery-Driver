@@ -18,13 +18,11 @@ public class GameUIManager : MonoBehaviour {
     [SerializeField] AudioClip gameOverClip;
     AudioSource audioSource;
 
-    GameManager gameManager;
     ScoreHandler scoreHandler; 
 
     private void Start() {
         audioSource = GetComponent<AudioSource>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
-        gameManager = FindFirstObjectByType<GameManager>();
 
         scoreText.text = "= 0";
         pizzaCountText.text = "= 0";
@@ -37,7 +35,7 @@ public class GameUIManager : MonoBehaviour {
         //Take score from ScoreHandler
         if (scoreHandler != null) {
             scoreText.text = "= " + scoreHandler.currentScore;
-            moneyText.text = "= " + gameManager.totalMoney;
+            moneyText.text = "= " + scoreHandler.sessionEarnings;
         }
     }
 
