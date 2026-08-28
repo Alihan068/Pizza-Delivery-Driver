@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 public class GameManager : MonoBehaviour {
     public static GameManager Instance;
+
+    const string SaveFileName = "save.json";
 
     [Header("Economy")]
     public int totalMoney = 100;
@@ -13,6 +16,10 @@ public class GameManager : MonoBehaviour {
     [SerializeField] float repairValueRate = 0.03f;
     [SerializeField] float deathEarningsKeep = 0.5f;
     [SerializeField] float repairBankSafetyRate = 0.5f;
+
+    [Header("Upgrade Cost")]
+    [SerializeField] float upgradeCostBase = 460f;
+    [SerializeField] float upgradeCostStep = 380f;
 
     [Header("Vehicle Database")]
     public VehicleData[] allVehicles;
@@ -25,10 +32,51 @@ public class GameManager : MonoBehaviour {
         if (Instance == null) {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            LoadGame();
             InitializeVehicles();
         }
         else {
             Destroy(gameObject);
+        }
+    }
+
+    string GetSavePath() {
+        return Path.Combine(Application.persistentDataPath, SaveFileName);
+    }
+
+    void LoadGame() {
+        string path = GetSavePath();
+        if (!File.Exists(path)) return;
+
+        try {
+            string json = File.ReadAllText(path);
+            GameSaveData data = JsonUtility.FromJson<GameSaveData>(json);
+            if (data == null) return;
+
+            totalMoney = data.totalMoney;
+            vehicleSaveList = data.vehicleSaveList ?? new List<VehicleSaveData>();
+
+            if (!string.IsNullOrEmpty(data.currentVehicleName)) {
+                currentVehicle = System.Array.Find(allVehicles, v => v.vehicleName == data.currentVehicleName);
+            }
+        }
+        catch (System.Exception e) {
+            Debug.LogWarning("Save file could not be loaded, starting fresh: " + e.Message);
+        }
+    }
+
+    void SaveGame() {
+        try {
+            GameSaveData data = new GameSaveData {
+                totalMoney = totalMoney,
+                currentVehicleName = currentVehicle != null ? currentVehicle.vehicleName : "",
+                vehicleSaveList = vehicleSaveList
+            };
+
+            File.WriteAllText(GetSavePath(), JsonUtility.ToJson(data, true));
+        }
+        catch (System.Exception e) {
+            Debug.LogWarning("Failed to save game: " + e.Message);
         }
     }
 
@@ -95,8 +143,37 @@ public class GameManager : MonoBehaviour {
         return Mathf.Clamp01(CalculateStat(currentVehicle.baseProtection, currentVehicle.protectionStep, save.protectionLevel));
     }
 
-    public int GetUpgradeCost(int currentLevel) {
-        return 100 + (currentLevel * 50);
+    public float GetStatValueAtLevel(string statName, int level) {
+        if (currentVehicle == null) return 0f;
+
+        switch (statName) {
+            case "Speed": return CalculateStat(currentVehicle.baseSpeed, currentVehicle.speedStep, level);
+            case "Turn": return CalculateStat(currentVehicle.baseTurn, currentVehicle.turnStep, level);
+            case "Health": return CalculateStat(currentVehicle.baseHealth, currentVehicle.healthStep, level);
+            case "Armor": return Mathf.Clamp01(CalculateStat(currentVehicle.baseArmor, currentVehicle.armorStep, level));
+            case "Capacity": return CalculateStat(currentVehicle.baseCapacity, currentVehicle.capacityStep, level);
+            case "Protection": return Mathf.Clamp01(CalculateStat(currentVehicle.baseProtection, currentVehicle.protectionStep, level));
+            default: return 0f;
+        }
+    }
+
+    float GetCostMultiplier(string statName) {
+        if (currentVehicle == null) return 1f;
+
+        switch (statName) {
+            case "Speed": return currentVehicle.speedCostMult;
+            case "Turn": return currentVehicle.turnCostMult;
+            case "Health": return currentVehicle.healthCostMult;
+            case "Armor": return currentVehicle.armorCostMult;
+            case "Capacity": return currentVehicle.capacityCostMult;
+            case "Protection": return currentVehicle.protectionCostMult;
+            default: return 1f;
+        }
+    }
+
+    public int GetUpgradeCost(string statName, int currentLevel) {
+        float mult = GetCostMultiplier(statName);
+        return Mathf.RoundToInt((upgradeCostBase + upgradeCostStep * currentLevel) * mult);
     }
 
     public bool TryUpgradeStat(string statName) {
@@ -132,11 +209,13 @@ public class GameManager : MonoBehaviour {
                 currentLevel = save.protectionLevel;
                 maxLevelAllowed = data.maxProtectionLevel;
                 break;
+            default:
+                return false;
         }
 
         if (currentLevel >= maxLevelAllowed) return false;
 
-        int cost = GetUpgradeCost(currentLevel);
+        int cost = GetUpgradeCost(statName, currentLevel);
 
         if (totalMoney >= cost) {
             totalMoney -= cost;
@@ -150,9 +229,22 @@ public class GameManager : MonoBehaviour {
                 case "Capacity": save.capacityLevel++; break;
                 case "Protection": save.protectionLevel++; break;
             }
+            SaveGame();
             return true;
         }
         return false;
+    }
+
+    public bool TryPurchaseVehicle() {
+        var save = GetCurrentVehicleSave();
+        if (save == null || currentVehicle == null) return false;
+        if (save.isUnlocked) return false;
+        if (totalMoney < currentVehicle.price) return false;
+
+        totalMoney -= currentVehicle.price;
+        save.isUnlocked = true;
+        SaveGame();
+        return true;
     }
 
     public void ChangeVehicle(int direction) {
@@ -163,6 +255,7 @@ public class GameManager : MonoBehaviour {
         if (newIndex >= allVehicles.Length) newIndex = 0;
 
         currentVehicle = allVehicles[newIndex];
+        SaveGame();
     }
 
     public int GetVehicleValue() {
@@ -197,6 +290,7 @@ public class GameManager : MonoBehaviour {
         int repair = Mathf.Clamp(repairRaw, 0, maxCharge);
 
         totalMoney = Mathf.Max(0, bankBefore + kept - repair);
+        SaveGame();
 
         return new SessionResult {
             reason = reason,

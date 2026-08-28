@@ -7,20 +7,22 @@ public class StatDisplay : MonoBehaviour {
     public TextMeshProUGUI statNameText;
     public TextMeshProUGUI descriptionText;
     public TextMeshProUGUI levelText;
+    public TextMeshProUGUI valueText;
     public TextMeshProUGUI costText;
     public Button upgradeButton;
 
     // Updates the panel UI based on the passed parameters
-    public void Setup(string name, string desc, int currentLvl, int maxLvl, int cost, bool isMaxed) {
+    public void Setup(string name, string desc, int currentLvl, int maxLvl, int cost, bool isMaxed, string valueDisplay) {
         statNameText.text = name;
         descriptionText.text = desc;
         levelText.text = $"Lvl {currentLvl}/{maxLvl}";
+        if (valueText != null) valueText.text = valueDisplay;
 
         if (isMaxed) {
             costText.text = "MAX";
             costText.color = Color.red;
             // Disable button if maxed
-            upgradeButton.interactable = false; 
+            upgradeButton.interactable = false;
         }
         else {
             costText.text = "$ " + cost;

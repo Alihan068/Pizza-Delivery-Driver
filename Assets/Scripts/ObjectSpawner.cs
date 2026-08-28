@@ -13,11 +13,13 @@ public class ObjectSpawner : MonoBehaviour {
         public float centerOffsetX;
         public float centerOffsetY;
 
-        public float maxObjectLimit = 50;
+        public int maxObjectLimit = 50;
         public List<GameObject> objectList;
 
         public float checkRadius = 1f;
         public LayerMask obstacleLayer;
+
+        [System.NonSerialized] public List<GameObject> spawnedInstances = new List<GameObject>();
     }
 
     [SerializeField] List<ObstacleGroup> obstacleGroups;
@@ -29,13 +31,16 @@ public class ObjectSpawner : MonoBehaviour {
     }
 
     IEnumerator SpawnObstacleRoutine(ObstacleGroup group) {
+        WaitForSeconds wait = new WaitForSeconds(group.spawnInterval);
         while (true) {
-            yield return new WaitForSeconds(group.spawnInterval);
+            yield return wait;
             SpawnObstacle(group);
         }
     }
 
     void SpawnObstacle(ObstacleGroup group) {
+        group.spawnedInstances.RemoveAll(go => go == null);
+        if (group.spawnedInstances.Count >= group.maxObjectLimit) return;
 
         int maxAttempts = 10;
 
@@ -51,7 +56,8 @@ public class ObjectSpawner : MonoBehaviour {
 
             if (hit == null) {
                 GameObject randomObstacle = group.objectList[UnityEngine.Random.Range(0, group.objectList.Count)];
-                Instantiate(randomObstacle, randomPositionCandidate, Quaternion.identity);
+                GameObject spawned = Instantiate(randomObstacle, randomPositionCandidate, Quaternion.identity);
+                group.spawnedInstances.Add(spawned);
                 return;
             }
         }

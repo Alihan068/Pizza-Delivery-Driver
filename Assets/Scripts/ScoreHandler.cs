@@ -10,6 +10,7 @@ public class ScoreHandler : MonoBehaviour {
     public int currentScore = 0;
     public int sessionEarnings { get; private set; }
     public int missedCustomers { get; private set; }
+    public bool IsGameActive => isGameActive;
 
     GameUIManager gameUIManager;
     SessionResultPanel resultPanel;
@@ -68,7 +69,7 @@ public class ScoreHandler : MonoBehaviour {
     }
 
     
-    public void EndLevel(EndReason reason) {
+    public void EndLevel(EndReason reason, string destinationScene = "GarageScene") {
         if (!isGameActive) return;
 
         isGameActive = false;
@@ -83,7 +84,7 @@ public class ScoreHandler : MonoBehaviour {
         SessionResult result = GameManager.Instance.SettleSession(sessionEarnings, hp, maxHp, reason);
 
         if (resultPanel != null) {
-            resultPanel.Show(result, delivered, missedCustomers, currentScore);
+            resultPanel.Show(result, delivered, missedCustomers, currentScore, destinationScene);
         }
 
         Time.timeScale = 0f;

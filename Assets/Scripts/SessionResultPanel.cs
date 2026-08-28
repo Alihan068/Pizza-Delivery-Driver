@@ -19,12 +19,15 @@ public class SessionResultPanel : MonoBehaviour {
 
     [SerializeField] Button returnToGarageButton;
 
+    string destinationScene = "GarageScene";
+
     void Awake() {
         if (returnToGarageButton != null) returnToGarageButton.onClick.AddListener(OnClickReturnToGarage);
     }
 
-    public void Show(SessionResult result, int deliveredCount, int missedCount, int score) {
+    public void Show(SessionResult result, int deliveredCount, int missedCount, int score, string destination = "GarageScene") {
         gameObject.SetActive(true);
+        destinationScene = destination;
 
         reasonText.text = GetReasonLabel(result.reason);
         deliveredText.text = "Teslimat: " + deliveredCount;
@@ -56,12 +59,13 @@ public class SessionResultPanel : MonoBehaviour {
             case EndReason.TimeUp: return "Vardiya Tamamlandı";
             case EndReason.Extracted: return "Erken Çıkış";
             case EndReason.Wrecked: return "Hurdaya Çıktın";
+            case EndReason.Abandoned: return "Seans Terk Edildi";
             default: return "Vardiya Bitti";
         }
     }
 
     void OnClickReturnToGarage() {
         Time.timeScale = 1f;
-        SceneManager.LoadScene("GarageScene");
+        SceneManager.LoadScene(destinationScene);
     }
 }

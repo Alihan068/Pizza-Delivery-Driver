@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,22 +16,33 @@ public class Driver : MonoBehaviour {
     private float baseTurnSpeed;
 
     [Header("Settings")]
-    [SerializeField] float baseCamSize = 6f;
     [SerializeField] float turboDuration = 5f;
+
+    [Header("Damage")]
+    [SerializeField] float damageBase = 3f;
+    [SerializeField] float damageFactor = 0.85f;
+    [SerializeField] float damageExponent = 2f;
+    [SerializeField] float invulnerabilityWindow = 0.7f;
+    float lastDamageTime = -999f;
+
+    [Header("Speedboost")]
+    [SerializeField] float speedBoostAmount = 5f;
+    [SerializeField] float speedBoostMaxMult = 1.5f;
 
     [Header("Visuals")]
     [SerializeField] Color32 crashColor = new Color32(255, 0, 0, 255);
+    [SerializeField] Color32 protectionColor = new Color32(80, 200, 255, 255);
     Color32 baseColor;
     SpriteRenderer spriteRenderer;
+    CinemachineImpulseSource impulseSource;
 
     // State
     float turboBoost = 1.0f;
-    bool turboMode;
     bool isDisabled;
     Vector2 movementInput;
 
     // References
-    Camera mainCam;
+    Rigidbody2D rb;
     Delivery delivery;
     GameUIManager gameUIManager;
     ScoreHandler scoreHandler;
@@ -43,10 +55,11 @@ public class Driver : MonoBehaviour {
     private void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        rb = GetComponent<Rigidbody2D>();
         delivery = GetComponent<Delivery>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
-        mainCam = Camera.main;
         audioSource = GetComponent<AudioSource>();
+        impulseSource = GetComponent<CinemachineImpulseSource>();
         baseColor = spriteRenderer.color;
 
         InitializeStats();
@@ -58,7 +71,7 @@ public class Driver : MonoBehaviour {
             baseMoveSpeed = GameManager.Instance.GetSpeed();
             baseTurnSpeed = GameManager.Instance.GetTurn();
             currentHealth = GameManager.Instance.GetHealth();
-            armorPercent = GameManager.Instance.GetArmor(); 
+            armorPercent = GameManager.Instance.GetArmor();
         }
         else {
             baseMoveSpeed = 10f;
@@ -74,13 +87,17 @@ public class Driver : MonoBehaviour {
 
     void FixedUpdate() {
         if (!gameObject.activeInHierarchy) return;
-        if (isDisabled) return;
+
+        if (isDisabled) {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
         float steerAmount = movementInput.x;
         float moveAmount = movementInput.y;
 
-        transform.Rotate(0, 0, -steerAmount * turnSpeed * Time.deltaTime);
-        transform.Translate(0, moveAmount * (moveSpeed * turboBoost) * Time.deltaTime, 0);
+        rb.MoveRotation(rb.rotation - steerAmount * turnSpeed * Time.fixedDeltaTime);
+        rb.linearVelocity = (Vector2)transform.up * (moveAmount * moveSpeed * turboBoost);
     }
 
     void OnMove(InputValue value) {
@@ -89,7 +106,7 @@ public class Driver : MonoBehaviour {
 
     private void OnTriggerEnter2D(Collider2D other) {
         if (other.CompareTag("Speedboost")) {
-            moveSpeed += 5f;
+            moveSpeed = Mathf.Min(moveSpeed + speedBoostAmount, baseMoveSpeed * speedBoostMaxMult);
             Destroy(other.gameObject);
         }
         else if (other.CompareTag("Turboboost")) {
@@ -100,10 +117,8 @@ public class Driver : MonoBehaviour {
     }
 
     IEnumerator TurboTimer() {
-        turboMode = true;
         turboBoost = 1.5f;
         yield return new WaitForSeconds(turboDuration);
-        turboMode = false;
         turboBoost = 1f;
     }
 
@@ -114,55 +129,72 @@ public class Driver : MonoBehaviour {
     private void OnCollisionEnter2D(Collision2D other) {
         if (isDisabled) return;
         if (other.gameObject.CompareTag("Border")) return;
+        if (Time.time - lastDamageTime < invulnerabilityWindow) return;
+        lastDamageTime = Time.time;
 
-        if (!turboMode) {
+        ApplyCollisionDamage();
+    }
 
-            float rawDamage = 5 + (moveSpeed * 0.5f);
+    void ApplyCollisionDamage() {
+        float impactSpeed = rb.linearVelocity.magnitude;
+        float rawDamage = damageBase + damageFactor * Mathf.Pow(impactSpeed, damageExponent);
+        float finalDamage = rawDamage * (1f - armorPercent);
+        float severity = Mathf.Clamp01(impactSpeed / (baseMoveSpeed * speedBoostMaxMult));
 
+        currentHealth -= finalDamage;
 
-            float finalDamage = rawDamage * (1.0f - armorPercent);
+        TryPlayAudioClipFromArray(crashSound, Mathf.Lerp(0.5f, 1f, severity));
 
-            currentHealth -= finalDamage;
-
-            TryPlayAudioClipFromArray(crashSound);
-
-            if (currentHealth <= 0) {
-                currentHealth = 0;
-                isDisabled = true;
-                movementInput = Vector2.zero;
-
-                var playerInput = GetComponent<PlayerInput>();
-                if (playerInput != null) playerInput.enabled = false;
-
-                if (gameUIManager != null) gameUIManager.PlayGameOverSound();
-                UpdateUIMethod();
-                if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Wrecked);
-                return;
-            }
-
-            if (delivery != null) {
-                delivery.AttemptDropPizza(transform.position);
-            }
-
-            moveSpeed = baseMoveSpeed;
-            turnSpeed = baseTurnSpeed;
-
-            spriteRenderer.color = crashColor;
-            Invoke(nameof(NormalizeColor), 0.5f);
-            UpdateUIMethod();
+        if (currentHealth <= 0) {
+            HandleDeath();
+            return;
         }
+
+        if (delivery != null) {
+            delivery.AttemptDropPizza(transform.position);
+        }
+
+        moveSpeed = baseMoveSpeed;
+        turnSpeed = baseTurnSpeed;
+
+        PlayCrashFlash();
+        if (impulseSource != null) impulseSource.GenerateImpulseWithForce(severity);
+        if (gameUIManager != null) gameUIManager.FlashHealthBar();
+        UpdateUIMethod();
+    }
+
+    void PlayCrashFlash() {
+        spriteRenderer.color = crashColor;
+        Invoke(nameof(NormalizeColor), 0.5f);
+    }
+
+    public void PlayProtectionFlash() {
+        spriteRenderer.color = protectionColor;
+        Invoke(nameof(NormalizeColor), 0.3f);
+    }
+
+    void HandleDeath() {
+        currentHealth = 0;
+        isDisabled = true;
+        movementInput = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
+
+        var playerInput = GetComponent<PlayerInput>();
+        if (playerInput != null) playerInput.enabled = false;
+
+        if (gameUIManager != null) gameUIManager.PlayGameOverSound();
+        UpdateUIMethod();
+        if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Wrecked);
     }
 
     void UpdateUIMethod() {
         if (gameUIManager != null)
-            gameUIManager.UpdateStatPanel(currentHealth, moveSpeed, turnSpeed);
-        if (mainCam != null)
-            mainCam.orthographicSize = baseCamSize + (moveSpeed / 10);
+            gameUIManager.UpdateStatPanel(currentHealth, maxHealth, moveSpeed, turnSpeed);
     }
 
-    public void TryPlayAudioClipFromArray(AudioClip[] clips) {
+    public void TryPlayAudioClipFromArray(AudioClip[] clips, float volume = 1f) {
         if (clips != null && clips.Length > 0 && audioSource != null) {
-            audioSource.PlayOneShot(clips[Random.Range(0, clips.Length)]);
+            audioSource.PlayOneShot(clips[Random.Range(0, clips.Length)], volume);
         }
     }
     public void TryPlayAudioClip(AudioClip clip) {
