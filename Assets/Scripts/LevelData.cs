@@ -18,4 +18,8 @@ public class LevelData : ScriptableObject {
     public float completionBonusBase = 6f;
     public float bonusExponent = 1.6f;
     public int failPenaltyPerPizza = 8;
+
+    [Header("Despawn Delay")]
+    public float completedDespawnDelay = 3f;
+    public float timedOutDespawnDelay = 2f;
 }

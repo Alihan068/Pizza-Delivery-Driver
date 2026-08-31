@@ -74,7 +74,7 @@ public class DriverTarget : MonoBehaviour {
             if (target == null || !target.activeInHierarchy) continue;
 
             Customer customer = target.GetComponent<Customer>();
-            if (customer == null || customer.currentOrder == null) continue;
+            if (customer == null || customer.currentOrder == null || customer.currentOrder.IsComplete) continue;
 
             float distance = Vector2.Distance(target.transform.position, myPos);
 

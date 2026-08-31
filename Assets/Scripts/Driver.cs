@@ -15,9 +15,6 @@ public class Driver : MonoBehaviour {
     private float baseMoveSpeed;
     private float baseTurnSpeed;
 
-    [Header("Settings")]
-    [SerializeField] float turboDuration = 5f;
-
     [Header("Damage")]
     [SerializeField] float damageBase = 3f;
     [SerializeField] float damageFactor = 0.85f;
@@ -25,9 +22,11 @@ public class Driver : MonoBehaviour {
     [SerializeField] float invulnerabilityWindow = 0.7f;
     float lastDamageTime = -999f;
 
-    [Header("Speedboost")]
-    [SerializeField] float speedBoostAmount = 5f;
-    [SerializeField] float speedBoostMaxMult = 1.5f;
+    [Header("Obstacle Hit")]
+    [SerializeField] float obstacleDamage = 6f;
+    [SerializeField] float obstacleSlowMult = 0.6f;
+    [SerializeField] float obstacleSlowDuration = 2f;
+    Coroutine slowCoroutine;
 
     [Header("Visuals")]
     [SerializeField] Color32 crashColor = new Color32(255, 0, 0, 255);
@@ -37,7 +36,6 @@ public class Driver : MonoBehaviour {
     CinemachineImpulseSource impulseSource;
 
     // State
-    float turboBoost = 1.0f;
     bool isDisabled;
     Vector2 movementInput;
 
@@ -97,7 +95,7 @@ public class Driver : MonoBehaviour {
         float moveAmount = movementInput.y;
 
         rb.MoveRotation(rb.rotation - steerAmount * turnSpeed * Time.fixedDeltaTime);
-        rb.linearVelocity = (Vector2)transform.up * (moveAmount * moveSpeed * turboBoost);
+        rb.linearVelocity = (Vector2)transform.up * (moveAmount * moveSpeed);
     }
 
     void OnMove(InputValue value) {
@@ -105,21 +103,44 @@ public class Driver : MonoBehaviour {
     }
 
     private void OnTriggerEnter2D(Collider2D other) {
-        if (other.CompareTag("Speedboost")) {
-            moveSpeed = Mathf.Min(moveSpeed + speedBoostAmount, baseMoveSpeed * speedBoostMaxMult);
-            Destroy(other.gameObject);
+        if (other.CompareTag("Debuff")) {
+            HandleObstacleHit();
         }
-        else if (other.CompareTag("Turboboost")) {
-            StartCoroutine(TurboTimer());
-            Destroy(other.gameObject);
+    }
+
+    void HandleObstacleHit() {
+        if (isDisabled) return;
+        if (Time.time - lastDamageTime < invulnerabilityWindow) return;
+        lastDamageTime = Time.time;
+
+        float finalDamage = obstacleDamage * (1f - armorPercent);
+        currentHealth -= finalDamage;
+
+        if (currentHealth <= 0) {
+            HandleDeath();
+            return;
         }
+
+        if (delivery != null) delivery.AttemptDropPizza(transform.position);
+
+        ApplySpeedDebuff();
+        PlayCrashFlash();
+        if (gameUIManager != null) gameUIManager.FlashHealthBar();
         UpdateUIMethod();
     }
 
-    IEnumerator TurboTimer() {
-        turboBoost = 1.5f;
-        yield return new WaitForSeconds(turboDuration);
-        turboBoost = 1f;
+    void ApplySpeedDebuff() {
+        if (slowCoroutine != null) StopCoroutine(slowCoroutine);
+        slowCoroutine = StartCoroutine(SpeedDebuffRoutine());
+    }
+
+    IEnumerator SpeedDebuffRoutine() {
+        moveSpeed = baseMoveSpeed * obstacleSlowMult;
+        UpdateUIMethod();
+        yield return new WaitForSeconds(obstacleSlowDuration);
+        moveSpeed = baseMoveSpeed;
+        UpdateUIMethod();
+        slowCoroutine = null;
     }
 
     private void NormalizeColor() {
@@ -139,7 +160,7 @@ public class Driver : MonoBehaviour {
         float impactSpeed = rb.linearVelocity.magnitude;
         float rawDamage = damageBase + damageFactor * Mathf.Pow(impactSpeed, damageExponent);
         float finalDamage = rawDamage * (1f - armorPercent);
-        float severity = Mathf.Clamp01(impactSpeed / (baseMoveSpeed * speedBoostMaxMult));
+        float severity = Mathf.Clamp01(impactSpeed / baseMoveSpeed);
 
         currentHealth -= finalDamage;
 
@@ -154,6 +175,10 @@ public class Driver : MonoBehaviour {
             delivery.AttemptDropPizza(transform.position);
         }
 
+        if (slowCoroutine != null) {
+            StopCoroutine(slowCoroutine);
+            slowCoroutine = null;
+        }
         moveSpeed = baseMoveSpeed;
         turnSpeed = baseTurnSpeed;
 
@@ -178,6 +203,11 @@ public class Driver : MonoBehaviour {
         isDisabled = true;
         movementInput = Vector2.zero;
         rb.linearVelocity = Vector2.zero;
+
+        if (slowCoroutine != null) {
+            StopCoroutine(slowCoroutine);
+            slowCoroutine = null;
+        }
 
         var playerInput = GetComponent<PlayerInput>();
         if (playerInput != null) playerInput.enabled = false;

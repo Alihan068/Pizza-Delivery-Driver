@@ -168,7 +168,7 @@ public class Customer : MonoBehaviour {
             scoreHandler.AddScore(Mathf.RoundToInt(timeLeft * 10));
         }
 
-        if (customerManager != null) customerManager.CustomerRoutine(gameObject, 0);
+        if (customerManager != null) customerManager.CustomerRoutine(gameObject, 0, levelData.completedDespawnDelay);
     }
 
     IEnumerator LeaveAfterTime() {
@@ -187,6 +187,6 @@ public class Customer : MonoBehaviour {
             if (remaining > 0) scoreHandler.AddMoney(-remaining * levelData.failPenaltyPerPizza);
         }
 
-        if (customerManager != null) customerManager.CustomerRoutine(gameObject, remaining);
+        if (customerManager != null) customerManager.CustomerRoutine(gameObject, remaining, levelData.timedOutDespawnDelay);
     }
 }

@@ -7999,7 +7999,7 @@ Canvas:
   m_GameObject: {fileID: 884137198}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 2
+  m_RenderMode: 0
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -8022,18 +8022,18 @@ RectTransform:
   m_GameObject: {fileID: 884137198}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 249238049}
   - {fileID: 1824413979}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0, y: 0}
 --- !u!1001 &893565620
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13298,20 +13298,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   obstacleGroups:
-  - spawnInterval: 5
-    xPos: 30
-    yPos: 20
-    centerOffsetX: 0
-    centerOffsetY: 0
-    maxObjectLimit: 20
-    objectList:
-    - {fileID: 8332463306554457787, guid: 07454a09898cb90429872af0eb12c143, type: 3}
-    - {fileID: 4298047659620099672, guid: 6a44e14656d80ef4eac7aef72db6ecc4, type: 3}
-    - {fileID: 8372727526587548703, guid: 088423778cbba644990eeaf9a19eda97, type: 3}
-    checkRadius: 1
-    obstacleLayer:
-      serializedVersion: 2
-      m_Bits: 448
   - spawnInterval: 2
     xPos: 30
     yPos: 20
@@ -13325,8 +13311,8 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 448
   - spawnInterval: 3
-    xPos: 1
-    yPos: 0.5
+    xPos: 0.5
+    yPos: 0.2
     centerOffsetX: 15.3
     centerOffsetY: 4.25
     maxObjectLimit: 20
@@ -13376,8 +13362,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelData: {fileID: 11400000, guid: f369e6c24ae62724297cf9ae2bed9b20, type: 2}
-  minRespawnTime: 15
-  maxRespawnTime: 30
   activeCustomers: 0
   outstandingDemand: 0
 --- !u!114 &1429882027
@@ -13473,7 +13457,7 @@ Transform:
   m_GameObject: {fileID: 1441298623}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 19.1, y: 15.6, z: 0}
+  m_LocalPosition: {x: 19.1, y: 14.773, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -128113,7 +128097,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 23.85
+  m_fontSize: 34.1
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1

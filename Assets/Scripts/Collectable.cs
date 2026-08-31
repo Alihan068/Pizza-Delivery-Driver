@@ -14,6 +14,8 @@ public class Collectable : MonoBehaviour {
 }
     private void OnTriggerEnter2D(Collider2D collision) {
         if(collision.gameObject.CompareTag("Player")) {
+            if (driver == null) driver = FindFirstObjectByType<Driver>();
+            if (driver == null) return;
             driver.TryPlayAudioClip(effectClip);
         }
     }

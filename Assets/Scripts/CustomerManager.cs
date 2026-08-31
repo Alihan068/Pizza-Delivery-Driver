@@ -5,9 +5,6 @@ using UnityEngine;
 public class CustomerManager : MonoBehaviour {
     [SerializeField] LevelData levelData;
 
-    [SerializeField] float minRespawnTime = 10f;
-    [SerializeField] float maxRespawnTime = 15f;
-
     public int activeCustomers = 0;
     public int outstandingDemand = 0;
 
@@ -35,13 +32,13 @@ public class CustomerManager : MonoBehaviour {
     // remainingDemand is whatever that order STILL needed and will never get now -
     // 0 for a completed order (RegisterDelivery already drained all of it), or the
     // leftover pizza count for one that timed out with an order still open.
-    public void CustomerRoutine(GameObject customer, int remainingDemand) {
+    public void CustomerRoutine(GameObject customer, int remainingDemand, float despawnDelay) {
         activeCustomers--;
         if (activeCustomers < 0) activeCustomers = 0;
 
         outstandingDemand = Mathf.Max(0, outstandingDemand - remainingDemand);
 
-        StartCoroutine(CustomerRespawnRoutine(customer, Random.Range(minRespawnTime, maxRespawnTime)));
+        StartCoroutine(CustomerRespawnRoutine(customer, despawnDelay));
     }
 
     IEnumerator CustomerRespawnRoutine(GameObject customer, float respawnTime) {

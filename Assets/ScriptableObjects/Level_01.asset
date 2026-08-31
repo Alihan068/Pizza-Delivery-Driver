@@ -23,3 +23,5 @@ MonoBehaviour:
   completionBonusBase: 6
   bonusExponent: 1.6
   failPenaltyPerPizza: 8
+  completedDespawnDelay: 3
+  timedOutDespawnDelay: 2
