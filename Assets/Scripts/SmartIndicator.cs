@@ -26,6 +26,10 @@ public class SmartIndicator : MonoBehaviour {
 
     int lastDist = -1, lastTime = -1, lastRemaining = -1;
 
+    // -1 until the first frame decides, so the very first visibility state is always
+    // written even if it matches the prefab's stored alpha.
+    int lastOffScreen = -1;
+
     void Awake() {
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
@@ -60,13 +64,18 @@ public class SmartIndicator : MonoBehaviour {
                            screenPoint.y < edgePadding ||
                            screenPoint.y > Screen.height - edgePadding;
 
-        if (isOffScreen) { //1 Show/0 Hide indicator
-            canvasGroup.alpha = 1f;
+        // Only write alpha when visibility actually flips. CanvasGroup.alpha can
+        // propagate a change notification to every child graphic, so setting it
+        // every frame kept dirtying the canvas for no reason.
+        int offNow = isOffScreen ? 1 : 0;
+        if (offNow != lastOffScreen) {
+            lastOffScreen = offNow;
+            canvasGroup.alpha = isOffScreen ? 1f : 0f;
+        }
+
+        if (isOffScreen) {
             UpdatePosition(screenPoint);
             UpdateVisuals();
-        }
-        else {
-            canvasGroup.alpha = 0f;
         }
     }
 
@@ -105,7 +114,13 @@ public class SmartIndicator : MonoBehaviour {
                 lastDist = d;
                 lastTime = t;
                 lastRemaining = r;
-                infoText.text = d + "m\n" + t + "s\n" + r + "x";
+
+                // SetText with args writes straight into TMP's own char buffer, so
+                // this costs zero allocations. The old string concat here was the
+                // scene's single largest source of GC pressure: the distance readout
+                // changes almost every frame while driving, so the dirty check above
+                // can't prevent the rebuild - only making the rebuild free helps.
+                infoText.SetText("{0}m\n{1}s\n{2}x", d, t, r);
             }
         }
 

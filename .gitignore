@@ -73,4 +73,7 @@ crashlytics-build.properties
 
 # Local AI assistant notes — personal, never pushed
 CLAUDE.md
+UNITY_AI_GUIDELINES.md
 oldUsedPromts/
+memory-bank/
+knowledge/

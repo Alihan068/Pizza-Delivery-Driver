@@ -798,8 +798,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ed626e19f1e3ba641af98ad505d2767c, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   startButton: {fileID: 2110008674}
   quitButton: {fileID: 606139355}
 --- !u!1 &1092157835
@@ -967,13 +967,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d870a2b3d422f7418daf053da85fcdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalMoney: 0
+  totalMoney: 100
   repairCostPerHP: 0.7
   repairValueRate: 0.03
   deathEarningsKeep: 0.5
   repairBankSafetyRate: 0.5
-  upgradeCostBase: 460
-  upgradeCostStep: 380
+  upgradeCostBase: 100
+  upgradeCostStep: 40
   allVehicles:
   - {fileID: 11400000, guid: 31b69dec864f54643b7579dbad1d82d6, type: 2}
   - {fileID: 11400000, guid: 43cfd60837c34c74e8e5f1b85f10d31d, type: 2}

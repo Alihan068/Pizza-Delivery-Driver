@@ -25,3 +25,5 @@ MonoBehaviour:
   failPenaltyPerPizza: 8
   completedDespawnDelay: 3
   timedOutDespawnDelay: 2
+  pizzaCost: 1
+  maxActiveCustomers: 4

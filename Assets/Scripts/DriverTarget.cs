@@ -11,6 +11,13 @@ public class DriverTarget : MonoBehaviour {
     SpriteRenderer arrow;
     Delivery delivery;
     Coroutine searchCoroutine;
+    WaitForSeconds scanWait;
+
+    // Built in Awake, not Start - Delivery.Start() can call SearchSetNavigation
+    // before our own Start() runs, and the scan loop needs this ready by then.
+    void Awake() {
+        scanWait = new WaitForSeconds(scanFrequency);
+    }
 
     void Start() {
         arrow = GetComponentInChildren<SpriteRenderer>();
@@ -30,7 +37,7 @@ public class DriverTarget : MonoBehaviour {
     IEnumerator FindClosestTargetRoutine(string targetTag) {
         while (true) {
             FindClosestTarget(targetTag);
-            yield return new WaitForSeconds(scanFrequency);
+            yield return scanWait;
         }
     }
 

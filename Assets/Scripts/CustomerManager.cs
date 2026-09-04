@@ -4,21 +4,50 @@ using UnityEngine;
 
 public class CustomerManager : MonoBehaviour {
     [SerializeField] LevelData levelData;
+    [SerializeField] float demandCheckInterval = 0.5f;
 
     public int activeCustomers = 0;
     public int outstandingDemand = 0;
+
+    public LevelData LevelData => levelData;
 
     GameObject[] allCustomers;
     readonly List<GameObject> inactiveCustomers = new List<GameObject>();
 
     IndicatorManager indicatorManager;
+    Delivery delivery;
 
     void Start() {
         indicatorManager = FindFirstObjectByType<IndicatorManager>();
+        delivery = FindFirstObjectByType<Delivery>();
 
         allCustomers = GameObject.FindGameObjectsWithTag("Customer");
         foreach (GameObject customer in allCustomers) {
             customer.SetActive(false);
+        }
+
+        StartCoroutine(DemandCheckRoutine());
+    }
+
+    // The invariant that keeps the pizza-loop from deadlocking: as long as the
+    // driver is carrying more pizzas than outstanding demand covers, spawn more
+    // customers. Runs continuously (not just on pickup) so a customer timing out
+    // while the driver's inventory is full still gets replaced.
+    IEnumerator DemandCheckRoutine() {
+        var wait = new WaitForSeconds(demandCheckInterval);
+        while (true) {
+            yield return wait;
+            EnsureDemandCoversCarry();
+        }
+    }
+
+    void EnsureDemandCoversCarry() {
+        if (delivery == null) delivery = FindFirstObjectByType<Delivery>();
+        if (delivery == null || levelData == null) return;
+
+        while (outstandingDemand < delivery.carryPizzaAmount
+               && activeCustomers < levelData.maxActiveCustomers) {
+            if (!GetCustomer()) break;
         }
     }
 
@@ -46,7 +75,8 @@ public class CustomerManager : MonoBehaviour {
         customer.SetActive(false);
     }
 
-    public void GetCustomer() {
+    // Returns false if the customer pool is exhausted (no inactive customer to spawn).
+    public bool GetCustomer() {
         inactiveCustomers.Clear();
 
         foreach (GameObject customer in allCustomers) {
@@ -55,7 +85,7 @@ public class CustomerManager : MonoBehaviour {
             }
         }
 
-        if (inactiveCustomers.Count == 0) return;
+        if (inactiveCustomers.Count == 0) return false;
 
         // Pick Random inavtive Customer
         GameObject selectedCustomerObj = inactiveCustomers[Random.Range(0, inactiveCustomers.Count)];
@@ -75,5 +105,7 @@ public class CustomerManager : MonoBehaviour {
         if (indicatorManager != null) {
             indicatorManager.CreateIndicator(customerScript);
         }
+
+        return true;
     }
 }

@@ -22,4 +22,8 @@ public class LevelData : ScriptableObject {
     [Header("Despawn Delay")]
     public float completedDespawnDelay = 3f;
     public float timedOutDespawnDelay = 2f;
+
+    [Header("Pizza Supply")]
+    public int pizzaCost = 1;
+    public int maxActiveCustomers = 4;
 }

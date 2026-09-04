@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 
 public class Delivery : MonoBehaviour {
-    [Header("Settings")]
-    [SerializeField] float destroyDelay = 0.2f;
     public int carryPizzaAmount;
     public int maxCarryPizzaAmount;
 
@@ -15,19 +13,21 @@ public class Delivery : MonoBehaviour {
     GameUIManager gameUIManager;
     DriverTarget driverTarget;
     CustomerManager customerManager;
+    LevelData levelData;
     AudioSource audioSource;
     ScoreHandler scoreHandler;
     Driver driver;
 
     [Header("Audio")]
-    [SerializeField] AudioClip pizzaCollectClip;
     [SerializeField] AudioClip pizzaDeliverClip;
-    [SerializeField] AudioClip pizzaFailClip;
 
     public int pizzaDelivered = 0;
 
+    public bool IsFull => carryPizzaAmount >= maxCarryPizzaAmount;
+
     private void Start() {
         customerManager = FindFirstObjectByType<CustomerManager>();
+        levelData = customerManager != null ? customerManager.LevelData : null;
         driverTarget = GetComponentInChildren<DriverTarget>();
         audioSource = GetComponent<AudioSource>();
         gameUIManager = FindFirstObjectByType<GameUIManager>();
@@ -45,8 +45,24 @@ public class Delivery : MonoBehaviour {
             protectionChance = 0f;
         }
 
-        driverTarget.SearchSetNavigation("Pizza");
+        driverTarget.SearchSetNavigation("CollectPoint");
         UpdateCarryUI();
+    }
+
+    public void CollectPizza(PizzaCollectPoint point) {
+        if (IsFull) return;
+
+        int cost = levelData != null ? levelData.pizzaCost : 0;
+        int spendable = 0;
+        if (GameManager.Instance != null) spendable += GameManager.Instance.totalMoney;
+        if (scoreHandler != null) spendable += scoreHandler.sessionEarnings;
+
+        int charge = Mathf.Clamp(cost, 0, Mathf.Max(0, spendable));
+        if (charge > 0 && scoreHandler != null) scoreHandler.AddMoney(-charge);
+
+        carryPizzaAmount += 1;
+        UpdateCarryUI();
+        havePizzaStatus(true);
     }
 
     public void AttemptDropPizza(Vector3 dropPosition) {
@@ -78,22 +94,9 @@ public class Delivery : MonoBehaviour {
         if (gameUIManager != null) gameUIManager.UpdateCarryText(carryPizzaAmount, maxCarryPizzaAmount);
     }
 
-    private void OnTriggerEnter2D(Collider2D collision) {
-        if (collision.gameObject.CompareTag("Pizza")) {
-            if (carryPizzaAmount < maxCarryPizzaAmount) {
-                PickupPizza();
-                Destroy(collision.gameObject, destroyDelay);
-                TryPlayAudioClip(pizzaCollectClip);
-            }
-            else {
-                TryPlayAudioClip(pizzaFailClip);
-            }
-        }
-    }
-
-    // Stay (not Enter) - an order can need more pizzas than the driver is carrying,
-    // so the customer's collider stays open across multiple visits until its order
-    // is complete. Each tick here just hands over whatever's left to give.
+    // An order can need more pizzas than the driver is carrying, so the customer's
+    // collider stays open across multiple visits until its order is complete. Each
+    // tick here just hands over whatever's left to give.
     private void OnTriggerStay2D(Collider2D collision) {
         if (carryPizzaAmount <= 0) return;
         if (!collision.gameObject.CompareTag("Customer")) return;
@@ -128,17 +131,8 @@ public class Delivery : MonoBehaviour {
             driverTarget.SearchSetNavigation("Customer");
         }
         else {
-            if (carryPizzaAmount <= 0) driverTarget.SearchSetNavigation("Pizza");
+            if (carryPizzaAmount <= 0) driverTarget.SearchSetNavigation("CollectPoint");
             else driverTarget.SearchSetNavigation("Customer");
         }
-    }
-
-    public void PickupPizza() {
-        carryPizzaAmount += 1;
-        UpdateCarryUI();
-        if (customerManager != null && carryPizzaAmount >= customerManager.outstandingDemand) {
-            customerManager.GetCustomer();
-        }
-        havePizzaStatus(true);
     }
 }

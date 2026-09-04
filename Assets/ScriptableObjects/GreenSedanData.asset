@@ -15,7 +15,7 @@ MonoBehaviour:
   vehicleName: GreenSedan
   vehiclePrefab: {fileID: 3882002878805238368, guid: 34f6749f47b34c749a916453f61e37cb, type: 3}
   vehicleIcon: {fileID: 0}
-  price: 4500
+  price: 1000
   speedDesc: Increases max speed.
   turnDesc: Better handling in corners.
   healthDesc: More durability against crashes.
@@ -23,26 +23,26 @@ MonoBehaviour:
   capacityDesc: Carry more pizzas.
   protectionDesc: Chance to save pizza on crash.
   baseSpeed: 3.7
-  speedStep: 0.5
-  maxSpeedLevel: 5
-  speedCostMult: 1.5
+  speedStep: 0.1
+  maxSpeedLevel: 25
+  speedCostMult: 0.5
   baseTurn: 160
-  turnStep: 40
-  maxTurnLevel: 3
-  turnCostMult: 0.9
+  turnStep: 10
+  maxTurnLevel: 12
+  turnCostMult: 0.5
   baseHealth: 195
-  healthStep: 30
-  maxHealthLevel: 4
-  healthCostMult: 1
+  healthStep: 10
+  maxHealthLevel: 12
+  healthCostMult: 0.9
   baseArmor: 0.05
-  armorStep: 0.06
-  maxArmorLevel: 4
-  armorCostMult: 1.2
+  armorStep: 0.02
+  maxArmorLevel: 12
+  armorCostMult: 1
   baseCapacity: 3
   capacityStep: 1
   maxCapacityLevel: 5
-  capacityCostMult: 0.7
+  capacityCostMult: 3.5
   baseProtection: 0
-  protectionStep: 0.18
-  maxProtectionLevel: 3
-  protectionCostMult: 0.5
+  protectionStep: 0.06
+  maxProtectionLevel: 9
+  protectionCostMult: 0.45
