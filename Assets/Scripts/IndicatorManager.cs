@@ -12,7 +12,7 @@ public class IndicatorManager : MonoBehaviour {
 
         if (customer == null || !customer.gameObject.activeInHierarchy) return;
 
-        // İndikatörü yarat
+        // Create the indicator
         GameObject newUI = Instantiate(indicatorPrefab, uiCanvasParent);
 
         SmartIndicator indicatorScript = newUI.GetComponent<SmartIndicator>();

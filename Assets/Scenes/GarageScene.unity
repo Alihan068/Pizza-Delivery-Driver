@@ -568,7 +568,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Ana Men\xFC"
+  m_text: Main Menu
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1492,7 +1492,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Sat\u0131n Al: $ 0"
+  m_text: 'Buy: $ 0'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2465,62 +2465,63 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87014d3d76298c943b02979d9dbdf658, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1830474322
-GameObject:
+--- !u!1001 &1819592816
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1830474324}
-  - component: {fileID: 1830474323}
-  m_Layer: 0
-  m_Name: GameManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1830474323
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830474322}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d870a2b3d422f7418daf053da85fcdc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  totalMoney: 100
-  repairCostPerHP: 0.7
-  repairValueRate: 0.03
-  deathEarningsKeep: 0.5
-  repairBankSafetyRate: 0.5
-  upgradeCostBase: 100
-  upgradeCostStep: 40
-  allVehicles:
-  - {fileID: 11400000, guid: 31b69dec864f54643b7579dbad1d82d6, type: 2}
-  - {fileID: 11400000, guid: 43cfd60837c34c74e8e5f1b85f10d31d, type: 2}
-  currentVehicle: {fileID: 0}
-  vehicleSaveList: []
---- !u!4 &1830474324
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1830474322}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.965753, y: 14.657109, z: -0.13707142}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2046228663473360257, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_Name
+      value: GameManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 9.965753
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 14.657109
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.13707142
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7486311232150969374, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: a517087556f8b5f479af1e9da965fd73, type: 3}
 --- !u!114 &1889843359 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3694407122406259534, guid: 75749ca8eb184c643b52e8313561eace, type: 3}
@@ -2725,7 +2726,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Bu ara\xE7 kilitli"
+  m_text: Vehicle Locked
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3147,7 +3148,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Sat\u0131n Al"
+  m_text: Buy
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3456,7 +3457,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 639362346657585927, guid: 75749ca8eb184c643b52e8313561eace, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 639362346657585927, guid: 75749ca8eb184c643b52e8313561eace, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
@@ -3597,4 +3598,4 @@ SceneRoots:
   - {fileID: 1785279383}
   - {fileID: 1952440819}
   - {fileID: 1632396417}
-  - {fileID: 1830474324}
+  - {fileID: 1819592816}

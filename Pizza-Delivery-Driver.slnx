@@ -1,5 +1,6 @@
 ﻿<Solution>
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="VFolders.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Wingman.csproj" />
 </Solution>

@@ -205,7 +205,7 @@ GameObject:
   - component: {fileID: 727553513885655854}
   - component: {fileID: 6064829192430227739}
   m_Layer: 0
-  m_Name: Driver
+  m_Name: Scooter
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -88,7 +88,7 @@ public class GarageManager : MonoBehaviour {
         if (startButton != null) startButton.interactable = unlocked;
 
         if (!unlocked) {
-            if (purchasePriceText != null) purchasePriceText.text = "Satın Al: $ " + currentVehicle.price;
+            if (purchasePriceText != null) purchasePriceText.text = "Buy: $ " + currentVehicle.price;
             return;
         }
 

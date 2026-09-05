@@ -28,16 +28,51 @@ public class GameManager : MonoBehaviour {
     [Header("Save Data")]
     public List<VehicleSaveData> vehicleSaveList = new List<VehicleSaveData>();
 
+    // The Inspector value of totalMoney is the starting balance. It is captured before LoadGame
+    // overwrites it so ResetProgress can restore it without duplicating the number in a second field.
+    int defaultMoney;
+
     private void Awake() {
         if (Instance == null) {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            defaultMoney = totalMoney;
             LoadGame();
             InitializeVehicles();
         }
         else {
             Destroy(gameObject);
         }
+    }
+
+    /// <summary>
+    /// Wipes all saved progress and returns the player to a brand new game: starting money, no
+    /// upgrades, only the first vehicle unlocked.
+    /// </summary>
+    /// <remarks>
+    /// Destructive and irreversible, so the caller is responsible for confirming with the player
+    /// first (see <see cref="SettingsPanel"/>). Player settings such as music volume live in
+    /// <see cref="GameSettings"/> and are deliberately left untouched.
+    /// <para>
+    /// The save file is deleted and then written again from the fresh state, so what is on disk
+    /// always matches what is in memory even if the game is killed right afterwards.
+    /// </para>
+    /// </remarks>
+    public void ResetProgress() {
+        try {
+            string path = GetSavePath();
+            if (File.Exists(path)) File.Delete(path);
+        }
+        catch (System.Exception e) {
+            Debug.LogWarning("Failed to delete the save file during reset: " + e.Message);
+        }
+
+        totalMoney = defaultMoney;
+        vehicleSaveList = new List<VehicleSaveData>();
+        currentVehicle = null;
+
+        InitializeVehicles();
+        SaveGame();
     }
 
     string GetSavePath() {

@@ -30,37 +30,37 @@ public class SessionResultPanel : MonoBehaviour {
         destinationScene = destination;
 
         reasonText.text = GetReasonLabel(result.reason);
-        deliveredText.text = "Teslimat: " + deliveredCount;
-        missedText.text = "Kaçırılan: " + missedCount;
-        scoreText.text = "Skor: " + score;
+        deliveredText.text = "Delivered: " + deliveredCount;
+        missedText.text = "Missed: " + missedCount;
+        scoreText.text = "Score: " + score;
 
-        grossText.text = "Vardiya kazancı: +$" + result.grossEarnings;
+        grossText.text = "Shift earnings: +$" + result.grossEarnings;
 
         int deathPenalty = result.grossEarnings - result.keptEarnings;
         if (deathPenaltyText != null) {
             bool showPenalty = result.reason == EndReason.Wrecked && deathPenalty > 0;
             deathPenaltyText.gameObject.SetActive(showPenalty);
-            if (showPenalty) deathPenaltyText.text = "Ölüm cezası: -$" + deathPenalty;
+            if (showPenalty) deathPenaltyText.text = "Death penalty: -$" + deathPenalty;
         }
 
         int unpaid = result.repairBeforeClamp - result.repairCost;
         repairText.text = unpaid > 0
-            ? "Tamir: -$" + result.repairCost + " (kısmi, $" + unpaid + " ödenmedi)"
-            : "Tamir: -$" + result.repairCost;
+            ? "Repairs: -$" + result.repairCost + " (partial, $" + unpaid + " unpaid)"
+            : "Repairs: -$" + result.repairCost;
 
         int net = result.keptEarnings - result.repairCost;
         netText.text = "Net: $" + net;
 
-        bankText.text = "Cüzdan: $" + result.bankBefore + " -> $" + result.bankAfter;
+        bankText.text = "Wallet: $" + result.bankBefore + " -> $" + result.bankAfter;
     }
 
     string GetReasonLabel(EndReason reason) {
         switch (reason) {
-            case EndReason.TimeUp: return "Vardiya Tamamlandı";
-            case EndReason.Extracted: return "Erken Çıkış";
-            case EndReason.Wrecked: return "Hurdaya Çıktın";
-            case EndReason.Abandoned: return "Seans Terk Edildi";
-            default: return "Vardiya Bitti";
+            case EndReason.TimeUp: return "Shift Complete";
+            case EndReason.Extracted: return "Early Exit";
+            case EndReason.Wrecked: return "Wrecked";
+            case EndReason.Abandoned: return "Shift Abandoned";
+            default: return "Shift Over";
         }
     }
 
