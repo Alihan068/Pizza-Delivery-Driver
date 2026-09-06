@@ -5,6 +5,8 @@ using UnityEngine.Events;
 
 [RequireComponent(typeof(CanvasGroup))]
 public class SmartIndicator : MonoBehaviour {
+    [SerializeField] string infoKey = "hud.indicator";
+    int lastLanguageRevision = -1;
     [Header("Target & UI")]
     public Customer targetCustomer;
     public Image targetImage;
@@ -110,7 +112,9 @@ public class SmartIndicator : MonoBehaviour {
             int t = Mathf.RoundToInt(currentTime);
             int r = targetCustomer.currentOrder.RemainingPizzas;
 
-            if (d != lastDist || t != lastTime || r != lastRemaining) {
+            int revision = LocalizationManager.Instance != null ? LocalizationManager.Instance.Revision : 0;
+            if (d != lastDist || t != lastTime || r != lastRemaining || revision != lastLanguageRevision) {
+                lastLanguageRevision = revision;
                 lastDist = d;
                 lastTime = t;
                 lastRemaining = r;
@@ -120,7 +124,7 @@ public class SmartIndicator : MonoBehaviour {
                 // scene's single largest source of GC pressure: the distance readout
                 // changes almost every frame while driving, so the dirty check above
                 // can't prevent the rebuild - only making the rebuild free helps.
-                infoText.SetText("{0}m\n{1}s\n{2}x", d, t, r);
+                LocalizationManager.SetText(infoText, infoKey, d, t, r);
             }
         }
 

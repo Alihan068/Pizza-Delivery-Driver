@@ -180,6 +180,11 @@ public static class VehicleCreationService {
         newData.name = name + "Data";
         newData.vehicleName = name;
         newData.vehiclePrefab = savedPrefab;
+
+        // The draft was cloned from a template, so it carries the template's id. A fresh one is
+        // generated here: two vehicles sharing an id would share one save record, and the player
+        // would see upgrades bought for one appear on the other.
+        newData.vehicleId = System.Guid.NewGuid().ToString("N");
         if (newData.vehicleIcon == null && request.bodySprite != null) {
             newData.vehicleIcon = request.bodySprite;
             outcome.steps.Add("Garage icon was empty, so the body sprite was used instead.");

@@ -22,6 +22,11 @@ public class ScoreHandler : MonoBehaviour {
         // Convert minutes to seconds
         currentTimer = levelDurationInMinutes * 60;
 
+        // Records that a shift is underway. Without this, killing the process mid-shift skips
+        // settlement entirely: the player loses the unbanked earnings but escapes the repair bill,
+        // which makes force-quitting cheaper than any legitimate way out of a bad run.
+        if (GameManager.Instance != null) GameManager.Instance.MarkShiftStarted();
+
         UpdateUI();
     }
 
@@ -69,8 +74,19 @@ public class ScoreHandler : MonoBehaviour {
     }
 
     
-    public void EndLevel(EndReason reason, string destinationScene = "GarageScene") {
+    /// <summary>
+    /// Ends the running session: settles the economy, shows the result panel and freezes time.
+    /// </summary>
+    /// <param name="reason">How the session ended, which decides how much of the earnings survive.</param>
+    /// <param name="destinationScene">
+    /// Scene the result panel returns to. Leave empty to use the garage from <see cref="GameConfig"/>.
+    /// </param>
+    public void EndLevel(EndReason reason, string destinationScene = null) {
         if (!isGameActive) return;
+
+        if (string.IsNullOrEmpty(destinationScene) && GameManager.Instance != null) {
+            destinationScene = GameManager.Instance.Config.garageScene;
+        }
 
         isGameActive = false;
 

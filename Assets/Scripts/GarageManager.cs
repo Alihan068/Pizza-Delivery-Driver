@@ -1,23 +1,48 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class GarageManager : MonoBehaviour {
+    [Header("Localization Keys")]
+    [SerializeField] string moneyKey = "common.money";
+    [SerializeField] string buyKey = "garage.buyPrice";
+    [SerializeField] string capacityKey = "stat.pizzaValue";
+    [SerializeField] string percentKey = "stat.percentValue";
+    [SerializeField] string numberKey = "stat.numberValue";
+    [SerializeField] string comparisonKey = "stat.comparison";
+
+    void OnEnable() { LocalizationManager.LanguageChanged += UpdateUI; }
+    void OnDisable() { LocalizationManager.LanguageChanged -= UpdateUI; }
+
+    /// <summary>
+    /// Binds one upgrade card in the garage to the stat it sells.
+    /// </summary>
+    /// <remarks>
+    /// Authored as a list rather than six named fields so the garage does not assume how many stats
+    /// exist. Adding or removing a card is an Inspector change.
+    /// </remarks>
+    [System.Serializable]
+    public class StatPanelBinding {
+        [Tooltip("Which stat this card sells.")]
+        public VehicleStatId stat;
+
+        [Tooltip("The card that shows it.")]
+        public StatDisplay panel;
+
+        /// <summary>Localization key for this card's title. Serialized name retained for existing bindings.</summary>
+        [Tooltip("Localization key for the stat card title.")]
+        public string displayName;
+    }
+
     [Header("UI References")]
     public TextMeshProUGUI totalMoneyText;
     public TextMeshProUGUI currentVehicleNameText;
     public Image chosenVehicleImage;
     public Button startButton;
 
-    [Header("Stat Panels")]
-    // Assign the objects with StatDisplay script here in the Inspector
-    public StatDisplay speedPanel;
-    public StatDisplay turnPanel;
-    public StatDisplay healthPanel;
-    public StatDisplay armorPanel;
-    public StatDisplay capacityPanel;
-    public StatDisplay protectionPanel;
+    [Header("Stat Cards")]
+    [SerializeField] StatPanelBinding[] statPanels;
 
     [Header("Vehicle Lock UI")]
     public GameObject statsPanel;
@@ -31,12 +56,15 @@ public class GarageManager : MonoBehaviour {
     void Start() {
         Time.timeScale = 1f;
 
-        if (speedPanel != null) speedPanel.upgradeButton.onClick.AddListener(() => OnClickUpgrade("Speed"));
-        if (turnPanel != null) turnPanel.upgradeButton.onClick.AddListener(() => OnClickUpgrade("Turn"));
-        if (healthPanel != null) healthPanel.upgradeButton.onClick.AddListener(() => OnClickUpgrade("Health"));
-        if (armorPanel != null) armorPanel.upgradeButton.onClick.AddListener(() => OnClickUpgrade("Armor"));
-        if (capacityPanel != null) capacityPanel.upgradeButton.onClick.AddListener(() => OnClickUpgrade("Capacity"));
-        if (protectionPanel != null) protectionPanel.upgradeButton.onClick.AddListener(() => OnClickUpgrade("Protection"));
+        // Bound in code rather than through Inspector events: a persistent UnityEvent left behind
+        // on one of these buttons once made a single click buy two levels (BF-016).
+        if (statPanels != null) {
+            foreach (var binding in statPanels) {
+                if (binding == null || binding.panel == null || binding.panel.upgradeButton == null) continue;
+                VehicleStatId stat = binding.stat;
+                binding.panel.upgradeButton.onClick.AddListener(() => OnClickUpgrade(stat));
+            }
+        }
 
         if (purchaseButton != null) purchaseButton.onClick.AddListener(OnClickPurchaseVehicle);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
@@ -45,33 +73,26 @@ public class GarageManager : MonoBehaviour {
     }
 
     void UpdateUI() {
-        //Money
-        if (totalMoneyText != null)
-            totalMoneyText.text = "$ " + GameManager.Instance.totalMoney;
+        if (GameManager.Instance == null) return;
 
-        // Get Current Vehicle Data
+        LocalizationManager.SetText(totalMoneyText, moneyKey, GameManager.Instance.totalMoney);
+
         var currentVehicle = GameManager.Instance.currentVehicle;
         var saveData = GameManager.Instance.GetCurrentVehicleSave();
-
         if (saveData == null || currentVehicle == null) return;
 
-        // Update Vehicle Name
-        currentVehicleNameText.text = currentVehicle.vehicleName;
+        currentVehicleNameText.text = string.IsNullOrEmpty(currentVehicle.displayNameKey)
+            ? currentVehicle.vehicleName : LocalizationManager.Get(currentVehicle.displayNameKey);
 
-        // Update Vehicle Image Logic
         Sprite displaySprite = null;
-
         if (currentVehicle.vehicleIcon != null) {
             displaySprite = currentVehicle.vehicleIcon;
         }
         else if (currentVehicle.vehiclePrefab != null) {
             SpriteRenderer sr = currentVehicle.vehiclePrefab.GetComponent<SpriteRenderer>();
-            if (sr != null) {
-                displaySprite = sr.sprite;
-            }
+            if (sr != null) displaySprite = sr.sprite;
         }
 
-        // Apply Image of the vehhicle to UI
         if (displaySprite != null) {
             chosenVehicleImage.sprite = displaySprite;
             chosenVehicleImage.enabled = true;
@@ -88,72 +109,87 @@ public class GarageManager : MonoBehaviour {
         if (startButton != null) startButton.interactable = unlocked;
 
         if (!unlocked) {
-            if (purchasePriceText != null) purchasePriceText.text = "Buy: $ " + currentVehicle.price;
+            LocalizationManager.SetText(purchasePriceText, buyKey, currentVehicle.price);
             return;
         }
 
-        // --- Update Stat Panels ---
-        SetupStatPanel(speedPanel, "Speed", "Speed", currentVehicle.speedDesc, saveData.speedLevel, currentVehicle.maxSpeedLevel);
-        SetupStatPanel(turnPanel, "Turn", "Handling", currentVehicle.turnDesc, saveData.turnLevel, currentVehicle.maxTurnLevel);
-        SetupStatPanel(healthPanel, "Health", "Chassis", currentVehicle.healthDesc, saveData.healthLevel, currentVehicle.maxHealthLevel);
-        SetupStatPanel(armorPanel, "Armor", "Armor", currentVehicle.armorDesc, saveData.armorLevel, currentVehicle.maxArmorLevel);
-        SetupStatPanel(capacityPanel, "Capacity", "Storage", currentVehicle.capacityDesc, saveData.capacityLevel, currentVehicle.maxCapacityLevel);
-        SetupStatPanel(protectionPanel, "Protection", "Stabilizer", currentVehicle.protectionDesc, saveData.protectionLevel, currentVehicle.maxProtectionLevel);
+        if (statPanels == null) return;
+        foreach (var binding in statPanels) {
+            if (binding == null || binding.panel == null) continue;
+            SetupStatPanel(binding, currentVehicle, saveData);
+        }
     }
 
-    void SetupStatPanel(StatDisplay panel, string statKey, string displayName, string desc, int level, int maxLevel) {
+    void SetupStatPanel(StatPanelBinding binding, VehicleData vehicle, VehicleSaveData save) {
+        int level = save.GetLevel(binding.stat);
+        int maxLevel = vehicle.GetMaxLevel(binding.stat);
         bool isMaxed = level >= maxLevel;
 
-        string valueDisplay = FormatStatValue(statKey, GameManager.Instance.GetStatValueAtLevel(statKey, level));
+        string valueDisplay = FormatStatValue(binding.stat, GameManager.Instance.GetStatValueAtLevel(binding.stat, level));
         if (!isMaxed) {
-            valueDisplay += " -> " + FormatStatValue(statKey, GameManager.Instance.GetStatValueAtLevel(statKey, level + 1));
+            valueDisplay = LocalizationManager.Get(comparisonKey, valueDisplay,
+                FormatStatValue(binding.stat, GameManager.Instance.GetStatValueAtLevel(binding.stat, level + 1)));
         }
 
-        int cost = GameManager.Instance.GetUpgradeCost(statKey, level);
-        panel.Setup(displayName, desc, level, maxLevel, cost, isMaxed, valueDisplay);
+        int cost = GameManager.Instance.GetUpgradeCost(binding.stat, level);
+        binding.panel.Setup(LocalizationManager.Get(binding.displayName), LocalizationManager.Get(vehicle.GetDescription(binding.stat)), level, maxLevel, cost, isMaxed, valueDisplay);
     }
 
-    string FormatStatValue(string statKey, float value) {
-        switch (statKey) {
-            case "Armor":
-            case "Protection":
-                return Mathf.RoundToInt(value * 100) + "%";
-            case "Capacity":
-                return Mathf.RoundToInt(value) + " pizza";
+    string FormatStatValue(VehicleStatId stat, float value) {
+        switch (stat) {
+            case VehicleStatId.Armor:
+            case VehicleStatId.Protection:
+                return LocalizationManager.Get(percentKey, Mathf.RoundToInt(value * 100));
+            case VehicleStatId.Capacity:
+                return LocalizationManager.Get(capacityKey, Mathf.RoundToInt(value));
             default:
-                return value.ToString("0.#");
+                return LocalizationManager.Get(numberKey, value);
         }
     }
 
-    public void OnClickUpgrade(string statName) {
-        bool success = GameManager.Instance.TryUpgradeStat(statName);
-        if (success) UpdateUI();
-        else Debug.Log("Insufficient funds or max level reached.");
+    /// <summary>Buys one level of a stat and refreshes the garage.</summary>
+    /// <param name="stat">Which stat the pressed card sells.</param>
+    public void OnClickUpgrade(VehicleStatId stat) {
+        if (GameManager.Instance.TryUpgradeStat(stat)) UpdateUI();
     }
 
+    /// <summary>Buys the vehicle currently on display.</summary>
     public void OnClickPurchaseVehicle() {
-        bool success = GameManager.Instance.TryPurchaseVehicle();
-        if (success) UpdateUI();
-        else Debug.Log("Not enough money to purchase this vehicle.");
+        if (GameManager.Instance.TryPurchaseVehicle()) UpdateUI();
     }
 
+    /// <summary>Shows the next vehicle in the registry.</summary>
     public void OnClickNextVehicle() {
         GameManager.Instance.ChangeVehicle(1);
         UpdateUI();
     }
 
+    /// <summary>Shows the previous vehicle in the registry.</summary>
     public void OnClickPrevVehicle() {
         GameManager.Instance.ChangeVehicle(-1);
         UpdateUI();
     }
 
+    /// <summary>Starts a session on the selected map, when the vehicle is owned.</summary>
     public void OnClickStartJob() {
         var save = GameManager.Instance.GetCurrentVehicleSave();
         if (save == null || !save.isUnlocked) return;
-        SceneManager.LoadScene("GameScene");
+
+        var map = GameManager.Instance.currentMap;
+        if (map == null || string.IsNullOrEmpty(map.sceneName)) {
+            Debug.LogError("No map is selected, or the selected map has no scene assigned.");
+            return;
+        }
+        SceneManager.LoadScene(map.sceneName);
     }
 
+    /// <summary>Returns to the main menu.</summary>
     public void OnClickMainMenu() {
-        SceneManager.LoadScene("MainMenu");
+        var config = GameManager.Instance != null ? GameManager.Instance.Config : null;
+        if (config == null) {
+            Debug.LogError("No GameConfig is assigned, so the main menu scene name is unknown.");
+            return;
+        }
+        SceneManager.LoadScene(config.mainMenuScene);
     }
 }

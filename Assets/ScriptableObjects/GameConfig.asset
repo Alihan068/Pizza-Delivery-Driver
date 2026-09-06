@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eecf1087c73d37041884d20d7b007e74, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: 
+  saveSlotCount: 3
+  saveFilePattern: save_{0}.json
+  backupSuffix: .bak
+  corruptSuffix: .corrupt_{0}.json
+  mainMenuScene: MainMenu
+  garageScene: GarageScene
+  startingMoney: 100
+  startingVehicle: {fileID: 11400000, guid: 31b69dec864f54643b7579dbad1d82d6, type: 2}
+  startingMap: {fileID: 11400000, guid: f9ffa1b2bfe46c84c98b23993ae0bc17, type: 2}

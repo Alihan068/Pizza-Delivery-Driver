@@ -68,6 +68,8 @@ public class VehicleCreatorWindow : EditorWindow {
         draft.hideFlags = HideFlags.DontSave;
         draft.name = "New Vehicle (draft)";
         draft.vehicleName = keepName;
+        // A new vehicle must not inherit the template's translated proper name.
+        draft.displayNameKey = string.Empty;
         draft.vehiclePrefab = null;
         draft.vehicleIcon = null;
         draftSerialized = new SerializedObject(draft);

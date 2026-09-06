@@ -106,13 +106,20 @@ public class PauseManager : MonoBehaviour {
     // there's no death penalty (repair is still costed off the real current health).
     /// <summary>Abandons the session and returns to the garage.</summary>
     public void OnClickReturnToGarage() {
-        if (pauseCanvas != null) pauseCanvas.SetActive(false);
-        if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Abandoned, "GarageScene");
+        AbandonTo(GameManager.Instance != null ? GameManager.Instance.Config.garageScene : null);
     }
 
     /// <summary>Abandons the session and returns to the main menu.</summary>
     public void OnClickMainMenu() {
+        AbandonTo(GameManager.Instance != null ? GameManager.Instance.Config.mainMenuScene : null);
+    }
+
+    void AbandonTo(string destinationScene) {
+        if (string.IsNullOrEmpty(destinationScene)) {
+            Debug.LogError("No GameConfig is assigned, so the destination scene name is unknown.");
+            return;
+        }
         if (pauseCanvas != null) pauseCanvas.SetActive(false);
-        if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Abandoned, "MainMenu");
+        if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Abandoned, destinationScene);
     }
 }

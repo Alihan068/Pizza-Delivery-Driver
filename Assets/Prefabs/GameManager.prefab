@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7486311232150969374}
   - component: {fileID: 8603452367421644912}
+  - component: {fileID: 4300764210011817774}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -44,6 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d870a2b3d422f7418daf053da85fcdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 73c02e34609603a4da74c2e26ff15b0f, type: 2}
   totalMoney: 100
   repairCostPerHP: 0.7
   repairValueRate: 0.03
@@ -54,5 +56,21 @@ MonoBehaviour:
   allVehicles:
   - {fileID: 11400000, guid: 31b69dec864f54643b7579dbad1d82d6, type: 2}
   - {fileID: 11400000, guid: 43cfd60837c34c74e8e5f1b85f10d31d, type: 2}
+  allMaps:
+  - {fileID: 11400000, guid: f9ffa1b2bfe46c84c98b23993ae0bc17, type: 2}
   currentVehicle: {fileID: 0}
+  currentMap: {fileID: 0}
   vehicleSaveList: []
+--- !u!114 &4300764210011817774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2046228663473360257}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1bb08a83baf589408f3c5ba74ad2084, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  catalog: {fileID: 11400000, guid: 6c1730455f8495b46a744d5fee9ff7c8, type: 2}

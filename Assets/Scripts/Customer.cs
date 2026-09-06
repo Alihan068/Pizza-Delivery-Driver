@@ -4,6 +4,12 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class Customer : MonoBehaviour {
+    [SerializeField] string thanksKey = "customer.thanks";
+
+    void RefreshLanguage() {
+        if (timeText != null && currentOrder != null && currentOrder.IsComplete)
+            timeText.text = LocalizationManager.Get(thanksKey);
+    }
 
     [SerializeField] GameObject pizzaInHand;
     [SerializeField] Sprite[] CustomerBodyVariety;
@@ -77,6 +83,7 @@ public class Customer : MonoBehaviour {
     }
 
     private void OnEnable() {
+        LocalizationManager.LanguageChanged += RefreshLanguage;
         // First activation happens before CustomerManager ever calls Setup() (the
         // objects start active in the scene and get switched off once at startup) -
         // ignore that spurious enable, the real one comes right after Setup().
@@ -87,6 +94,7 @@ public class Customer : MonoBehaviour {
     }
 
     private void OnDisable() {
+        LocalizationManager.LanguageChanged -= RefreshLanguage;
         StopAllCoroutines();
         leaveCoroutine = null;
     }
@@ -157,7 +165,7 @@ public class Customer : MonoBehaviour {
     void CompleteOrder() {
         if (leaveCoroutine != null) StopCoroutine(leaveCoroutine);
         bodyCollider.enabled = false;
-        if (timeText != null) timeText.text = "Thank You!";
+        RefreshLanguage();
 
         float timeRatio = Mathf.Clamp01(timeLeft / currentOrder.waitTime);
         int tip = Mathf.RoundToInt(currentOrder.totalPizzas * levelData.tipPerPizza * timeRatio);

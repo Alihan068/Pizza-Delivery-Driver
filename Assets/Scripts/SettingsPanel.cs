@@ -27,8 +27,6 @@ public class SettingsPanel : MonoBehaviour {
     [Header("Navigation")]
     [SerializeField] Button backButton;
 
-    [Tooltip("Scene loaded after a reset. The running session is built on progress that no longer exists, so it cannot continue.")]
-    [SerializeField] string sceneAfterReset = "MainMenu";
 
     /// <summary>Raised when the player closes this panel with the back button.</summary>
     public event System.Action Closed;
@@ -81,13 +79,17 @@ public class SettingsPanel : MonoBehaviour {
         SetConfirmVisible(false);
     }
 
+    // The running session is built on progress that no longer exists, so it cannot continue: the
+    // player is returned to the main menu rather than dropped back into a stale garage.
     void OnClickConfirmReset() {
-        if (GameManager.Instance != null) GameManager.Instance.ResetProgress();
+        if (GameManager.Instance == null) return;
+
+        GameManager.Instance.ResetProgress();
         SetConfirmVisible(false);
 
         // The pause menu froze time; the destination scene would otherwise open frozen.
         Time.timeScale = 1f;
-        SceneManager.LoadScene(sceneAfterReset);
+        SceneManager.LoadScene(GameManager.Instance.Config.mainMenuScene);
     }
 
     void OnClickBack() {

@@ -4,6 +4,17 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class GameUIManager : MonoBehaviour {
+    [Header("Localization Keys")]
+    [SerializeField] string steeringKey = "hud.steering";
+    [SerializeField] string speedKey = "hud.speed";
+    float shownSpeed, shownSteering;
+
+    void OnEnable() { LocalizationManager.LanguageChanged += RefreshStatLabels; }
+    void OnDisable() { LocalizationManager.LanguageChanged -= RefreshStatLabels; }
+    void RefreshStatLabels() {
+        LocalizationManager.SetText(steeringText, steeringKey, shownSteering / 10);
+        LocalizationManager.SetText(speedText, speedKey, shownSpeed);
+    }
     [Header("UI Elements")]
     [SerializeField] TextMeshProUGUI scoreText;
     [SerializeField] TextMeshProUGUI moneyText;
@@ -76,12 +87,18 @@ public class GameUIManager : MonoBehaviour {
         timerText.text = minutes.ToString("00") + ":" + seconds.ToString("00");
     }
 
+    /// <summary>Updates health and localized driving values, retaining those values for a subsequent language change.</summary>
+    /// <param name="hp">Remaining health.</param>
+    /// <param name="maxHp">Health bar maximum for the selected vehicle.</param>
+    /// <param name="speed">Current driving speed.</param>
+    /// <param name="steering">Turning stat, displayed on the existing one-tenth scale.</param>
     public void UpdateStatPanel(float hp, float maxHp, float speed, float steering) {
         healthbar.maxValue = maxHp;
         healthbar.value = hp;
         // Divide steering by 10 for display
-        steeringText.text = "Steering: \n" + (steering / 10).ToString("F1");
-        speedText.text = "Speed: \n" + speed.ToString("F1");
+        shownSpeed = speed;
+        shownSteering = steering;
+        RefreshStatLabels();
     }
 
     public void FlashHealthBar() {

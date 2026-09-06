@@ -261,8 +261,12 @@ public static class VehicleValidator {
 
         string id = Quote(data.name);
 
+        if (string.IsNullOrWhiteSpace(data.vehicleId)) {
+            issues.Add(VehicleIssue.Error(id + " has an empty vehicleId. Saves are keyed by this id, so the vehicle cannot be owned or upgraded until it has one.", data));
+        }
+
         if (string.IsNullOrWhiteSpace(data.vehicleName)) {
-            issues.Add(VehicleIssue.Error(id + " has an empty vehicleName. The save system matches vehicles by name, so an unnamed vehicle loses its upgrades.", data));
+            issues.Add(VehicleIssue.Warning(id + " has an empty vehicleName. Nothing is saved against it, but the player would see a blank name in the garage.", data));
         }
 
         if (data.vehiclePrefab == null) {
@@ -370,13 +374,30 @@ public static class VehicleValidator {
             }
         }
 
+        // Duplicate ids are the serious case: two vehicles sharing an id share one save record, so
+        // upgrades bought for one silently appear on the other. Checked across every VehicleData in
+        // the project, not just the registered ones, because an unregistered asset can be added later.
+        var seenIds = new Dictionary<string, VehicleData>();
+        foreach (var guid in AssetDatabase.FindAssets("t:VehicleData")) {
+            var asset = AssetDatabase.LoadAssetAtPath<VehicleData>(AssetDatabase.GUIDToAssetPath(guid));
+            if (asset == null || string.IsNullOrWhiteSpace(asset.vehicleId)) continue;
+            string key = asset.vehicleId.Trim();
+            if (seenIds.TryGetValue(key, out var clash)) {
+                issues.Add(VehicleIssue.Error("Two vehicles share the same vehicleId: " + clash.name + " and " + asset.name +
+                    " (both are '" + key + "'). They would share one save record and their upgrades would mix.", asset));
+            }
+            else {
+                seenIds[key] = asset;
+            }
+        }
+
         var seenNames = new Dictionary<string, VehicleData>();
         foreach (var v in registered) {
             if (v == null || string.IsNullOrWhiteSpace(v.vehicleName)) continue;
             string key = v.vehicleName.Trim().ToLowerInvariant();
             if (seenNames.TryGetValue(key, out var other)) {
-                issues.Add(VehicleIssue.Error("Two vehicles share the same vehicleName: " + other.name + " and " + v.name +
-                    " (both are " + v.vehicleName + "). The save system would treat them as one vehicle and their upgrades would mix.", v));
+                issues.Add(VehicleIssue.Warning("Two vehicles share the display name '" + v.vehicleName + "': " +
+                    other.name + " and " + v.name + ". Saves are keyed by id so nothing breaks, but the player sees two identical entries.", v));
             }
             else {
                 seenNames[key] = v;

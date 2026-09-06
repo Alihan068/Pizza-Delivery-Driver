@@ -1,0 +1,157 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4b518a165324924891ce8fe3c40e4c1, type: 3}
+  m_Name: Turkish
+  m_EditorClassIdentifier: 
+  languageCode: tr
+  nativeName: "T\xFCrk\xE7e"
+  systemLanguages: 25000000
+  entries:
+  - key: menu.start
+    text: "Ba\u015Fla"
+  - key: menu.quit
+    text: "\xC7\u0131k\u0131\u015F"
+  - key: menu.title
+    text: Pizza Delivery Driver
+  - key: menu.version
+    text: v{0}
+  - key: common.mainMenu
+    text: "Ana Men\xFC"
+  - key: common.garage
+    text: "Garaja D\xF6n"
+  - key: common.back
+    text: Geri
+  - key: common.cancel
+    text: "\u0130ptal"
+  - key: common.money
+    text: $ {0}
+  - key: garage.startJob
+    text: "\u0130\u015Fe Ba\u015Fla"
+  - key: garage.next
+    text: Sonraki
+  - key: garage.previous
+    text: "\xD6nceki"
+  - key: garage.locked
+    text: "Ara\xE7 Kilitli"
+  - key: garage.buy
+    text: "Sat\u0131n Al"
+  - key: garage.buyPrice
+    text: 'Fiyat: $ {0}'
+  - key: garage.upgrade
+    text: "Y\xFCkselt"
+  - key: pause.title
+    text: "Duraklat\u0131ld\u0131"
+  - key: pause.resume
+    text: Devam Et
+  - key: settings.title
+    text: Ayarlar
+  - key: settings.music
+    text: "M\xFCzik"
+  - key: settings.language
+    text: 'Dil: {0}'
+  - key: settings.reset
+    text: "\u0130lerlemeyi S\u0131f\u0131rla"
+  - key: settings.confirmReset
+    text: "T\xFCm ilerleme s\u0131f\u0131rlans\u0131n m\u0131? Bu i\u015Flem geri
+      al\u0131namaz."
+  - key: settings.yesReset
+    text: "Evet, s\u0131f\u0131rla"
+  - key: result.delivered
+    text: 'Teslim edilen: {0}'
+  - key: result.missed
+    text: "Ka\xE7\u0131r\u0131lan: {0}"
+  - key: result.score
+    text: 'Skor: {0}'
+  - key: result.gross
+    text: "Vardiya kazanc\u0131: +${0}"
+  - key: result.penalty
+    text: "Kaza cezas\u0131: -${0}"
+  - key: result.repair
+    text: 'Tamir: -${0}'
+  - key: result.partialRepair
+    text: "Tamir: -${0} (k\u0131smi, ${1} \xF6denmedi)"
+  - key: result.net
+    text: 'Net: ${0}'
+  - key: result.wallet
+    text: "C\xFCzdan: ${0} -> ${1}"
+  - key: result.timeUp
+    text: "Vardiya Tamamland\u0131"
+  - key: result.extracted
+    text: "Erken \xC7\u0131k\u0131\u015F"
+  - key: result.wrecked
+    text: "Ara\xE7 Pert Oldu"
+  - key: result.abandoned
+    text: Vardiya Terk Edildi
+  - key: result.ended
+    text: Vardiya Bitti
+  - key: stat.level
+    text: Seviye {0}/{1}
+  - key: stat.max
+    text: MAKS
+  - key: stat.pizzaValue
+    text: '{0} pizza'
+  - key: stat.percentValue
+    text: '%{0}'
+  - key: stat.numberValue
+    text: '{0:0.#}'
+  - key: stat.comparison
+    text: '{0} -> {1}'
+  - key: stat.speed.name
+    text: "H\u0131z"
+  - key: stat.turn.name
+    text: "Yol Tutu\u015F"
+  - key: stat.health.name
+    text: "\u015Easi"
+  - key: stat.armor.name
+    text: "Z\u0131rh"
+  - key: stat.capacity.name
+    text: Kapasite
+  - key: stat.protection.name
+    text: Sabitleyici
+  - key: stat.speed.description
+    text: "Azami h\u0131z\u0131 art\u0131r\u0131r."
+  - key: stat.turn.description
+    text: "Virajlarda daha iyi kontrol sa\u011Flar."
+  - key: stat.health.description
+    text: "\xC7arp\u0131\u015Fmalara dayan\u0131kl\u0131l\u0131\u011F\u0131 art\u0131r\u0131r."
+  - key: stat.armor.description
+    text: "Al\u0131nan hasar\u0131 azalt\u0131r."
+  - key: stat.capacity.description
+    text: "Daha fazla pizza ta\u015F\u0131man\u0131 sa\u011Flar."
+  - key: stat.protection.description
+    text: "\xC7arp\u0131\u015Fmada pizzay\u0131 koruma \u015Fans\u0131 verir."
+  - key: customer.thanks
+    text: "Te\u015Fekk\xFCrler!"
+  - key: hud.speed
+    text: "H\u0131z:\n{0:0.0}"
+  - key: hud.steering
+    text: "D\xF6n\xFC\u015F:\n{0:0.0}"
+  - key: hud.indicator
+    text: '{0}m
+
+      {1}sn
+
+      {2}x'
+  - key: hud.distancePlaceholder
+    text: 'Mesafe:
+
+      --'
+  - key: hud.timePlaceholder
+    text: "S\xFCre:\n--"
+  - key: vehicle.scooter.name
+    text: Scooter
+  - key: vehicle.greensedan.name
+    text: "Ye\u015Fil Sedan"
+  - key: map.downtown.name
+    text: "\u015Eehir Merkezi"
+  - key: map.downtown.desc
+    text: "\u015Eehir sokaklar\u0131nda pizza teslim et."

@@ -9,8 +9,22 @@ public class VehicleData : ScriptableObject {
     // VehicleValidator.ValidateScriptDefaults watches for that drift and warns.
 
     [Header("Identity & Visuals")]
-    /// <summary>Unique name the save system matches this vehicle by. Must not be empty.</summary>
+    /// <summary>
+    /// Permanent identifier this vehicle is saved and referenced by. Generated once when the asset
+    /// is created and never changed afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Saves key off this rather than <see cref="vehicleName"/> so that renaming a vehicle — or
+    /// localizing its name — cannot orphan a player's upgrades. It is also what lets externally
+    /// supplied content be referenced safely: an id is stable across sources, an array index is not.
+    /// </remarks>
+    public string vehicleId;
+
+    /// <summary>Name shown to the player. Safe to change or localize; nothing is saved against it.</summary>
     public string vehicleName;
+
+    /// <summary>Optional localized display-name key. Empty retains the authored proper name for external vehicles.</summary>
+    public string displayNameKey;
 
     /// <summary>Prefab PlayerSpawner instantiates at the start of a session.</summary>
     public GameObject vehiclePrefab;
@@ -22,23 +36,23 @@ public class VehicleData : ScriptableObject {
     public int price;
 
     [Header("Descriptions")]
-    /// <summary>Description shown on the Speed card in the garage.</summary>
-    [TextArea] public string speedDesc = "Increases max speed.";
+    /// <summary>Localization key for the Speed card description.</summary>
+    [TextArea] public string speedDesc = "stat.speed.description";
 
-    /// <summary>Description shown on the Handling card in the garage.</summary>
-    [TextArea] public string turnDesc = "Better handling in corners.";
+    /// <summary>Localization key for the Handling card description.</summary>
+    [TextArea] public string turnDesc = "stat.turn.description";
 
-    /// <summary>Description shown on the Chassis card in the garage.</summary>
-    [TextArea] public string healthDesc = "More durability against crashes.";
+    /// <summary>Localization key for the Chassis card description.</summary>
+    [TextArea] public string healthDesc = "stat.health.description";
 
-    /// <summary>Description shown on the Armor card in the garage.</summary>
-    [TextArea] public string armorDesc = "Reduces damage taken.";
+    /// <summary>Localization key for the Armor card description.</summary>
+    [TextArea] public string armorDesc = "stat.armor.description";
 
-    /// <summary>Description shown on the Storage card in the garage.</summary>
-    [TextArea] public string capacityDesc = "Carry more pizzas.";
+    /// <summary>Localization key for the Storage card description.</summary>
+    [TextArea] public string capacityDesc = "stat.capacity.description";
 
-    /// <summary>Description shown on the Stabilizer card in the garage.</summary>
-    [TextArea] public string protectionDesc = "Chance to save pizza on crash.";
+    /// <summary>Localization key for the Stabilizer card description.</summary>
+    [TextArea] public string protectionDesc = "stat.protection.description";
 
     [Header("Speed")]
     /// <summary>Speed with no upgrades bought.</summary>
@@ -117,4 +131,84 @@ public class VehicleData : ScriptableObject {
 
     /// <summary>Base cost multiplier for protection upgrades.</summary>
     public float protectionCostMult = 0.45f;
+
+    // The four accessors below exist so that callers never have to know which field belongs to
+    // which stat. Before this, the same six-way switch was repeated in GameManager and
+    // GarageManager against magic strings, and a mistyped key silently charged the player without
+    // granting a level.
+
+    /// <summary>Value of a stat with no upgrades bought.</summary>
+    /// <param name="stat">Which stat to read.</param>
+    /// <returns>The unupgraded value, or zero for an unknown stat.</returns>
+    public float GetBaseValue(VehicleStatId stat) {
+        switch (stat) {
+            case VehicleStatId.Speed: return baseSpeed;
+            case VehicleStatId.Turn: return baseTurn;
+            case VehicleStatId.Health: return baseHealth;
+            case VehicleStatId.Armor: return baseArmor;
+            case VehicleStatId.Capacity: return baseCapacity;
+            case VehicleStatId.Protection: return baseProtection;
+            default: return 0f;
+        }
+    }
+
+    /// <summary>Amount one purchased level adds to a stat.</summary>
+    /// <param name="stat">Which stat to read.</param>
+    /// <returns>The per-level increment, or zero for an unknown stat.</returns>
+    public float GetStep(VehicleStatId stat) {
+        switch (stat) {
+            case VehicleStatId.Speed: return speedStep;
+            case VehicleStatId.Turn: return turnStep;
+            case VehicleStatId.Health: return healthStep;
+            case VehicleStatId.Armor: return armorStep;
+            case VehicleStatId.Capacity: return capacityStep;
+            case VehicleStatId.Protection: return protectionStep;
+            default: return 0f;
+        }
+    }
+
+    /// <summary>How many levels of a stat can be bought.</summary>
+    /// <param name="stat">Which stat to read.</param>
+    /// <returns>The level ceiling, or zero for an unknown stat.</returns>
+    public int GetMaxLevel(VehicleStatId stat) {
+        switch (stat) {
+            case VehicleStatId.Speed: return maxSpeedLevel;
+            case VehicleStatId.Turn: return maxTurnLevel;
+            case VehicleStatId.Health: return maxHealthLevel;
+            case VehicleStatId.Armor: return maxArmorLevel;
+            case VehicleStatId.Capacity: return maxCapacityLevel;
+            case VehicleStatId.Protection: return maxProtectionLevel;
+            default: return 0;
+        }
+    }
+
+    /// <summary>Price multiplier applied to this stat's upgrades.</summary>
+    /// <param name="stat">Which stat to read.</param>
+    /// <returns>The multiplier, or one for an unknown stat so pricing never collapses to free.</returns>
+    public float GetCostMultiplier(VehicleStatId stat) {
+        switch (stat) {
+            case VehicleStatId.Speed: return speedCostMult;
+            case VehicleStatId.Turn: return turnCostMult;
+            case VehicleStatId.Health: return healthCostMult;
+            case VehicleStatId.Armor: return armorCostMult;
+            case VehicleStatId.Capacity: return capacityCostMult;
+            case VehicleStatId.Protection: return protectionCostMult;
+            default: return 1f;
+        }
+    }
+
+    /// <summary>Resolves this stat's description key without depending on the active language.</summary>
+    /// <param name="stat">Which stat to read.</param>
+    /// <returns>A localization key, or an empty string for an unknown stat.</returns>
+    public string GetDescription(VehicleStatId stat) {
+        switch (stat) {
+            case VehicleStatId.Speed: return speedDesc;
+            case VehicleStatId.Turn: return turnDesc;
+            case VehicleStatId.Health: return healthDesc;
+            case VehicleStatId.Armor: return armorDesc;
+            case VehicleStatId.Capacity: return capacityDesc;
+            case VehicleStatId.Protection: return protectionDesc;
+            default: return string.Empty;
+        }
+    }
 }

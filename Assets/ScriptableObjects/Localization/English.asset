@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4b518a165324924891ce8fe3c40e4c1, type: 3}
+  m_Name: English
+  m_EditorClassIdentifier: 
+  languageCode: en
+  nativeName: English
+  systemLanguages: 0a000000
+  entries:
+  - key: menu.start
+    text: Start
+  - key: menu.quit
+    text: Quit
+  - key: menu.title
+    text: Pizza Delivery Driver
+  - key: menu.version
+    text: v{0}
+  - key: common.mainMenu
+    text: Main Menu
+  - key: common.garage
+    text: Return to Garage
+  - key: common.back
+    text: Back
+  - key: common.cancel
+    text: Cancel
+  - key: common.money
+    text: $ {0}
+  - key: garage.startJob
+    text: Start Job
+  - key: garage.next
+    text: Next
+  - key: garage.previous
+    text: Previous
+  - key: garage.locked
+    text: Vehicle Locked
+  - key: garage.buy
+    text: Buy
+  - key: garage.buyPrice
+    text: 'Buy: $ {0}'
+  - key: garage.upgrade
+    text: Upgrade
+  - key: pause.title
+    text: Paused
+  - key: pause.resume
+    text: Resume
+  - key: settings.title
+    text: Settings
+  - key: settings.music
+    text: Music
+  - key: settings.language
+    text: 'Language: {0}'
+  - key: settings.reset
+    text: Reset Progress
+  - key: settings.confirmReset
+    text: Reset all progress? This cannot be undone.
+  - key: settings.yesReset
+    text: Yes, reset
+  - key: result.delivered
+    text: 'Delivered: {0}'
+  - key: result.missed
+    text: 'Missed: {0}'
+  - key: result.score
+    text: 'Score: {0}'
+  - key: result.gross
+    text: 'Shift earnings: +${0}'
+  - key: result.penalty
+    text: 'Death penalty: -${0}'
+  - key: result.repair
+    text: 'Repairs: -${0}'
+  - key: result.partialRepair
+    text: 'Repairs: -${0} (partial, ${1} unpaid)'
+  - key: result.net
+    text: 'Net: ${0}'
+  - key: result.wallet
+    text: 'Wallet: ${0} -> ${1}'
+  - key: result.timeUp
+    text: Shift Complete
+  - key: result.extracted
+    text: Early Exit
+  - key: result.wrecked
+    text: Wrecked
+  - key: result.abandoned
+    text: Shift Abandoned
+  - key: result.ended
+    text: Shift Over
+  - key: stat.level
+    text: Lvl {0}/{1}
+  - key: stat.max
+    text: MAX
+  - key: stat.pizzaValue
+    text: '{0} pizza'
+  - key: stat.percentValue
+    text: '{0}%'
+  - key: stat.numberValue
+    text: '{0:0.#}'
+  - key: stat.comparison
+    text: '{0} -> {1}'
+  - key: stat.speed.name
+    text: Speed
+  - key: stat.turn.name
+    text: Handling
+  - key: stat.health.name
+    text: Chassis
+  - key: stat.armor.name
+    text: Armor
+  - key: stat.capacity.name
+    text: Storage
+  - key: stat.protection.name
+    text: Stabilizer
+  - key: stat.speed.description
+    text: Increases max speed.
+  - key: stat.turn.description
+    text: Better handling in corners.
+  - key: stat.health.description
+    text: More durability against crashes.
+  - key: stat.armor.description
+    text: Reduces damage taken.
+  - key: stat.capacity.description
+    text: Carry more pizzas.
+  - key: stat.protection.description
+    text: Chance to save pizza on crash.
+  - key: customer.thanks
+    text: Thank You!
+  - key: hud.speed
+    text: 'Speed:
+
+      {0:0.0}'
+  - key: hud.steering
+    text: 'Steering:
+
+      {0:0.0}'
+  - key: hud.indicator
+    text: '{0}m
+
+      {1}s
+
+      {2}x'
+  - key: hud.distancePlaceholder
+    text: 'Dist:
+
+      --'
+  - key: hud.timePlaceholder
+    text: 'Time:
+
+      --'
+  - key: vehicle.scooter.name
+    text: Scooter
+  - key: vehicle.greensedan.name
+    text: Green Sedan
+  - key: map.downtown.name
+    text: Downtown
+  - key: map.downtown.desc
+    text: Deliver pizzas through the city streets.

@@ -12,16 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bf817bec05bf8244b8d635bc77788a7, type: 3}
   m_Name: GreenSedanData
   m_EditorClassIdentifier: 
+  vehicleId: ae0771fda77049c9923da9803ea6dd19
   vehicleName: GreenSedan
+  displayNameKey: vehicle.greensedan.name
   vehiclePrefab: {fileID: 3882002878805238368, guid: 34f6749f47b34c749a916453f61e37cb, type: 3}
   vehicleIcon: {fileID: 0}
   price: 1000
-  speedDesc: Increases max speed.
-  turnDesc: Better handling in corners.
-  healthDesc: More durability against crashes.
-  armorDesc: Reduces damage taken.
-  capacityDesc: Carry more pizzas.
-  protectionDesc: Chance to save pizza on crash.
+  speedDesc: stat.speed.description
+  turnDesc: stat.turn.description
+  healthDesc: stat.health.description
+  armorDesc: stat.armor.description
+  capacityDesc: stat.capacity.description
+  protectionDesc: stat.protection.description
   baseSpeed: 3.7
   speedStep: 0.1
   maxSpeedLevel: 25

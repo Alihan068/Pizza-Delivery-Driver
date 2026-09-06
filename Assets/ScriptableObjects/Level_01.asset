@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Level_01
   m_EditorClassIdentifier: 
   orderMin: 1
-  orderScale: 0.6
+  orderScale: 0.8
   waitBase: 30
   waitPerOrderPizza: 8
   partialExtension: 12

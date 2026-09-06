@@ -77,3 +77,5 @@ UNITY_AI_GUIDELINES.md
 oldUsedPromts/
 memory-bank/
 knowledge/
+AGENTS.md
+.codex/

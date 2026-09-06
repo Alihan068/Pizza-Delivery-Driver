@@ -14,6 +14,19 @@ using UnityEngine;
 /// </remarks>
 public static class GameSettings {
 
+    /// <summary>Reads a language preference independently of profile slots. Empty means use the system language.</summary>
+    /// <param name="key">Stable PlayerPrefs key supplied by the localization catalog.</param>
+    /// <returns>Previously selected language code, or empty on first launch.</returns>
+    public static string GetLanguagePreference(string key) => PlayerPrefs.GetString(key, string.Empty);
+
+    /// <summary>Persists a language choice without modifying game progress or audio settings.</summary>
+    /// <param name="key">Stable PlayerPrefs key supplied by the localization catalog.</param>
+    /// <param name="code">Installed language code selected by the player.</param>
+    public static void SetLanguagePreference(string key, string code) {
+        PlayerPrefs.SetString(key, code);
+        PlayerPrefs.Save();
+    }
+
     const string MusicVolumeKey = "settings.musicVolume";
 
     /// <summary>Music volume used when the player has never changed it, on a 0-100 scale.</summary>
