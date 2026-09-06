@@ -174,6 +174,7 @@ public class Customer : MonoBehaviour {
         if (scoreHandler != null) {
             scoreHandler.AddMoney(tip + bonus);
             scoreHandler.AddScore(Mathf.RoundToInt(timeLeft * 10));
+            scoreHandler.RegisterCompletedOrder(currentOrder.totalPizzas);
         }
 
         if (customerManager != null) customerManager.CustomerRoutine(gameObject, 0, levelData.completedDespawnDelay);

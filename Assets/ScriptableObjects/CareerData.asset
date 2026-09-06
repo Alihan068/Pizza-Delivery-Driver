@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3adb23ddc70523a459c07260d13992ce, type: 3}
+  m_Name: CareerData
+  m_EditorClassIdentifier: 
+  shiftsPerDay: 3
+  rankThresholds: 0000000046000000be000000630100003f020000
+  endingThreshold: 870
+  regionCapByTier: be0000003f02000066030000
+  regionUnlockRank: 0300000005000000
+  baseRepAtTier1: 10
+  baseRepPerTier: 4
+  qualityOnTimeMin: 0.4
+  qualityOnTimeWeight: 0.6
+  qualityHealthMin: 0.5
+  qualityHealthWeight: 0.5
+  endReasonMultipliers:
+  - reason: 0
+    multiplier: 1
+  - reason: 1
+    multiplier: 1.1
+  - reason: 2
+    multiplier: 0.5
+  - reason: 3
+    multiplier: 0.15
+  - reason: 4
+    multiplier: 0.5
+  rentBase: 400
+  rentPerRankStep: 350
+  repShortfallDivisorBase: 60
+  repShortfallDivisorPerRank: 7
+  objectivesPerShift: 2
+  objectiveCapFraction: 0.25
+  gTypicalBase: 400
+  gTypicalPerRankStep: 300
+  objectiveTypes:
+  - type: 0
+    displayNameKey: objective.quota.name
+    descriptionKey: objective.quota.description
+    rewardFraction: 0.9
+    zeroTarget: 0
+    targetBase: 0
+    targetCapacityMultiplier: 2.2
+    targetRankDivisor: 2
+    minimumTarget: 1
+    parameterBase: 0
+    parameterCapacityMultiplier: 0
+  - type: 1
+    displayNameKey: objective.perfectService.name
+    descriptionKey: objective.perfectService.description
+    rewardFraction: 0.8
+    zeroTarget: 1
+    targetBase: 0
+    targetCapacityMultiplier: 0
+    targetRankDivisor: 0
+    minimumTarget: 0
+    parameterBase: 0
+    parameterCapacityMultiplier: 0
+  - type: 2
+    displayNameKey: objective.cleanRun.name
+    descriptionKey: objective.cleanRun.description
+    rewardFraction: 0.75
+    zeroTarget: 1
+    targetBase: 0
+    targetCapacityMultiplier: 0
+    targetRankDivisor: 0
+    minimumTarget: 0
+    parameterBase: 0
+    parameterCapacityMultiplier: 0
+  - type: 3
+    displayNameKey: objective.cargoGuard.name
+    descriptionKey: objective.cargoGuard.description
+    rewardFraction: 1
+    zeroTarget: 1
+    targetBase: 0
+    targetCapacityMultiplier: 0
+    targetRankDivisor: 0
+    minimumTarget: 0
+    parameterBase: 0
+    parameterCapacityMultiplier: 0
+  - type: 4
+    displayNameKey: objective.bigOrder.name
+    descriptionKey: objective.bigOrder.description
+    rewardFraction: 0.65
+    zeroTarget: 0
+    targetBase: 1
+    targetCapacityMultiplier: 0
+    targetRankDivisor: 3
+    minimumTarget: 1
+    parameterBase: 3
+    parameterCapacityMultiplier: 1
+  - type: 5
+    displayNameKey: objective.fastExtraction.name
+    descriptionKey: objective.fastExtraction.description
+    rewardFraction: 1
+    zeroTarget: 0
+    targetBase: 1
+    targetCapacityMultiplier: 0
+    targetRankDivisor: 0
+    minimumTarget: 1
+    parameterBase: 0
+    parameterCapacityMultiplier: 0
+  quotaCapacityMultiplier: 2.2
+  quotaRankDivisor: 2
+  bigOrderMinPizzas: 3
+  bigOrderRankDivisor: 3
+  fastExtractionMinSecondsRemaining: 60
+  fastExtractionQuotaFraction: 0.5

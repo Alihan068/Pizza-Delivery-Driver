@@ -28,10 +28,10 @@ public class VehicleSaveData {
     /// <summary>Purchased Armor levels.</summary>
     public int armorLevel;
 
-    /// <summary>Purchased Capacity levels.</summary>
+    /// <summary>Legacy version 1 field: Capacity was per-vehicle before it became driver-owned. Migration input only.</summary>
     public int capacityLevel;
 
-    /// <summary>Purchased Protection levels.</summary>
+    /// <summary>Legacy version 1 field: Protection was per-vehicle before it became driver-owned. Migration input only.</summary>
     public int protectionLevel;
 
     /// <summary>Total money spent on this vehicle. Feeds the repair cost through vehicle value.</summary>
@@ -55,8 +55,8 @@ public class VehicleSaveData {
         moneySpent = 0;
     }
 
-    /// <summary>Reads the purchased level of one stat.</summary>
-    /// <param name="stat">Which stat to read.</param>
+    /// <summary>Reads the purchased level of one vehicle-bound stat.</summary>
+    /// <param name="stat">Which stat to read. Driver-bound stats (see <see cref="VehicleStatOwnership"/>) always return zero here — read them from <see cref="DriverSaveData"/> instead.</param>
     /// <returns>The number of levels bought, zero when none.</returns>
     public int GetLevel(VehicleStatId stat) {
         switch (stat) {
@@ -64,22 +64,18 @@ public class VehicleSaveData {
             case VehicleStatId.Turn: return turnLevel;
             case VehicleStatId.Health: return healthLevel;
             case VehicleStatId.Armor: return armorLevel;
-            case VehicleStatId.Capacity: return capacityLevel;
-            case VehicleStatId.Protection: return protectionLevel;
             default: return 0;
         }
     }
 
-    /// <summary>Adds one purchased level to a stat.</summary>
-    /// <param name="stat">Which stat was upgraded.</param>
+    /// <summary>Adds one purchased level to a vehicle-bound stat.</summary>
+    /// <param name="stat">Which stat was upgraded. Driver-bound stats are ignored here.</param>
     public void AddLevel(VehicleStatId stat) {
         switch (stat) {
             case VehicleStatId.Speed: speedLevel++; break;
             case VehicleStatId.Turn: turnLevel++; break;
             case VehicleStatId.Health: healthLevel++; break;
             case VehicleStatId.Armor: armorLevel++; break;
-            case VehicleStatId.Capacity: capacityLevel++; break;
-            case VehicleStatId.Protection: protectionLevel++; break;
         }
     }
 }

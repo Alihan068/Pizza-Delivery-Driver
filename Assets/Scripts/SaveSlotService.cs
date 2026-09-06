@@ -231,7 +231,7 @@ public class SaveSlotService {
         info.totalMoney = data.totalMoney;
 
         var vehicle = registry != null ? registry.GetVehicle(data.currentVehicleId) : null;
-        if (vehicle != null) info.vehicleDisplayName = vehicle.vehicleName;
+        if (vehicle != null) info.vehicleDisplayName = vehicle.GetDisplayName();
         else info.hasMissingContent = true;
 
         return info;

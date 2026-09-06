@@ -77,6 +77,7 @@ public class Delivery : MonoBehaviour {
         if (scoreHandler != null) scoreHandler.AddScore(-50);
 
         LosePizza();
+        if (scoreHandler != null) scoreHandler.RegisterPizzaLost();
     }
 
     public void LosePizza() {
@@ -109,6 +110,7 @@ public class Delivery : MonoBehaviour {
 
         carryPizzaAmount -= accepted;
         pizzaDelivered += accepted;
+        if (scoreHandler != null) scoreHandler.RegisterDeliveredPizzas(accepted);
         UpdateCarryUI();
 
         if (gameUIManager != null) gameUIManager.UpdatePizzaText(pizzaDelivered);

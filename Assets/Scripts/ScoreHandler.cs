@@ -1,16 +1,28 @@
-﻿using UnityEngine;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class ScoreHandler : MonoBehaviour {
     [Header("Game Settings")]
-    [SerializeField] float levelDurationInMinutes = 3f; 
-    private float currentTimer;
-    private bool isGameActive = true;
+    [SerializeField] float levelDurationInMinutes = 3f;
+    float currentTimer;
+    float totalDurationSeconds;
+    bool isGameActive = true;
 
     [Header("Session Data")]
-    public int currentScore = 0;
+    public int currentScore;
     public int sessionEarnings { get; private set; }
     public int missedCustomers { get; private set; }
+    public int ordersCompleted { get; private set; }
     public bool IsGameActive => isGameActive;
+
+    /// <summary>Seconds remaining in the active shift.</summary>
+    public float RemainingTimeSeconds => Mathf.Max(0f, currentTimer);
+
+    /// <summary>Normalized progress through the active shift.</summary>
+    public float ShiftProgress01 => totalDurationSeconds > 0f ? Mathf.Clamp01(1f - currentTimer / totalDurationSeconds) : 0f;
+
+    /// <summary>Objectives selected for this shift and their live progress.</summary>
+    public List<ShiftObjectiveState> ActiveObjectives { get; private set; } = new List<ShiftObjectiveState>();
 
     GameUIManager gameUIManager;
     SessionResultPanel resultPanel;
@@ -18,40 +30,50 @@ public class ScoreHandler : MonoBehaviour {
     void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         resultPanel = FindFirstObjectByType<SessionResultPanel>(FindObjectsInactive.Include);
-        
-        // Convert minutes to seconds
-        currentTimer = levelDurationInMinutes * 60;
+        currentTimer = levelDurationInMinutes * 60f;
+        totalDurationSeconds = currentTimer;
 
-        // Records that a shift is underway. Without this, killing the process mid-shift skips
-        // settlement entirely: the player loses the unbanked earnings but escapes the repair bill,
-        // which makes force-quitting cheaper than any legitimate way out of a bad run.
         if (GameManager.Instance != null) GameManager.Instance.MarkShiftStarted();
-
+        CreateShiftObjectives();
         UpdateUI();
+    }
+
+    void CreateShiftObjectives() {
+        ActiveObjectives.Clear();
+        if (GameManager.Instance == null || GameManager.Instance.Career == null || GameManager.Instance.CareerData == null) return;
+
+        var data = GameManager.Instance.CareerData;
+        if (data.objectiveTypes == null || data.objectiveTypes.Length == 0) return;
+
+        int capacity = GameManager.Instance.GetCapacity();
+        int rank = GameManager.Instance.CurrentRank;
+        int objectiveCount = Mathf.Clamp(data.objectivesPerShift, 0, data.objectiveTypes.Length);
+        var available = new List<ShiftObjectiveTuning>(data.objectiveTypes);
+
+        for (int i = 0; i < objectiveCount && available.Count > 0; i++) {
+            int index = Random.Range(0, available.Count);
+            var tuning = available[index];
+            available.RemoveAt(index);
+            var state = GameManager.Instance.Career.CreateObjective(tuning.type, capacity, rank);
+            if (state != null) ActiveObjectives.Add(state);
+        }
     }
 
     void Update() {
         if (!isGameActive) return;
 
-        
-        if (currentTimer > 0) {
+        if (currentTimer > 0f) {
             currentTimer -= Time.deltaTime;
-
-            // UI Update format
-            if (gameUIManager != null) {
-                gameUIManager.UpdateTimerText(currentTimer);
-            }
+            if (gameUIManager != null) gameUIManager.UpdateTimerText(currentTimer);
         }
         else {
-            
-            currentTimer = 0;
-            EndLevel(EndReason.TimeUp); 
+            currentTimer = 0f;
+            EndLevel(EndReason.TimeUp);
         }
     }
 
     public void AddScore(int amount) {
         if (!isGameActive) return;
-
         currentScore += amount;
         UpdateUI();
     }
@@ -64,23 +86,101 @@ public class ScoreHandler : MonoBehaviour {
 
     public void RegisterMissedCustomer() {
         missedCustomers++;
+        RegisterObjectiveViolation(ShiftObjectiveType.PerfectService);
     }
 
+    public void RegisterCompletedOrder() {
+        ordersCompleted++;
+    }
+
+    /// <summary>Advances the quota objective by pizzas delivered on time.</summary>
+    /// <param name="amount">Number of pizzas accepted by customers.</param>
+    public void RegisterDeliveredPizzas(int amount) {
+        if (!isGameActive || amount <= 0) return;
+        foreach (var objective in ActiveObjectives) {
+            if (objective.type != ShiftObjectiveType.Quota || objective.IsComplete || objective.IsFailed) continue;
+            if (objective.AddProgress(amount)) CompleteObjective(objective);
+        }
+    }
+
+    /// <summary>Registers a completed order and advances any large-order objective.</summary>
+    /// <param name="orderSize">Total pizzas in the completed order.</param>
+    public void RegisterCompletedOrder(int orderSize) {
+        ordersCompleted++;
+        foreach (var objective in ActiveObjectives) {
+            if (objective.type != ShiftObjectiveType.BigOrder || objective.IsComplete || objective.IsFailed) continue;
+            if (orderSize < objective.parameter) continue;
+            if (objective.AddProgress(1)) CompleteObjective(objective);
+        }
+    }
+
+    /// <summary>Registers one collision that caused damage during this shift.</summary>
+    public void RegisterCollisionDamageEvent() {
+        RegisterObjectiveViolation(ShiftObjectiveType.CleanRun);
+    }
+
+    /// <summary>Registers one pizza lost because of a damaging impact.</summary>
+    public void RegisterPizzaLost() {
+        RegisterObjectiveViolation(ShiftObjectiveType.CargoGuard);
+    }
+
+    /// <summary>Checks and completes the fast-extraction objective at the extraction zone.</summary>
+    public void RegisterFastExtraction() {
+        if (!isGameActive || GameManager.Instance == null || GameManager.Instance.CareerData == null) return;
+
+        var data = GameManager.Instance.CareerData;
+        int quotaTarget = data.GetObjectiveTarget(ShiftObjectiveType.Quota, GameManager.Instance.GetCapacity(), GameManager.Instance.CurrentRank);
+        int requiredDeliveries = Mathf.FloorToInt(quotaTarget * data.fastExtractionQuotaFraction);
+        Delivery delivery = FindFirstObjectByType<Delivery>();
+        bool hasTime = RemainingTimeSeconds >= data.fastExtractionMinSecondsRemaining;
+        bool hasDeliveries = delivery != null && delivery.pizzaDelivered >= requiredDeliveries;
+        if (!hasTime || !hasDeliveries) return;
+
+        foreach (var objective in ActiveObjectives) {
+            if (objective.type != ShiftObjectiveType.FastExtraction || objective.IsComplete || objective.IsFailed) continue;
+            if (objective.AddProgress(1)) CompleteObjective(objective);
+        }
+    }
+
+    void RegisterObjectiveViolation(ShiftObjectiveType type) {
+        foreach (var objective in ActiveObjectives) {
+            if (objective.type == type) objective.RegisterViolation();
+        }
+        UpdateUI();
+    }
+
+    void CompleteObjective(ShiftObjectiveState objective) {
+        if (objective == null || objective.IsComplete || objective.IsFailed) return;
+        objective.MarkCompleted();
+        if (GameManager.Instance != null && objective.reward > 0) {
+            GameManager.Instance.AddMoneyToBank(objective.reward);
+            GameManager.Instance.SaveGame();
+        }
+        UpdateUI();
+    }
+
+    void FinalizeObjectives() {
+        foreach (var objective in ActiveObjectives) {
+            if (objective.IsComplete || objective.IsFailed) continue;
+            if (objective.target > 0) {
+                if (objective.progress >= objective.target) CompleteObjective(objective);
+            }
+            else {
+                CompleteObjective(objective);
+            }
+        }
+    }
 
     void UpdateUI() {
         if (gameUIManager != null) {
             gameUIManager.UpdateScoreDisplays();
+            gameUIManager.UpdateObjectiveDisplays(ActiveObjectives);
         }
     }
 
-    
-    /// <summary>
-    /// Ends the running session: settles the economy, shows the result panel and freezes time.
-    /// </summary>
-    /// <param name="reason">How the session ended, which decides how much of the earnings survive.</param>
-    /// <param name="destinationScene">
-    /// Scene the result panel returns to. Leave empty to use the garage from <see cref="GameConfig"/>.
-    /// </param>
+    /// <summary>Ends the running session, settles the economy and freezes time.</summary>
+    /// <param name="reason">How the session ended.</param>
+    /// <param name="destinationScene">Optional scene for the result button.</param>
     public void EndLevel(EndReason reason, string destinationScene = null) {
         if (!isGameActive) return;
 
@@ -89,6 +189,7 @@ public class ScoreHandler : MonoBehaviour {
         }
 
         isGameActive = false;
+        FinalizeObjectives();
 
         Driver driver = FindFirstObjectByType<Driver>();
         float hp = driver != null ? driver.currentHealth : 0f;
@@ -97,12 +198,12 @@ public class ScoreHandler : MonoBehaviour {
         Delivery delivery = FindFirstObjectByType<Delivery>();
         int delivered = delivery != null ? delivery.pizzaDelivered : 0;
 
-        SessionResult result = GameManager.Instance.SettleSession(sessionEarnings, hp, maxHp, reason);
+        CustomerManager customerManager = FindFirstObjectByType<CustomerManager>();
+        int ordersOffered = customerManager != null ? customerManager.ordersOffered : 0;
 
-        if (resultPanel != null) {
-            resultPanel.Show(result, delivered, missedCustomers, currentScore, destinationScene);
-        }
+        SessionResult result = GameManager.Instance.SettleSession(sessionEarnings, hp, maxHp, reason, ordersCompleted, ordersOffered);
 
+        if (resultPanel != null) resultPanel.Show(result, delivered, missedCustomers, currentScore, destinationScene);
         Time.timeScale = 0f;
     }
 }

@@ -26,7 +26,9 @@ public static class SaveMigration {
 
     // Index is the version being upgraded FROM. steps[0] turns a v0 file into a v1 file.
     static readonly MigrationStep[] steps = {
-        MigrateV0ToV1
+        MigrateV0ToV1,
+        MigrateV1ToV2,
+        MigrateV2ToV3
     };
 
     /// <summary>The schema version this build writes.</summary>
@@ -76,5 +78,41 @@ public static class SaveMigration {
             else resolved++;
         }
         notes.Add(resolved + " vehicle record(s) keyed by id" + (unresolved > 0 ? ", " + unresolved + " unresolved" : ""));
+    }
+
+    // v1 stored Capacity and Protection per vehicle, resetting when the player switched. v2 makes
+    // them the driver's own permanent stats. The highest level already bought on any one vehicle
+    // carries over, so migrating never undoes a purchase; the old per-vehicle fields are left in
+    // place (unread from here on) rather than cleared, matching how v0's name fields were handled.
+    static void MigrateV1ToV2(GameSaveData data, Func<string, string> resolveVehicleIdFromName, List<string> notes) {
+        if (data.driverStats == null) data.driverStats = new DriverSaveData();
+        if (data.vehicleSaveList == null) return;
+
+        int capacity = data.driverStats.capacityLevel;
+        int protection = data.driverStats.protectionLevel;
+        foreach (var record in data.vehicleSaveList) {
+            if (record == null) continue;
+            capacity = Mathf.Max(capacity, record.capacityLevel);
+            protection = Mathf.Max(protection, record.protectionLevel);
+        }
+        data.driverStats.capacityLevel = capacity;
+        data.driverStats.protectionLevel = protection;
+        notes.Add("Storage/Stabilizer moved to driver-owned stats (Storage lvl " + capacity + ", Stabilizer lvl " + protection + ")");
+    }
+
+    // v2 profiles predate the career layer entirely. A profile that already has upgrade progress
+    // did not earn it through this new system, so it starts at rank 1 with no reputation rather
+    // than something back-calculated from money spent - there is no honest way to infer "how much
+    // career" a v2 save represents, and starting at zero costs nothing but a fresh rent clock.
+    static void MigrateV2ToV3(GameSaveData data, Func<string, string> resolveVehicleIdFromName, List<string> notes) {
+        data.totalReputation = 0;
+        data.highestRankAchieved = 1;
+        data.highestUnlockedRegionTier = 1;
+        data.currentDay = 1;
+        data.shiftsCompletedToday = 0;
+        data.everPaidRent = false;
+        data.lastRentChargeRank = 1;
+        data.reachedEnding = false;
+        notes.Add("career layer initialized at rank 1, day 1");
     }
 }

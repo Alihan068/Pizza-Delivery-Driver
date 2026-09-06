@@ -21,6 +21,10 @@ public class PauseManager : MonoBehaviour {
     [SerializeField] Button settingsButton;
     [SerializeField] SettingsPanel settingsPanel;
 
+    [Header("Cost Transparency")]
+    [Tooltip("Shown alongside the pause menu buttons, replacing the old quick-save button.")]
+    [SerializeField] PauseCostPanel costPanel;
+
     ScoreHandler scoreHandler;
     bool isPaused;
 
@@ -81,6 +85,7 @@ public class PauseManager : MonoBehaviour {
     void ShowPauseMenu() {
         if (pauseMenuRoot != null) pauseMenuRoot.SetActive(true);
         if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
+        if (costPanel != null) costPanel.Refresh();
     }
 
     void OpenSettings() {

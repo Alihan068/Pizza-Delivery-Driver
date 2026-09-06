@@ -31,6 +31,7 @@ public class ExtractionZone : MonoBehaviour {
             if (holdTimer >= holdDuration) {
                 holdTimer = 0f;
                 SetFillAmount(0f);
+                if (scoreHandler != null) scoreHandler.RegisterFastExtraction();
                 if (scoreHandler != null) scoreHandler.EndLevel(EndReason.Extracted);
             }
         }

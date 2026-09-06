@@ -9,6 +9,9 @@ public class CustomerManager : MonoBehaviour {
     public int activeCustomers = 0;
     public int outstandingDemand = 0;
 
+    /// <summary>How many customers have spawned this shift. Feeds the reputation on-time rate.</summary>
+    public int ordersOffered = 0;
+
     public LevelData LevelData => levelData;
 
     GameObject[] allCustomers;
@@ -16,10 +19,12 @@ public class CustomerManager : MonoBehaviour {
 
     IndicatorManager indicatorManager;
     Delivery delivery;
+    ScoreHandler scoreHandler;
 
     void Start() {
         indicatorManager = FindFirstObjectByType<IndicatorManager>();
         delivery = FindFirstObjectByType<Delivery>();
+        scoreHandler = FindFirstObjectByType<ScoreHandler>();
 
         allCustomers = GameObject.FindGameObjectsWithTag("Customer");
         foreach (GameObject customer in allCustomers) {
@@ -96,13 +101,16 @@ public class CustomerManager : MonoBehaviour {
         int capacity = GameManager.Instance != null ? GameManager.Instance.GetCapacity() : 2;
         int orderMax = Mathf.Max(levelData.orderMin + 1, Mathf.CeilToInt(capacity * levelData.orderScale));
         int totalPizzas = Random.Range(levelData.orderMin, orderMax + 1);
-        float waitTime = levelData.waitBase + levelData.waitPerOrderPizza * totalPizzas;
+        float baseWaitTime = levelData.waitBase + levelData.waitPerOrderPizza * totalPizzas;
+        float shiftProgress = scoreHandler != null ? scoreHandler.ShiftProgress01 : 0f;
+        float waitTime = baseWaitTime * levelData.GetCustomerWaitMultiplier(shiftProgress);
 
         Customer customerScript = selectedCustomerObj.GetComponent<Customer>();
         customerScript.Setup(new CustomerOrder(totalPizzas, waitTime), levelData);
 
         selectedCustomerObj.SetActive(true);
         activeCustomers++;
+        ordersOffered++;
         outstandingDemand += totalPizzas;
 
         if (indicatorManager != null) {

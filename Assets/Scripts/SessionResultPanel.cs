@@ -19,7 +19,13 @@ public class SessionResultPanel : MonoBehaviour {
     [SerializeField] string extractedKey = "result.extracted";
     [SerializeField] string wreckedKey = "result.wrecked";
     [SerializeField] string abandonedKey = "result.abandoned";
+    [SerializeField] string interruptedKey = "result.interrupted";
     [SerializeField] string endedKey = "result.ended";
+    [SerializeField] string savedKey = "result.saved";
+    [SerializeField] string reputationKey = "result.reputation";
+    [SerializeField] string rentPaidKey = "result.rent.paid";
+    [SerializeField] string rentShortfallKey = "result.rent.shortfall";
+    [SerializeField] string rentFreeKey = "result.rent.free";
     SessionResult shownResult;
     int shownDelivered, shownMissed, shownScore;
     bool hasResult;
@@ -38,6 +44,12 @@ public class SessionResultPanel : MonoBehaviour {
     [SerializeField] TextMeshProUGUI repairText;
     [SerializeField] TextMeshProUGUI netText;
     [SerializeField] TextMeshProUGUI bankText;
+    [SerializeField] TextMeshProUGUI savedText;
+
+    [Header("Career")]
+    [SerializeField] TextMeshProUGUI reputationText;
+    [Tooltip("Shown only when this shift ended the day, reporting that day's rent settlement.")]
+    [SerializeField] TextMeshProUGUI rentText;
 
     [SerializeField] Button returnToGarageButton;
 
@@ -92,6 +104,27 @@ public class SessionResultPanel : MonoBehaviour {
         LocalizationManager.SetText(netText, netKey, net);
 
         LocalizationManager.SetText(bankText, walletKey, result.bankBefore, result.bankAfter);
+
+        // SettleSession always writes to disk as part of closing the session, so this is a plain
+        // confirmation rather than something conditional on a save result.
+        if (savedText != null) savedText.text = LocalizationManager.Get(savedKey);
+
+        if (reputationText != null) LocalizationManager.SetText(reputationText, reputationKey, result.reputationEarned, result.rankAfter);
+
+        if (rentText != null) {
+            rentText.gameObject.SetActive(result.dayEnded);
+            if (result.dayEnded && result.rent != null) {
+                if (result.rent.wasFree) {
+                    LocalizationManager.SetText(rentText, rentFreeKey, result.dayNumber);
+                }
+                else if (result.rent.shortfall > 0) {
+                    rentText.text = LocalizationManager.Get(rentShortfallKey, result.dayNumber, result.rent.rentDue, result.rent.shortfall, result.rent.reputationPenalty);
+                }
+                else {
+                    LocalizationManager.SetText(rentText, rentPaidKey, result.dayNumber, result.rent.rentDue);
+                }
+            }
+        }
     }
 
     string GetReasonLabel(EndReason reason) {
@@ -100,6 +133,7 @@ public class SessionResultPanel : MonoBehaviour {
             case EndReason.Extracted: return LocalizationManager.Get(extractedKey);
             case EndReason.Wrecked: return LocalizationManager.Get(wreckedKey);
             case EndReason.Abandoned: return LocalizationManager.Get(abandonedKey);
+            case EndReason.Interrupted: return LocalizationManager.Get(interruptedKey);
             default: return LocalizationManager.Get(endedKey);
         }
     }

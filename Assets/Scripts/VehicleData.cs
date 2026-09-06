@@ -35,6 +35,9 @@ public class VehicleData : ScriptableObject {
     /// <summary>Cost to unlock this vehicle. Never read for the first vehicle (allVehicles[0]).</summary>
     public int price;
 
+    /// <summary>Rank the player must reach before this vehicle can be purchased. Zero means available from the start.</summary>
+    public int requiredRank;
+
     [Header("Descriptions")]
     /// <summary>Localization key for the Speed card description.</summary>
     [TextArea] public string speedDesc = "stat.speed.description";
@@ -210,5 +213,11 @@ public class VehicleData : ScriptableObject {
             case VehicleStatId.Protection: return protectionDesc;
             default: return string.Empty;
         }
+    }
+
+    /// <summary>Name shown to the player: the localized proper name when one is set, otherwise <see cref="vehicleName"/>.</summary>
+    /// <returns>The text to display for this vehicle.</returns>
+    public string GetDisplayName() {
+        return string.IsNullOrEmpty(displayNameKey) ? vehicleName : LocalizationManager.Get(displayNameKey);
     }
 }

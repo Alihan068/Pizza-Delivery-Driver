@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 73c02e34609603a4da74c2e26ff15b0f, type: 2}
+  careerData: {fileID: 11400000, guid: e1aed765d7e4beb439c1c0e760bcb2e8, type: 2}
   totalMoney: 100
   repairCostPerHP: 0.7
   repairValueRate: 0.03
@@ -61,6 +62,17 @@ MonoBehaviour:
   currentVehicle: {fileID: 0}
   currentMap: {fileID: 0}
   vehicleSaveList: []
+  driverStats:
+    capacityLevel: 0
+    protectionLevel: 0
+  totalReputation: 0
+  highestRankAchieved: 1
+  highestUnlockedRegionTier: 1
+  currentDay: 1
+  shiftsCompletedToday: 0
+  everPaidRent: 0
+  lastRentChargeRank: 1
+  reachedEnding: 0
 --- !u!114 &4300764210011817774
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour {
 
     [Header("Configuration")]
     [SerializeField] GameConfig config;
+    [SerializeField] CareerData careerData;
 
     [Header("Economy")]
     public int totalMoney = 100;
@@ -35,6 +36,17 @@ public class GameManager : MonoBehaviour {
     public VehicleData currentVehicle;
     public MapData currentMap;
     public List<VehicleSaveData> vehicleSaveList = new List<VehicleSaveData>();
+    public DriverSaveData driverStats = new DriverSaveData();
+
+    [Header("Career Progress")]
+    public int totalReputation;
+    public int highestRankAchieved = 1;
+    public int highestUnlockedRegionTier = 1;
+    public int currentDay = 1;
+    public int shiftsCompletedToday;
+    public bool everPaidRent;
+    public int lastRentChargeRank = 1;
+    public bool reachedEnding;
 
     /// <summary>Every vehicle and map the game knows about, from all content sources.</summary>
     public ContentRegistry Content { get; private set; }
@@ -44,6 +56,19 @@ public class GameManager : MonoBehaviour {
 
     /// <summary>Reads and writes profile slots on disk.</summary>
     public SaveSlotService Saves { get; private set; }
+
+    /// <summary>
+    /// Reputation/rank/rent calculations for the career layer. Null when no <see cref="CareerData"/>
+    /// is assigned, in which case the career layer is inert: reputation never changes and rent is
+    /// never charged, rather than throwing.
+    /// </summary>
+    public CareerManager Career { get; private set; }
+
+    /// <summary>Authored career tuning used by the active profile.</summary>
+    public CareerData CareerData => careerData;
+
+    /// <summary>Rank the active career has reached, from <see cref="totalReputation"/>.</summary>
+    public int CurrentRank => Career != null ? Career.ComputeRank(totalReputation, out _) : 1;
 
     /// <summary>
     /// True when the loaded profile was written while a session was still running, meaning the game
@@ -66,6 +91,7 @@ public class GameManager : MonoBehaviour {
         BuildContentRegistry();
         Saves = new SaveSlotService(config, ResolveVehicleIdFromName);
         Saves.AdoptLegacySave(LegacySaveFileName, 0);
+        if (careerData != null) Career = new CareerManager(careerData);
 
         LoadCareer(PlayerPrefs.GetInt(LastSlotKey, 0));
     }
@@ -107,6 +133,9 @@ public class GameManager : MonoBehaviour {
         else ApplySaveData(data);
 
         InitializeVehicles();
+
+        // Runs after InitializeVehicles because the repair bill needs the vehicle's stats.
+        SettleInterruptedShiftIfNeeded();
         return status;
     }
 
@@ -126,14 +155,25 @@ public class GameManager : MonoBehaviour {
     void StartFreshCareer() {
         totalMoney = config != null ? config.startingMoney : totalMoney;
         vehicleSaveList = new List<VehicleSaveData>();
+        driverStats = new DriverSaveData();
         currentVehicle = Content.ResolveStartingVehicle(config != null ? config.startingVehicle : null);
         currentMap = Content.ResolveStartingMap(config != null ? config.startingMap : null);
         HasInterruptedShift = false;
+
+        totalReputation = 0;
+        highestRankAchieved = 1;
+        highestUnlockedRegionTier = 1;
+        currentDay = 1;
+        shiftsCompletedToday = 0;
+        everPaidRent = false;
+        lastRentChargeRank = 1;
+        reachedEnding = false;
     }
 
     void ApplySaveData(GameSaveData data) {
         totalMoney = data.totalMoney;
         vehicleSaveList = data.vehicleSaveList ?? new List<VehicleSaveData>();
+        driverStats = data.driverStats ?? new DriverSaveData();
         HasInterruptedShift = data.shiftInProgress;
 
         currentVehicle = Content.GetVehicle(data.currentVehicleId);
@@ -145,6 +185,15 @@ public class GameManager : MonoBehaviour {
 
         currentMap = Content.GetMap(data.currentMapId);
         if (currentMap == null) currentMap = Content.ResolveStartingMap(config != null ? config.startingMap : null);
+
+        totalReputation = data.totalReputation;
+        highestRankAchieved = Mathf.Max(1, data.highestRankAchieved);
+        highestUnlockedRegionTier = Mathf.Max(1, data.highestUnlockedRegionTier);
+        currentDay = Mathf.Max(1, data.currentDay);
+        shiftsCompletedToday = data.shiftsCompletedToday;
+        everPaidRent = data.everPaidRent;
+        lastRentChargeRank = Mathf.Max(1, data.lastRentChargeRank);
+        reachedEnding = data.reachedEnding;
     }
 
     GameSaveData BuildSaveData() {
@@ -154,14 +203,28 @@ public class GameManager : MonoBehaviour {
             currentVehicleId = currentVehicle != null ? currentVehicle.vehicleId : string.Empty,
             currentMapId = currentMap != null ? currentMap.mapId : string.Empty,
             vehicleSaveList = vehicleSaveList,
-            shiftInProgress = HasInterruptedShift
+            driverStats = driverStats,
+            shiftInProgress = HasInterruptedShift,
+            totalReputation = totalReputation,
+            highestRankAchieved = highestRankAchieved,
+            highestUnlockedRegionTier = highestUnlockedRegionTier,
+            currentDay = currentDay,
+            shiftsCompletedToday = shiftsCompletedToday,
+            everPaidRent = everPaidRent,
+            lastRentChargeRank = lastRentChargeRank,
+            reachedEnding = reachedEnding
         };
     }
+
+    /// <summary>Raised after every write attempt to the active slot, successful or not.</summary>
+    public static event System.Action<bool> GameSaved;
 
     /// <summary>Writes the current career to its slot.</summary>
     /// <returns>True when the write completed.</returns>
     public bool SaveGame() {
-        return Saves.Save(ActiveSlot, BuildSaveData());
+        bool success = Saves.Save(ActiveSlot, BuildSaveData());
+        GameSaved?.Invoke(success);
+        return success;
     }
 
     /// <summary>
@@ -171,6 +234,33 @@ public class GameManager : MonoBehaviour {
     public void MarkShiftStarted() {
         HasInterruptedShift = true;
         SaveGame();
+    }
+
+    /// <summary>
+    /// Settlement of a shift that was never finished, produced on load when the profile still had
+    /// a session marked as running. Null once it has been shown to the player.
+    /// </summary>
+    /// <remarks>
+    /// Nullable because <see cref="SessionResult"/> is a value type, and "no interrupted shift" has
+    /// to be distinguishable from "an interrupted shift that settled to all zeroes".
+    /// </remarks>
+    public SessionResult? PendingInterruptedResult { get; private set; }
+
+    /// <summary>Clears the pending interrupted settlement after the UI has shown it.</summary>
+    public void ClearPendingInterruptedResult() {
+        PendingInterruptedResult = null;
+    }
+
+    // Settles immediately on load rather than waiting for the UI, so the charge lands even if the
+    // player never sees the notice. Otherwise force-quitting again before the notice appeared would
+    // keep dodging the bill.
+    void SettleInterruptedShiftIfNeeded() {
+        if (!HasInterruptedShift) return;
+        if (currentVehicle == null) {
+            HasInterruptedShift = false;
+            return;
+        }
+        PendingInterruptedResult = SettleSession(0, 0f, GetHealth(), EndReason.Interrupted, 0, 0);
     }
 
     void InitializeVehicles() {
@@ -215,14 +305,24 @@ public class GameManager : MonoBehaviour {
         return baseVal + (step * currentLevel);
     }
 
+    /// <summary>
+    /// Purchased level of a stat, read from wherever it lives: the driver's own record for
+    /// Storage/Stabilizer, or the active vehicle's record for everything else.
+    /// </summary>
+    /// <param name="stat">Which stat to read.</param>
+    /// <returns>The number of levels bought, zero when none or when no vehicle is selected.</returns>
+    public int GetLevel(VehicleStatId stat) {
+        if (VehicleStatOwnership.IsDriverBound(stat)) return driverStats.GetLevel(stat);
+        var save = GetCurrentVehicleSave();
+        return save != null ? save.GetLevel(stat) : 0;
+    }
+
     /// <summary>Current value of a stat on the active vehicle, including purchased levels.</summary>
     /// <param name="stat">Which stat to read.</param>
     /// <returns>The effective value, unclamped except where the stat is a fraction.</returns>
     public float GetStatValue(VehicleStatId stat) {
         if (currentVehicle == null) return 0f;
-        var save = GetCurrentVehicleSave();
-        int level = save != null ? save.GetLevel(stat) : 0;
-        return GetStatValueAtLevel(stat, level);
+        return GetStatValueAtLevel(stat, GetLevel(stat));
     }
 
     /// <summary>Value a stat would have at a given level, used to preview an upgrade.</summary>
@@ -274,31 +374,44 @@ public class GameManager : MonoBehaviour {
     /// <summary>
     /// Buys one level of a stat when the player can afford it and the ceiling has not been reached.
     /// </summary>
+    /// <remarks>
+    /// A driver-bound stat (Storage/Stabilizer) is capped by the <i>active</i> vehicle's authored
+    /// max level, same as any other stat — since the level itself is shared, switching to a vehicle
+    /// with a higher cap for that stat is how the player pushes it further.
+    /// </remarks>
     /// <param name="stat">Which stat to upgrade.</param>
     /// <returns>True when a level was bought and money was spent.</returns>
     public bool TryUpgradeStat(VehicleStatId stat) {
-        var save = GetCurrentVehicleSave();
-        if (save == null || currentVehicle == null) return false;
+        if (currentVehicle == null) return false;
+        bool driverBound = VehicleStatOwnership.IsDriverBound(stat);
+        var vehicleSave = GetCurrentVehicleSave();
+        if (!driverBound && vehicleSave == null) return false;
 
-        int currentLevel = save.GetLevel(stat);
+        int currentLevel = GetLevel(stat);
         if (currentLevel >= currentVehicle.GetMaxLevel(stat)) return false;
 
         int cost = GetUpgradeCost(stat, currentLevel);
         if (totalMoney < cost) return false;
 
         totalMoney -= cost;
-        save.moneySpent += cost;
-        save.AddLevel(stat);
+        if (driverBound) {
+            driverStats.AddLevel(stat);
+        }
+        else {
+            vehicleSave.moneySpent += cost;
+            vehicleSave.AddLevel(stat);
+        }
         SaveGame();
         return true;
     }
 
-    /// <summary>Buys the active vehicle when it is still locked and affordable.</summary>
+    /// <summary>Buys the active vehicle when it is still locked, rank-eligible, and affordable.</summary>
     /// <returns>True when the vehicle was unlocked and money was spent.</returns>
     public bool TryPurchaseVehicle() {
         var save = GetCurrentVehicleSave();
         if (save == null || currentVehicle == null) return false;
         if (save.isUnlocked) return false;
+        if (CurrentRank < currentVehicle.requiredRank) return false;
         if (totalMoney < currentVehicle.price) return false;
 
         totalMoney -= currentVehicle.price;
@@ -361,25 +474,32 @@ public class GameManager : MonoBehaviour {
     }
 
     /// <summary>
-    /// Closes a session: banks the kept earnings, charges repairs, and writes the result to disk.
+    /// Closes a session: banks the kept earnings, charges repairs, earns reputation, settles the
+    /// day's rent if this was its last shift, and writes the result to disk.
     /// </summary>
     /// <param name="sessionEarnings">Money earned during the session, not yet banked.</param>
     /// <param name="currentHealth">Health remaining at the end.</param>
     /// <param name="maxHealth">The vehicle's maximum health.</param>
     /// <param name="reason">How the session ended, which decides how much of the earnings survive.</param>
+    /// <param name="ordersCompleted">Orders fully delivered this shift, for the reputation quality signal.</param>
+    /// <param name="ordersOffered">Customers that appeared this shift, for the reputation quality signal.</param>
     /// <returns>A breakdown of the settlement for the result screen.</returns>
-    public SessionResult SettleSession(int sessionEarnings, float currentHealth, float maxHealth, EndReason reason) {
+    public SessionResult SettleSession(int sessionEarnings, float currentHealth, float maxHealth, EndReason reason, int ordersCompleted, int ordersOffered) {
         int bankBefore = totalMoney;
 
         int kept;
         switch (reason) {
             case EndReason.Wrecked: kept = Mathf.FloorToInt(sessionEarnings * deathEarningsKeep); break;
             case EndReason.Abandoned: kept = 0; break;
+            case EndReason.Interrupted: kept = 0; break;
             default: kept = sessionEarnings; break;
         }
         kept = Mathf.Max(0, kept);
 
-        bool died = (reason == EndReason.Wrecked);
+        // An interrupted shift is billed like a wreck: the vehicle was left in the street, so the
+        // full health bar is charged. The bank safety clamp below still caps the damage, which is
+        // what stops a genuine crash from ever being ruinous.
+        bool died = (reason == EndReason.Wrecked || reason == EndReason.Interrupted);
         int repairRaw = CalculateRepairCost(currentHealth, maxHealth, died);
 
         int maxCharge = kept + Mathf.FloorToInt(bankBefore * repairBankSafetyRate);
@@ -387,19 +507,62 @@ public class GameManager : MonoBehaviour {
 
         totalMoney = Mathf.Max(0, bankBefore + kept - repair);
 
-        // The shift is over however it ended, so the interrupted-shift flag is cleared here rather
-        // than on any one ending path.
-        HasInterruptedShift = false;
-        SaveGame();
-
-        return new SessionResult {
+        var result = new SessionResult {
             reason = reason,
             grossEarnings = sessionEarnings,
             keptEarnings = kept,
             repairCost = repair,
             repairBeforeClamp = repairRaw,
             bankBefore = bankBefore,
-            bankAfter = totalMoney
+            bankAfter = totalMoney,
+            rankAfter = CurrentRank
         };
+
+        // Rent is charged inside this same call, atomically with the day's last shift, rather than
+        // as a separate check the garage could run later - otherwise a player could spend the bank
+        // to zero the instant a day ends and dodge rent on demand every single day, no matter how
+        // gentle the shortfall penalty is (BF-021-adjacent finding from the Economy Designer pass).
+        if (Career != null) {
+            int regionTier = currentMap != null ? currentMap.regionTier : 1;
+            float onTimeRate = ordersOffered > 0 ? (float)ordersCompleted / ordersOffered : (ordersCompleted > 0 ? 1f : 0f);
+            float healthRetainedRatio = maxHealth > 0f ? Mathf.Clamp01(currentHealth / maxHealth) : 0f;
+            int reputationEarned = Career.ComputeShiftReputation(regionTier, onTimeRate, healthRetainedRatio, reason);
+
+            int cap = Career.GetRegionCap(highestUnlockedRegionTier);
+            totalReputation = Mathf.Clamp(totalReputation + reputationEarned, 0, cap);
+
+            int rankAfter = Career.ComputeRank(totalReputation, out bool reachedEndingNow);
+            if (rankAfter > highestRankAchieved) highestRankAchieved = rankAfter;
+            int unlockedTier = Career.ComputeUnlockedRegionTier(rankAfter);
+            if (unlockedTier > highestUnlockedRegionTier) highestUnlockedRegionTier = unlockedTier;
+            if (reachedEndingNow) reachedEnding = true;
+
+            result.reputationEarned = reputationEarned;
+            result.rankAfter = rankAfter;
+
+            shiftsCompletedToday++;
+            if (shiftsCompletedToday >= careerData.shiftsPerDay) {
+                var rent = Career.ComputeRentSettlement(rankAfter, lastRentChargeRank, everPaidRent, totalMoney);
+                totalMoney = rent.bankAfter;
+                if (rent.reputationPenalty > 0) totalReputation = Mathf.Max(0, totalReputation - rent.reputationPenalty);
+                everPaidRent = true;
+                lastRentChargeRank = rankAfter;
+
+                result.dayEnded = true;
+                result.dayNumber = currentDay;
+                result.rent = rent;
+                result.bankAfter = totalMoney;
+
+                currentDay++;
+                shiftsCompletedToday = 0;
+            }
+        }
+
+        // The shift is over however it ended, so the interrupted-shift flag is cleared here rather
+        // than on any one ending path.
+        HasInterruptedShift = false;
+        SaveGame();
+
+        return result;
     }
 }

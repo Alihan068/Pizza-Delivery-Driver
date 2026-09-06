@@ -24,18 +24,30 @@ public class ObjectSpawner : MonoBehaviour {
 
     [SerializeField] List<ObstacleGroup> obstacleGroups;
 
+    ScoreHandler scoreHandler;
+    CustomerManager customerManager;
+    LevelData levelData;
+
     void Start() {
+        scoreHandler = FindFirstObjectByType<ScoreHandler>();
+        customerManager = FindFirstObjectByType<CustomerManager>();
+        levelData = customerManager != null ? customerManager.LevelData : null;
         foreach (ObstacleGroup group in obstacleGroups) {
             StartCoroutine(SpawnObstacleRoutine(group));
         }
     }
 
     IEnumerator SpawnObstacleRoutine(ObstacleGroup group) {
-        WaitForSeconds wait = new WaitForSeconds(group.spawnInterval);
-        while (true) {
-            yield return wait;
+        while (scoreHandler == null || scoreHandler.IsGameActive) {
+            yield return new WaitForSeconds(GetSpawnInterval(group));
             SpawnObstacle(group);
         }
+    }
+
+    float GetSpawnInterval(ObstacleGroup group) {
+        float progress = scoreHandler != null ? scoreHandler.ShiftProgress01 : 0f;
+        float multiplier = levelData != null ? levelData.GetObstacleSpawnIntervalMultiplier(progress) : 1f;
+        return Mathf.Max(Mathf.Epsilon, group.spawnInterval * multiplier);
     }
 
     void SpawnObstacle(ObstacleGroup group) {

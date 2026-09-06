@@ -27,3 +27,7 @@ MonoBehaviour:
   timedOutDespawnDelay: 2
   pizzaCost: 1
   maxActiveCustomers: 4
+  difficultyRampStart: 0.25
+  difficultyRampEnd: 1
+  obstacleSpawnIntervalMultiplierAtEnd: 0.7
+  customerWaitMultiplierAtEnd: 0.8

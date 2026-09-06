@@ -112,6 +112,7 @@ public class Driver : MonoBehaviour {
         if (isDisabled) return;
         if (Time.time - lastDamageTime < invulnerabilityWindow) return;
         lastDamageTime = Time.time;
+        if (scoreHandler != null) scoreHandler.RegisterCollisionDamageEvent();
 
         float finalDamage = obstacleDamage * (1f - armorPercent);
         currentHealth -= finalDamage;
@@ -152,6 +153,7 @@ public class Driver : MonoBehaviour {
         if (other.gameObject.CompareTag("Border")) return;
         if (Time.time - lastDamageTime < invulnerabilityWindow) return;
         lastDamageTime = Time.time;
+        if (scoreHandler != null) scoreHandler.RegisterCollisionDamageEvent();
 
         ApplyCollisionDamage();
     }

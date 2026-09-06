@@ -39,4 +39,22 @@ public class MapData : ScriptableObject {
     [Header("Progression")]
     [Tooltip("Rank the player must reach before this map can be selected. Zero means available from the start.")]
     public int requiredRank;
+
+    [Tooltip("One-based region tier this map belongs to. Sets both its base reputation rate and which region reputation cap applies.")]
+    public int regionTier = 1;
+
+    [Tooltip("One-time currency fee to unlock this region's maps. Zero means free once the rank gate is met.")]
+    public int unlockPrice;
+
+    /// <summary>Name shown to the player, resolved from <see cref="displayNameKey"/>.</summary>
+    /// <returns>The localized name, or the asset name when no key is set.</returns>
+    public string GetDisplayName() {
+        return string.IsNullOrEmpty(displayNameKey) ? name : LocalizationManager.Get(displayNameKey);
+    }
+
+    /// <summary>Description shown to the player, resolved from <see cref="descriptionKey"/>.</summary>
+    /// <returns>The localized description, or an empty string when no key is set.</returns>
+    public string GetDescription() {
+        return string.IsNullOrEmpty(descriptionKey) ? string.Empty : LocalizationManager.Get(descriptionKey);
+    }
 }

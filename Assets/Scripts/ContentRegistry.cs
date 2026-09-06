@@ -23,9 +23,11 @@ public class ContentRegistry {
 
     readonly List<VehicleData> vehicles = new List<VehicleData>();
     readonly Dictionary<string, VehicleData> vehiclesById = new Dictionary<string, VehicleData>();
+    readonly Dictionary<VehicleData, string> vehicleProviderIds = new Dictionary<VehicleData, string>();
 
     readonly List<MapData> maps = new List<MapData>();
     readonly Dictionary<string, MapData> mapsById = new Dictionary<string, MapData>();
+    readonly Dictionary<MapData, string> mapProviderIds = new Dictionary<MapData, string>();
 
     readonly List<string> conflicts = new List<string>();
 
@@ -55,22 +57,40 @@ public class ContentRegistry {
     public void Rebuild() {
         vehicles.Clear();
         vehiclesById.Clear();
+        vehicleProviderIds.Clear();
         maps.Clear();
         mapsById.Clear();
+        mapProviderIds.Clear();
         conflicts.Clear();
 
         foreach (var provider in providers) {
             foreach (var vehicle in provider.GetVehicles()) {
                 if (!TryClaimId(vehicle.vehicleId, provider.ProviderId, vehicle.name, "vehicle", vehiclesById.ContainsKey)) continue;
                 vehiclesById.Add(vehicle.vehicleId, vehicle);
+                vehicleProviderIds.Add(vehicle, provider.ProviderId);
                 vehicles.Add(vehicle);
             }
             foreach (var map in provider.GetMaps()) {
                 if (!TryClaimId(map.mapId, provider.ProviderId, map.name, "map", mapsById.ContainsKey)) continue;
                 mapsById.Add(map.mapId, map);
+                mapProviderIds.Add(map, provider.ProviderId);
                 maps.Add(map);
             }
         }
+    }
+
+    /// <summary>Which source supplied a vehicle, for display in a content or mods listing.</summary>
+    /// <param name="vehicle">A vehicle returned by <see cref="Vehicles"/>.</param>
+    /// <returns>The supplying <see cref="IContentProvider.ProviderId"/>, or empty if unknown.</returns>
+    public string GetVehicleProviderId(VehicleData vehicle) {
+        return vehicle != null && vehicleProviderIds.TryGetValue(vehicle, out var id) ? id : string.Empty;
+    }
+
+    /// <summary>Which source supplied a map, for display in a content or mods listing.</summary>
+    /// <param name="map">A map returned by <see cref="Maps"/>.</param>
+    /// <returns>The supplying <see cref="IContentProvider.ProviderId"/>, or empty if unknown.</returns>
+    public string GetMapProviderId(MapData map) {
+        return map != null && mapProviderIds.TryGetValue(map, out var id) ? id : string.Empty;
     }
 
     bool TryClaimId(string id, string providerId, string assetName, string kind, System.Func<string, bool> alreadyTaken) {

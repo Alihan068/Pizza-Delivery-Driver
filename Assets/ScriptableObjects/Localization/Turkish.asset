@@ -16,8 +16,6 @@ MonoBehaviour:
   nativeName: "T\xFCrk\xE7e"
   systemLanguages: 25000000
   entries:
-  - key: menu.start
-    text: "Ba\u015Fla"
   - key: menu.quit
     text: "\xC7\u0131k\u0131\u015F"
   - key: menu.title
@@ -147,6 +145,8 @@ MonoBehaviour:
       --'
   - key: hud.timePlaceholder
     text: "S\xFCre:\n--"
+  - key: hud.repairCost
+    text: "Tamir: ${0}"
   - key: vehicle.scooter.name
     text: Scooter
   - key: vehicle.greensedan.name
@@ -155,3 +155,116 @@ MonoBehaviour:
     text: "\u015Eehir Merkezi"
   - key: map.downtown.desc
     text: "\u015Eehir sokaklar\u0131nda pizza teslim et."
+  - key: result.interrupted
+    text: "VARD\u0130YA YARIDA KALDI - arac\u0131n \xE7ekildi"
+  - key: menu.newGame
+    text: Yeni Oyun
+  - key: menu.loadGame
+    text: "Oyunu Y\xFCkle"
+  - key: panel.newGame.title
+    text: Yeni Oyun
+  - key: panel.loadGame.title
+    text: "Oyunu Y\xFCkle"
+  - key: slot.empty
+    text: "Bo\u015F"
+  - key: slot.emptyHint
+    text: "{0} ile {1}$ olarak ba\u015Fla"
+  - key: slot.occupied
+    text: 'Bakiye: {0}$'
+  - key: slot.lastPlayed
+    text: 'Son oynanma: {0}'
+  - key: slot.damaged
+    text: "Hasarl\u0131"
+  - key: slot.damagedHint
+    text: "Bu kay\u0131t okunamad\u0131. Temizleyip yeniden ba\u015Flamak i\xE7in
+      se\xE7."
+  - key: slot.missingContent
+    text: "Eksik i\xE7erik"
+  - key: slot.action.create
+    text: "Ba\u015Fla"
+  - key: slot.action.load
+    text: Devam Et
+  - key: slot.action.overwrite
+    text: "\xDCzerine Yazmak \u0130\xE7in Bas\u0131l\u0131 Tut"
+  - key: slot.action.reset
+    text: "Temizle ve Yeniden Ba\u015Fla"
+  - key: slot.action.deleteHold
+    text: "Silmek \u0130\xE7in Bas\u0131l\u0131 Tut"
+  - key: save.chip.idle
+    text: Kaydedildi
+  - key: save.chip.saved
+    text: "Kaydedildi \u2713"
+  - key: result.saved
+    text: "\u0130lerleme kaydedildi"
+  - key: slot.action.copyHere
+    text: Buraya Kopyala
+  - key: panel.copyTarget.title
+    text: Kariyeri Kopyala
+  - key: garage.copyToSlot
+    text: Slota Kopyala
+  - key: pause.cost.unbanked
+    text: "Bankas\u0131z: {0}$"
+  - key: pause.cost.bank
+    text: 'Banka: {0}$'
+  - key: pause.cost.health
+    text: 'Can: {0}/{1}'
+  - key: pause.cost.exit
+    text: "\u015Eimdi \xE7\u0131k\u0131\u015F: -{0}$ tamir, -{1}$ bankas\u0131z"
+  - key: menu.mods
+    text: Mod'lar
+  - key: mods.title
+    text: "Y\xFCkl\xFC \u0130\xE7erik"
+  - key: mods.vehiclesHeader
+    text: "Ara\xE7lar"
+  - key: mods.mapsHeader
+    text: Haritalar
+  - key: mods.entry
+    text: '  {0} ({1})'
+  - key: mods.conflictsHeader
+    text: "\xC7at\u0131\u015Fmalar"
+  - key: mods.noConflicts
+    text: '  Yok'
+  - key: stat.persistentSuffix
+    text: " (Kal\u0131c\u0131)"
+  - key: result.reputation
+    text: "\u0130tibar: +{0} (R\xFCtbe {1})"
+  - key: result.rent.paid
+    text: "{0}. g\xFCn kiras\u0131 \xF6dendi: -{1}$"
+  - key: result.rent.shortfall
+    text: "{0}. g\xFCn kiras\u0131: -{1}$ ({2}$ \xF6denemedi, -{3} itibar)"
+  - key: result.rent.free
+    text: "{0}. g\xFCn: ilk kira ba\u011F\u0131\u015Fland\u0131"
+  - key: garage.rank
+    text: "R\xFCtbe {0} ({1} itibar)"
+  - key: objective.quota.name
+    text: "Teslimat Kotas\u0131"
+  - key: objective.quota.description
+    text: "Pizzalar\u0131 zaman\u0131nda teslim et"
+  - key: objective.perfectService.name
+    text: Kusursuz Hizmet
+  - key: objective.perfectService.description
+    text: "Hi\xE7bir m\xFC\u015Fteri zaman a\u015F\u0131m\u0131na u\u011Framas\u0131n"
+  - key: objective.cleanRun.name
+    text: Temiz Vardiya
+  - key: objective.cleanRun.description
+    text: "\xC7arp\u0131\u015Fma hasar\u0131 alma"
+  - key: objective.cargoGuard.name
+    text: "Kargo Korumas\u0131"
+  - key: objective.cargoGuard.description
+    text: "\xC7arp\u0131\u015Fmalarda pizza kaybetme"
+  - key: objective.bigOrder.name
+    text: "B\xFCy\xFCk Sipari\u015F"
+  - key: objective.bigOrder.description
+    text: "B\xFCy\xFCk sipari\u015Fleri tamamla"
+  - key: objective.fastExtraction.name
+    text: "H\u0131zl\u0131 \xC7\u0131k\u0131\u015F"
+  - key: objective.fastExtraction.description
+    text: "Yeterli s\xFCre ve teslimatla \xE7\u0131k\u0131\u015F yap"
+  - key: hud.objective.progress
+    text: "{0}: {1} [{2}/{3}] \xD6d\xFCl: +${4}"
+  - key: hud.objective.zero
+    text: '{0}: {1}'
+  - key: hud.objective.complete
+    text: "{0}: Tamamland\u0131! \xD6d\xFCl: +${1}"
+  - key: hud.objective.failed
+    text: "{0}: Ba\u015Far\u0131s\u0131z"

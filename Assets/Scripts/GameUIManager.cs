@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,8 @@ public class GameUIManager : MonoBehaviour {
     void RefreshStatLabels() {
         LocalizationManager.SetText(steeringText, steeringKey, shownSteering / 10);
         LocalizationManager.SetText(speedText, speedKey, shownSpeed);
+        if (repairCostText != null) LocalizationManager.SetText(repairCostText, repairCostKey, shownRepairCost);
+        RefreshObjectiveDisplays();
     }
     [Header("UI Elements")]
     [SerializeField] TextMeshProUGUI scoreText;
@@ -23,8 +26,18 @@ public class GameUIManager : MonoBehaviour {
     [SerializeField] TextMeshProUGUI timerText;
 
     [SerializeField] Slider healthbar;
+    [SerializeField] TextMeshProUGUI repairCostText;
+    [SerializeField] string repairCostKey = "hud.repairCost";
     [SerializeField] TextMeshProUGUI speedText;
     [SerializeField] TextMeshProUGUI steeringText;
+
+    [Header("Shift Objectives")]
+    [SerializeField] TextMeshProUGUI[] objectiveTexts;
+    [SerializeField] string objectiveProgressKey = "hud.objective.progress";
+    [SerializeField] string objectiveZeroKey = "hud.objective.zero";
+    [SerializeField] string objectiveCompleteKey = "hud.objective.complete";
+    [SerializeField] string objectiveFailedKey = "hud.objective.failed";
+    IList<ShiftObjectiveState> shownObjectives;
 
     [Header("Damage Feedback")]
     [SerializeField] Color healthBarFlashColor = Color.red;
@@ -38,6 +51,7 @@ public class GameUIManager : MonoBehaviour {
     AudioSource audioSource;
 
     ScoreHandler scoreHandler;
+    int shownRepairCost;
 
     private void Start() {
         audioSource = GetComponent<AudioSource>();
@@ -72,6 +86,39 @@ public class GameUIManager : MonoBehaviour {
         if (carryText != null) carryText.text = carried + "/" + capacity;
     }
 
+    /// <summary>Updates the visible objective cards for the active shift.</summary>
+    /// <param name="objectives">Current objective states.</param>
+    public void UpdateObjectiveDisplays(IList<ShiftObjectiveState> objectives) {
+        shownObjectives = objectives;
+        RefreshObjectiveDisplays();
+    }
+
+    void RefreshObjectiveDisplays() {
+        if (objectiveTexts == null) return;
+        for (int i = 0; i < objectiveTexts.Length; i++) {
+            var text = objectiveTexts[i];
+            if (text == null) continue;
+            bool visible = shownObjectives != null && i < shownObjectives.Count && shownObjectives[i] != null;
+            text.gameObject.SetActive(visible);
+            if (!visible) continue;
+
+            var objective = shownObjectives[i];
+            string title = LocalizationManager.Get(objective.displayNameKey);
+            if (objective.IsComplete) {
+                text.text = LocalizationManager.Get(objectiveCompleteKey, title, objective.reward);
+            }
+            else if (objective.IsFailed) {
+                text.text = LocalizationManager.Get(objectiveFailedKey, title);
+            }
+            else if (objective.target == 0) {
+                text.text = LocalizationManager.Get(objectiveZeroKey, title, LocalizationManager.Get(objective.descriptionKey));
+            }
+            else {
+                text.text = LocalizationManager.Get(objectiveProgressKey, title, LocalizationManager.Get(objective.descriptionKey), objective.progress, objective.target, objective.reward);
+            }
+        }
+    }
+
     int lastDisplayedSeconds = -1;
 
     // Display timer in MM:SS format
@@ -95,6 +142,9 @@ public class GameUIManager : MonoBehaviour {
     public void UpdateStatPanel(float hp, float maxHp, float speed, float steering) {
         healthbar.maxValue = maxHp;
         healthbar.value = hp;
+        shownRepairCost = GameManager.Instance != null && maxHp > 0f
+            ? GameManager.Instance.CalculateRepairCost(hp, maxHp, false)
+            : 0;
         // Divide steering by 10 for display
         shownSpeed = speed;
         shownSteering = steering;

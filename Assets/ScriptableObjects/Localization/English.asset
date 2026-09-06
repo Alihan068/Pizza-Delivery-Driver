@@ -16,8 +16,6 @@ MonoBehaviour:
   nativeName: English
   systemLanguages: 0a000000
   entries:
-  - key: menu.start
-    text: Start
   - key: menu.quit
     text: Quit
   - key: menu.title
@@ -152,6 +150,8 @@ MonoBehaviour:
     text: 'Time:
 
       --'
+  - key: hud.repairCost
+    text: 'Repair: ${0}'
   - key: vehicle.scooter.name
     text: Scooter
   - key: vehicle.greensedan.name
@@ -160,3 +160,115 @@ MonoBehaviour:
     text: Downtown
   - key: map.downtown.desc
     text: Deliver pizzas through the city streets.
+  - key: result.interrupted
+    text: SHIFT INTERRUPTED - your vehicle was towed
+  - key: menu.newGame
+    text: New Game
+  - key: menu.loadGame
+    text: Load Game
+  - key: panel.newGame.title
+    text: New Game
+  - key: panel.loadGame.title
+    text: Load Game
+  - key: slot.empty
+    text: Empty
+  - key: slot.emptyHint
+    text: Start with {0} and ${1}
+  - key: slot.occupied
+    text: 'Bank: ${0}'
+  - key: slot.lastPlayed
+    text: 'Last played: {0}'
+  - key: slot.damaged
+    text: Damaged
+  - key: slot.damagedHint
+    text: This save could not be read. Select to clear it and start over.
+  - key: slot.missingContent
+    text: Missing content
+  - key: slot.action.create
+    text: Start
+  - key: slot.action.load
+    text: Continue
+  - key: slot.action.overwrite
+    text: Hold to Overwrite
+  - key: slot.action.reset
+    text: Clear and Start Over
+  - key: slot.action.deleteHold
+    text: Hold to Delete
+  - key: save.chip.idle
+    text: Saved
+  - key: save.chip.saved
+    text: "Saved \u2713"
+  - key: result.saved
+    text: Progress saved
+  - key: slot.action.copyHere
+    text: Copy Here
+  - key: panel.copyTarget.title
+    text: Copy Career To
+  - key: garage.copyToSlot
+    text: Copy to Slot
+  - key: pause.cost.unbanked
+    text: 'Unbanked: ${0}'
+  - key: pause.cost.bank
+    text: 'Bank: ${0}'
+  - key: pause.cost.health
+    text: 'Health: {0}/{1}'
+  - key: pause.cost.exit
+    text: 'Leaving now: -${0} repair, -${1} unbanked'
+  - key: menu.mods
+    text: Mods
+  - key: mods.title
+    text: Installed Content
+  - key: mods.vehiclesHeader
+    text: Vehicles
+  - key: mods.mapsHeader
+    text: Maps
+  - key: mods.entry
+    text: '  {0} ({1})'
+  - key: mods.conflictsHeader
+    text: Conflicts
+  - key: mods.noConflicts
+    text: '  None'
+  - key: stat.persistentSuffix
+    text: ' (Persistent)'
+  - key: result.reputation
+    text: 'Reputation: +{0} (Rank {1})'
+  - key: result.rent.paid
+    text: 'Day {0} rent paid: -${1}'
+  - key: result.rent.shortfall
+    text: 'Day {0} rent: -${1} (${2} unpaid, -{3} reputation)'
+  - key: result.rent.free
+    text: 'Day {0}: first rent waived'
+  - key: garage.rank
+    text: Rank {0} ({1} rep)
+  - key: objective.quota.name
+    text: Delivery Quota
+  - key: objective.quota.description
+    text: Deliver pizzas on time
+  - key: objective.perfectService.name
+    text: Perfect Service
+  - key: objective.perfectService.description
+    text: No customer timeouts
+  - key: objective.cleanRun.name
+    text: Clean Run
+  - key: objective.cleanRun.description
+    text: Take no collision damage
+  - key: objective.cargoGuard.name
+    text: Cargo Guard
+  - key: objective.cargoGuard.description
+    text: Lose no pizzas to impacts
+  - key: objective.bigOrder.name
+    text: Big Order
+  - key: objective.bigOrder.description
+    text: Complete large orders
+  - key: objective.fastExtraction.name
+    text: Fast Extraction
+  - key: objective.fastExtraction.description
+    text: Extract with time and deliveries to spare
+  - key: hud.objective.progress
+    text: '{0}: {1} [{2}/{3}] Reward: +${4}'
+  - key: hud.objective.zero
+    text: '{0}: {1}'
+  - key: hud.objective.complete
+    text: '{0}: Complete! Reward: +${1}'
+  - key: hud.objective.failed
+    text: '{0}: Failed'

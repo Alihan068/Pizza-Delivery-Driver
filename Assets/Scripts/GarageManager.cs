@@ -11,6 +11,8 @@ public class GarageManager : MonoBehaviour {
     [SerializeField] string percentKey = "stat.percentValue";
     [SerializeField] string numberKey = "stat.numberValue";
     [SerializeField] string comparisonKey = "stat.comparison";
+    [SerializeField] string persistentSuffixKey = "stat.persistentSuffix";
+    [SerializeField] string rankKey = "garage.rank";
 
     void OnEnable() { LocalizationManager.LanguageChanged += UpdateUI; }
     void OnDisable() { LocalizationManager.LanguageChanged -= UpdateUI; }
@@ -41,6 +43,9 @@ public class GarageManager : MonoBehaviour {
     public Image chosenVehicleImage;
     public Button startButton;
 
+    [Tooltip("Shows the active career's rank and reputation. Left blank when no CareerData is configured.")]
+    public TextMeshProUGUI rankText;
+
     [Header("Stat Cards")]
     [SerializeField] StatPanelBinding[] statPanels;
 
@@ -52,6 +57,11 @@ public class GarageManager : MonoBehaviour {
 
     [Header("Navigation")]
     public Button mainMenuButton;
+
+    [Header("Slot Management")]
+    [Tooltip("Shared slot picker, reused here in copy-target mode to pick a destination for the active career.")]
+    public SaveSlotSelectPanel copySlotPanel;
+    public Button copyToSlotButton;
 
     void Start() {
         Time.timeScale = 1f;
@@ -68,6 +78,7 @@ public class GarageManager : MonoBehaviour {
 
         if (purchaseButton != null) purchaseButton.onClick.AddListener(OnClickPurchaseVehicle);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
+        if (copyToSlotButton != null) copyToSlotButton.onClick.AddListener(OnClickCopyToSlot);
 
         UpdateUI();
     }
@@ -77,12 +88,17 @@ public class GarageManager : MonoBehaviour {
 
         LocalizationManager.SetText(totalMoneyText, moneyKey, GameManager.Instance.totalMoney);
 
+        if (rankText != null) {
+            bool hasCareerLayer = GameManager.Instance.Career != null;
+            rankText.gameObject.SetActive(hasCareerLayer);
+            if (hasCareerLayer) LocalizationManager.SetText(rankText, rankKey, GameManager.Instance.CurrentRank, GameManager.Instance.totalReputation);
+        }
+
         var currentVehicle = GameManager.Instance.currentVehicle;
         var saveData = GameManager.Instance.GetCurrentVehicleSave();
         if (saveData == null || currentVehicle == null) return;
 
-        currentVehicleNameText.text = string.IsNullOrEmpty(currentVehicle.displayNameKey)
-            ? currentVehicle.vehicleName : LocalizationManager.Get(currentVehicle.displayNameKey);
+        currentVehicleNameText.text = currentVehicle.GetDisplayName();
 
         Sprite displaySprite = null;
         if (currentVehicle.vehicleIcon != null) {
@@ -116,12 +132,12 @@ public class GarageManager : MonoBehaviour {
         if (statPanels == null) return;
         foreach (var binding in statPanels) {
             if (binding == null || binding.panel == null) continue;
-            SetupStatPanel(binding, currentVehicle, saveData);
+            SetupStatPanel(binding, currentVehicle);
         }
     }
 
-    void SetupStatPanel(StatPanelBinding binding, VehicleData vehicle, VehicleSaveData save) {
-        int level = save.GetLevel(binding.stat);
+    void SetupStatPanel(StatPanelBinding binding, VehicleData vehicle) {
+        int level = GameManager.Instance.GetLevel(binding.stat);
         int maxLevel = vehicle.GetMaxLevel(binding.stat);
         bool isMaxed = level >= maxLevel;
 
@@ -132,7 +148,11 @@ public class GarageManager : MonoBehaviour {
         }
 
         int cost = GameManager.Instance.GetUpgradeCost(binding.stat, level);
-        binding.panel.Setup(LocalizationManager.Get(binding.displayName), LocalizationManager.Get(vehicle.GetDescription(binding.stat)), level, maxLevel, cost, isMaxed, valueDisplay);
+        string title = LocalizationManager.Get(binding.displayName);
+        // Marks the two stats that survive a vehicle switch, so the garage does not silently imply
+        // every card resets the way the other four do.
+        if (VehicleStatOwnership.IsDriverBound(binding.stat)) title += LocalizationManager.Get(persistentSuffixKey);
+        binding.panel.Setup(title, LocalizationManager.Get(vehicle.GetDescription(binding.stat)), level, maxLevel, cost, isMaxed, valueDisplay);
     }
 
     string FormatStatValue(VehicleStatId stat, float value) {
@@ -191,5 +211,10 @@ public class GarageManager : MonoBehaviour {
             return;
         }
         SceneManager.LoadScene(config.mainMenuScene);
+    }
+
+    /// <summary>Opens the slot picker to copy the active career onto another slot.</summary>
+    public void OnClickCopyToSlot() {
+        if (copySlotPanel != null) copySlotPanel.Open(SaveSlotSelectMode.CopyTarget);
     }
 }
