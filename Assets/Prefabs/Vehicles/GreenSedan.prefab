@@ -498,13 +498,13 @@ MonoBehaviour:
   moveSpeed: 0
   turnSpeed: 0
   armorPercent: 0
-  turboDuration: 5
   damageBase: 3
   damageFactor: 0.85
   damageExponent: 2
   invulnerabilityWindow: 0.7
-  speedBoostAmount: 5
-  speedBoostMaxMult: 1.5
+  obstacleDamage: 6
+  obstacleSlowMult: 0.6
+  obstacleSlowDuration: 2
   crashColor:
     serializedVersion: 2
     rgba: 4278190335
@@ -559,14 +559,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b0470e3a6c22f40857045fa5087225, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  destroyDelay: 0.2
   carryPizzaAmount: 0
   maxCarryPizzaAmount: 2
   pizzaObject: {fileID: 9143841304530722366}
   wastedPizzaPrefab: {fileID: 1333578237394975446, guid: b6a2f74dceae41f41beb1aed5acfe032, type: 3}
-  pizzaCollectClip: {fileID: 8300000, guid: 88b3da84e85981f498b52317e8146935, type: 3}
   pizzaDeliverClip: {fileID: 8300000, guid: 52320e590bf774734a288886eba557ba, type: 3}
-  pizzaFailClip: {fileID: 8300000, guid: 72127805eb2bc4e7fbf2e02eca266cfa, type: 3}
   pizzaDelivered: 0
 --- !u!82 &3600968874981835683
 AudioSource:
@@ -577,7 +574,7 @@ AudioSource:
   m_GameObject: {fileID: 3882002878805238368}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: 3423384054908381652, guid: 5b34ce45a14f81e42b6035c2c6c9f48a, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1

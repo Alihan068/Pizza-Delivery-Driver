@@ -1,0 +1,279 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
+using Object = UnityEngine.Object;
+
+/// <summary>
+/// EditMode coverage for the deterministic domain calculations that do not require a running
+/// Unity scene. These tests protect economy, order state, rating, and save migration contracts.
+/// </summary>
+public class PizzaGameEditModeTests {
+
+    /// <summary>Verifies that an order never accepts more pizzas than remain outstanding.</summary>
+    [Test]
+    public void CustomerOrder_ClampsDeliveryAndTracksRemaining() {
+        var order = new CustomerOrder(3, 40f);
+
+        order.RegisterDelivery(1);
+        order.RegisterDelivery(9);
+
+        Assert.AreEqual(3, order.deliveredPizzas);
+        Assert.AreEqual(0, order.RemainingPizzas);
+        Assert.IsTrue(order.IsComplete);
+    }
+
+    /// <summary>Verifies that strong service performance produces a positive rating delta.</summary>
+    [Test]
+    public void CareerManager_StrongShiftProducesPositiveRatingDelta() {
+        var data = ScriptableObject.CreateInstance<CareerData>();
+        try {
+            var career = new CareerManager(data);
+            int delta = career.ComputeRatingDelta(180f, 8, 8, 0, 1f, EndReason.TimeUp);
+
+            Assert.Greater(delta, 0);
+        }
+        finally {
+            Object.DestroyImmediate(data);
+        }
+    }
+
+    /// <summary>Verifies that a poor shift can reduce the courier rating.</summary>
+    [Test]
+    public void CareerManager_PoorShiftProducesNegativeRatingDelta() {
+        var data = ScriptableObject.CreateInstance<CareerData>();
+        try {
+            var career = new CareerManager(data);
+            int delta = career.ComputeRatingDelta(30f, 0, 6, 6, 0f, EndReason.Wrecked);
+
+            Assert.Less(delta, 0);
+        }
+        finally {
+            Object.DestroyImmediate(data);
+        }
+    }
+
+    /// <summary>Verifies that rank is a visual calculation and does not alter the authored rating.</summary>
+    [Test]
+    public void CareerData_RankUsesThresholdsWithoutUnlockSideEffects() {
+        var data = ScriptableObject.CreateInstance<CareerData>();
+        try {
+            bool reachedEnding;
+            int rank = data.ComputeRank(data.rankThresholds[1], out reachedEnding);
+
+            Assert.AreEqual(2, rank);
+            Assert.IsFalse(reachedEnding);
+            Assert.AreEqual(1, data.ComputeUnlockedRegionTier(1));
+        }
+        finally {
+            Object.DestroyImmediate(data);
+        }
+    }
+
+    /// <summary>Verifies that migration creates ownership storage and preserves the selected map.</summary>
+    [Test]
+    public void SaveMigration_SelectedMapBecomesOwnedDuringV3ToV4() {
+        var data = new GameSaveData {
+            saveVersion = 3,
+            currentMapId = "map.test",
+            ownedMapIds = new List<string>()
+        };
+
+        SaveMigration.Migrate(data, name => name);
+
+        CollectionAssert.Contains(data.ownedMapIds, "map.test");
+        Assert.AreEqual(SaveMigration.CurrentVersion, data.saveVersion);
+    }
+
+    /// <summary>Verifies that migration tolerates missing ownership data on an old profile.</summary>
+    [Test]
+    public void SaveMigration_MissingOwnershipListIsCreatedSafely() {
+        var data = new GameSaveData {
+            saveVersion = 3,
+            currentMapId = string.Empty,
+            ownedMapIds = null
+        };
+
+        SaveMigration.Migrate(data, name => name);
+
+        Assert.IsNotNull(data.ownedMapIds);
+        Assert.AreEqual(SaveMigration.CurrentVersion, data.saveVersion);
+    }
+
+    /// <summary>Verifies that the rebalanced vehicle defaults expose the intended speed curve.</summary>
+    [Test]
+    public void VehicleData_DefaultsUseTheRebalancedSpeedCurve() {
+        var vehicle = ScriptableObject.CreateInstance<VehicleData>();
+        try {
+            Assert.AreEqual(0.1f, vehicle.speedStep, 0.0001f);
+            Assert.AreEqual(25, vehicle.maxSpeedLevel);
+        }
+        finally {
+            Object.DestroyImmediate(vehicle);
+        }
+    }
+
+    /// <summary>Verifies that time-up and extraction keep all non-negative earnings.</summary>
+    [Test]
+    public void SessionSettlement_TimeUpAndExtractionKeepEarnings() {
+        Assert.AreEqual(120, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.TimeUp, 0.5f));
+        Assert.AreEqual(120, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Extracted, 0.5f));
+    }
+
+    /// <summary>Verifies that wrecked and abandoned sessions apply their distinct retention rules.</summary>
+    [Test]
+    public void SessionSettlement_WreckedAndAbandonedApplyLossRules() {
+        Assert.AreEqual(60, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Wrecked, 0.5f));
+        Assert.AreEqual(0, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Abandoned, 0.5f));
+        Assert.AreEqual(0, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Interrupted, 0.5f));
+    }
+
+    /// <summary>Verifies that repair cost is linear in health loss and bills full health after death.</summary>
+    [Test]
+    public void SessionSettlement_RepairUsesLinearDamageAndDeathFullBill() {
+        int quarterDamage = SessionSettlementMath.CalculateRepairCost(75f, 100f, false, 1000, 0.7f, 0.03f);
+        int halfDamage = SessionSettlementMath.CalculateRepairCost(50f, 100f, false, 1000, 0.7f, 0.03f);
+        int deathDamage = SessionSettlementMath.CalculateRepairCost(1f, 100f, true, 1000, 0.7f, 0.03f);
+
+        Assert.AreEqual(25, quarterDamage);
+        Assert.AreEqual(50, halfDamage);
+        Assert.AreEqual(100, deathDamage);
+    }
+
+    /// <summary>Verifies that repair affordability preserves the bank safety reserve and zero floor.</summary>
+    [Test]
+    public void SessionSettlement_RepairClampProtectsBankAndBankFloor() {
+        Assert.AreEqual(65, SessionSettlementMath.ClampRepairCost(200, 15, 100, 0.5f));
+        Assert.AreEqual(0, SessionSettlementMath.ClampRepairCost(200, 0, 0, 0.5f));
+        Assert.AreEqual(0, SessionSettlementMath.CalculateBankAfter(10, 0, 20));
+        Assert.AreEqual(55, SessionSettlementMath.CalculateBankAfter(40, 30, 15));
+    }
+
+    /// <summary>Verifies that saving one profile does not overwrite a different profile slot.</summary>
+    [Test]
+    public void SaveSlots_KeepProfilesIndependent() {
+        var config = CreateTestConfig();
+        var service = new SaveSlotService(config, name => name);
+        try {
+            Assert.IsTrue(service.Save(0, CreateSave(125)));
+            Assert.IsTrue(service.Save(1, CreateSave(875)));
+
+            var first = service.Load(0, out var firstStatus);
+            var second = service.Load(1, out var secondStatus);
+
+            Assert.AreEqual(SaveLoadStatus.Loaded, firstStatus);
+            Assert.AreEqual(SaveLoadStatus.Loaded, secondStatus);
+            Assert.AreEqual(125, first.totalMoney);
+            Assert.AreEqual(875, second.totalMoney);
+        }
+        finally {
+            CleanupTestFiles(config);
+            Object.DestroyImmediate(config);
+        }
+    }
+
+    /// <summary>Verifies that the pre-slot save file is adopted without losing its contents.</summary>
+    [Test]
+    public void SaveSlots_AdoptLegacySaveIntoSlotZero() {
+        var config = CreateTestConfig();
+        var service = new SaveSlotService(config, name => name);
+        string legacyPath = Path.Combine(Application.persistentDataPath, TestId + "_legacy.json");
+        try {
+            File.WriteAllText(legacyPath, JsonUtility.ToJson(CreateSave(321)));
+
+            Assert.IsTrue(service.AdoptLegacySave(TestId + "_legacy.json", 0));
+            var loaded = service.Load(0, out var status);
+
+            Assert.AreEqual(SaveLoadStatus.Loaded, status);
+            Assert.AreEqual(321, loaded.totalMoney);
+        }
+        finally {
+            if (File.Exists(legacyPath)) File.Delete(legacyPath);
+            CleanupTestFiles(config);
+            Object.DestroyImmediate(config);
+        }
+    }
+
+    /// <summary>Verifies that an unreadable main file can recover from its atomic-write backup.</summary>
+    [Test]
+    public void SaveSlots_RecoverUnreadableMainFileFromBackup() {
+        var config = CreateTestConfig();
+        var service = new SaveSlotService(config, name => name);
+        try {
+            Assert.IsTrue(service.Save(0, CreateSave(100)));
+            Assert.IsTrue(service.Save(0, CreateSave(200)));
+            File.WriteAllText(service.GetPath(0), "not valid json");
+
+            var loaded = service.Load(0, out var status);
+
+            Assert.AreEqual(SaveLoadStatus.RecoveredFromBackup, status);
+            Assert.AreEqual(100, loaded.totalMoney);
+        }
+        finally {
+            CleanupTestFiles(config);
+            Object.DestroyImmediate(config);
+        }
+    }
+
+    /// <summary>Verifies that two unreadable files become a visible damaged slot instead of a reset career.</summary>
+    [Test]
+    public void SaveSlots_ReportCorruptWhenMainAndBackupAreUnreadable() {
+        var config = CreateTestConfig();
+        var service = new SaveSlotService(config, name => name);
+        try {
+            Assert.IsTrue(service.Save(0, CreateSave(100)));
+            Assert.IsTrue(service.Save(0, CreateSave(200)));
+            File.WriteAllText(service.GetPath(0), "not valid json");
+            File.WriteAllText(service.GetPath(0) + config.backupSuffix, "also not valid json");
+            LogAssert.Expect(LogType.Error, new Regex("\\[Save\\] Slot 0 could not be read and was set aside as '.*'. Nothing was deleted\\."));
+
+            var loaded = service.Load(0, out var status);
+
+            Assert.IsNull(loaded);
+            Assert.AreEqual(SaveLoadStatus.Corrupt, status);
+            Assert.IsFalse(File.Exists(service.GetPath(0)));
+            Assert.IsFalse(File.Exists(service.GetPath(0) + config.backupSuffix));
+        }
+        finally {
+            CleanupTestFiles(config);
+            Object.DestroyImmediate(config);
+        }
+    }
+
+    static readonly string TestId = "codex_save_test_" + Guid.NewGuid().ToString("N");
+
+    static GameConfig CreateTestConfig() {
+        var config = ScriptableObject.CreateInstance<GameConfig>();
+        config.saveSlotCount = 3;
+        config.saveFilePattern = TestId + "_{0}.json";
+        config.backupSuffix = ".bak";
+        config.corruptSuffix = ".corrupt_{0}.json";
+        return config;
+    }
+
+    static GameSaveData CreateSave(int money) {
+        return new GameSaveData {
+            totalMoney = money,
+            currentVehicleId = "vehicle.test",
+            vehicleSaveList = new List<VehicleSaveData> {
+                new VehicleSaveData("vehicle.test", true)
+            }
+        };
+    }
+
+    static void CleanupTestFiles(GameConfig config) {
+        if (config == null) return;
+        for (int i = 0; i < config.saveSlotCount; i++) {
+            string path = Path.Combine(Application.persistentDataPath, config.GetSaveFileName(i));
+            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path + config.backupSuffix)) File.Delete(path + config.backupSuffix);
+            string directory = Path.GetDirectoryName(path);
+            string prefix = Path.GetFileName(path) + ".corrupt_";
+            if (!Directory.Exists(directory)) continue;
+            foreach (string corrupt in Directory.GetFiles(directory, prefix + "*.json")) File.Delete(corrupt);
+        }
+    }
+}

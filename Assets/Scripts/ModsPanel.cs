@@ -12,6 +12,7 @@ using UnityEngine.UI;
 public class ModsPanel : MonoBehaviour {
 
     [SerializeField] TextMeshProUGUI contentText;
+    [Tooltip("Top-right close control for the overlay.")]
     [SerializeField] Button backButton;
 
     [Header("Localization Keys")]

@@ -6,8 +6,10 @@ public class MainMenuManager : MonoBehaviour {
     [Header("Buttons")]
     [SerializeField] Button newGameButton;
     [SerializeField] Button loadGameButton;
+    [SerializeField] Button freeplayButton;
     [SerializeField] Button modsButton;
     [SerializeField] Button quitButton;
+    [SerializeField] Button settingsButton;
 
     [Header("Slot Selection")]
     [Tooltip("Shared New Game / Load Game screen. Opened in the mode matching whichever button was pressed.")]
@@ -15,6 +17,9 @@ public class MainMenuManager : MonoBehaviour {
 
     [Header("Mods")]
     [SerializeField] ModsPanel modsPanel;
+
+    [Header("Settings")]
+    [SerializeField] SettingsPanel settingsPanel;
 
     [Header("Build Identity")]
     [SerializeField] TextMeshProUGUI versionText;
@@ -29,10 +34,18 @@ public class MainMenuManager : MonoBehaviour {
         Time.timeScale = 1f;
         if (newGameButton != null) newGameButton.onClick.AddListener(OnClickNewGame);
         if (loadGameButton != null) loadGameButton.onClick.AddListener(OnClickLoadGame);
+        if (freeplayButton != null) freeplayButton.onClick.AddListener(OnClickFreeplay);
         if (modsButton != null) modsButton.onClick.AddListener(OnClickMods);
         if (quitButton != null) quitButton.onClick.AddListener(OnClickQuit);
+        if (settingsButton != null) settingsButton.onClick.AddListener(OnClickSettings);
+        if (settingsPanel != null) settingsPanel.Closed += CloseSettings;
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
         ShowVersion();
         RefreshLoadButtonAvailability();
+    }
+
+    void OnDestroy() {
+        if (settingsPanel != null) settingsPanel.Closed -= CloseSettings;
     }
 
     // The version is never written into the scene or the code: it is read from Player Settings at
@@ -66,9 +79,23 @@ public class MainMenuManager : MonoBehaviour {
         if (slotSelectPanel != null) slotSelectPanel.Open(SaveSlotSelectMode.LoadGame);
     }
 
+    /// <summary>Starts an endless session using the currently selected owned map and vehicle.</summary>
+    public void OnClickFreeplay() {
+        if (GameManager.Instance != null) GameManager.Instance.StartFreeplay();
+    }
+
     /// <summary>Opens the installed-content listing.</summary>
     public void OnClickMods() {
         if (modsPanel != null) modsPanel.Open();
+    }
+
+    /// <summary>Opens the shared settings panel without leaving the main menu.</summary>
+    public void OnClickSettings() {
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(true);
+    }
+
+    void CloseSettings() {
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
     }
 
     /// <summary>Closes the game, and stops Play Mode when running inside the editor.</summary>

@@ -12,6 +12,9 @@ EditorBuildSettings:
     path: Assets/Scenes/GarageScene.unity
     guid: 93027039bd8fee7468ce0458d4157897
   - enabled: 1
+    path: Assets/Scenes/MapSelectionScene.unity
+    guid: 916c480e6c1a17943b44ffbf9f41be3c
+  - enabled: 1
     path: Assets/Scenes/GameScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1

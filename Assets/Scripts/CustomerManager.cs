@@ -20,6 +20,7 @@ public class CustomerManager : MonoBehaviour {
     IndicatorManager indicatorManager;
     Delivery delivery;
     ScoreHandler scoreHandler;
+    bool firstShiftTutorialOrderUsed;
 
     void Start() {
         indicatorManager = FindFirstObjectByType<IndicatorManager>();
@@ -100,7 +101,17 @@ public class CustomerManager : MonoBehaviour {
         // nothing. Ceiling keeps the ladder climbing.
         int capacity = GameManager.Instance != null ? GameManager.Instance.GetShiftCapacity() : 2;
         int orderMax = Mathf.Max(levelData.orderMin + 1, Mathf.CeilToInt(capacity * levelData.orderScale));
-        int totalPizzas = Random.Range(levelData.orderMin, orderMax + 1);
+        bool shouldDemonstratePartialDelivery = levelData.demonstratePartialDeliveryOnFirstShift &&
+            !firstShiftTutorialOrderUsed && GameManager.Instance != null &&
+            !GameManager.Instance.IsFreeplayMode && GameManager.Instance.totalShiftsSettled == 0;
+        int totalPizzas;
+        if (shouldDemonstratePartialDelivery) {
+            totalPizzas = Mathf.Max(levelData.orderMin, capacity + 1);
+            firstShiftTutorialOrderUsed = true;
+        }
+        else {
+            totalPizzas = Random.Range(levelData.orderMin, orderMax + 1);
+        }
         float baseWaitTime = levelData.waitBase + levelData.waitPerOrderPizza * totalPizzas;
         float shiftProgress = scoreHandler != null ? scoreHandler.ShiftProgress01 : 0f;
         float waitTime = baseWaitTime * levelData.GetCustomerWaitMultiplier(shiftProgress);

@@ -30,10 +30,12 @@ MonoBehaviour:
     text: Back
   - key: common.cancel
     text: Cancel
+  - key: common.check
+    text: OK
+  - key: common.cross
+    text: X
   - key: common.money
     text: $ {0}
-  - key: garage.startJob
-    text: Start Job
   - key: garage.next
     text: Next
   - key: garage.previous
@@ -52,6 +54,10 @@ MonoBehaviour:
     text: Resume
   - key: settings.title
     text: Settings
+  - key: settings.open
+    text: Settings
+  - key: mods.close
+    text: "\xD7"
   - key: settings.music
     text: Music
   - key: settings.language
@@ -150,6 +156,8 @@ MonoBehaviour:
     text: 'Time:
 
       --'
+  - key: hud.endless
+    text: Endless
   - key: hud.repairCost
     text: 'Repair: ${0}'
   - key: vehicle.scooter.name
@@ -166,6 +174,8 @@ MonoBehaviour:
     text: New Game
   - key: menu.loadGame
     text: Load Game
+  - key: menu.freeplay
+    text: Freeplay
   - key: panel.newGame.title
     text: New Game
   - key: panel.loadGame.title
@@ -231,15 +241,29 @@ MonoBehaviour:
   - key: stat.persistentSuffix
     text: ' (Persistent)'
   - key: result.reputation
-    text: 'Reputation: +{0} (Rank {1})'
+    text: 'Courier rating: {0} (Rank {1})'
   - key: result.rent.paid
     text: 'Day {0} rent paid: -${1}'
   - key: result.rent.shortfall
-    text: 'Day {0} rent: -${1} (${2} unpaid, -{3} reputation)'
+    text: 'Day {0} rent: -${1} (${2} unpaid)'
   - key: result.rent.free
     text: 'Day {0}: first rent waived'
+  - key: result.personalBestScore
+    text: 'New personal records: score and deliveries!'
+  - key: result.personalBestDeliveries
+    text: 'New personal record: deliveries!'
+  - key: result.personalBestFreeplay
+    text: New endless record!
+  - key: result.perfectShift
+    text: Perfect Shift - Service {0} | Damage {1} | Cargo {2} | Overall {3}
+  - key: ending.finalChallenge
+    text: Final challenge failed. Complete the target orders to finish your career.
+  - key: ending.complete
+    text: Career Complete
+  - key: ending.credits
+    text: Thank you for playing Pizza Delivery Driver.
   - key: garage.rank
-    text: Rank {0} ({1} rep)
+    text: Rank {0} (Rating {1})
   - key: objective.quota.name
     text: Delivery Quota
   - key: objective.quota.description
@@ -297,13 +321,15 @@ MonoBehaviour:
   - key: modifier.busyHour.description
     text: More traffic pressure, but a faster pace.
   - key: garage.mapSelection.locked
-    text: Requires Rank {0}
+    text: Purchase for ${0}
   - key: garage.mapSelection.available
     text: Available
   - key: garage.mapSelection.selected
     text: Selected
   - key: garage.mapSelection.select
     text: Select Map
+  - key: garage.mapSelection.purchase
+    text: Purchase Map
   - key: garage.modifier.none
     text: No Modifier
   - key: garage.modifier.noneDescription
@@ -316,3 +342,50 @@ MonoBehaviour:
     text: Close
   - key: garage.mapSelection.open
     text: Maps
+  - key: garage.mapSelection.startJob
+    text: Start Job
+  - key: garage.mapSelection.backToGarage
+    text: Back to Garage
+  - key: settings.master
+    text: Master Volume
+  - key: settings.sfx
+    text: Sound Effects
+  - key: settings.displayOptions
+    text: Display
+  - key: settings.resolutionValue
+    text: '{0} x {1}'
+  - key: settings.fullscreenOn
+    text: Fullscreen
+  - key: settings.fullscreenOff
+    text: Windowed
+  - key: settings.frameRateValue
+    text: '{0} FPS'
+  - key: settings.uncapped
+    text: Uncapped
+  - key: settings.vSyncOn
+    text: VSync On
+  - key: settings.vSyncOff
+    text: VSync Off
+  - key: common.close
+    text: Close
+  - key: settings.resolution
+    text: Resolution
+  - key: settings.fullscreen
+    text: Fullscreen
+  - key: settings.frameRate
+    text: Frame Rate
+  - key: settings.vSync
+    text: VSync
+  - key: onboarding.controls
+    text: 'WASD / Arrow Keys: Drive
+
+      Collect pizzas at a pizza point.
+
+      Deliver
+      them to customers before time runs out.
+
+      Avoid obstacles: impacts cost
+      health and may drop pizza.
+
+      Hold the extraction key in the zone to end
+      a shift.'

@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Presents registered maps and shift modifiers in the garage and applies the selected pair to the
-/// next session.
+/// Presents registered maps and shift modifiers in the map selection scene and applies the selected
+/// pair to the next session.
 /// </summary>
 /// <remarks>
 /// Browsing is local to this panel. A map is saved only when the player presses Select Map, while a
@@ -31,6 +31,7 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] string mapLockedKey = "garage.mapSelection.locked";
     [SerializeField] string mapAvailableKey = "garage.mapSelection.available";
     [SerializeField] string mapSelectedKey = "garage.mapSelection.selected";
+    [SerializeField] string mapPurchaseKey = "garage.mapSelection.purchase";
     [SerializeField] string selectMapKey = "garage.mapSelection.select";
     [SerializeField] string modifierNoneKey = "garage.modifier.none";
     [SerializeField] string modifierNoneDescriptionKey = "garage.modifier.noneDescription";
@@ -38,6 +39,9 @@ public class MapSelectionPanel : MonoBehaviour {
     int mapIndex;
     int modifierIndex;
     bool listenersBound;
+
+    /// <summary>Raised when the previewed map or modifier changes, or when the active selection is applied.</summary>
+    public event System.Action SelectionChanged;
 
     void OnEnable() {
         LocalizationManager.LanguageChanged += RefreshUI;
@@ -102,11 +106,22 @@ public class MapSelectionPanel : MonoBehaviour {
     void SelectMap() {
         var manager = GameManager.Instance;
         var map = GetSelectedMap(manager);
-        if (manager == null || map == null || manager.CurrentRank < map.requiredRank) return;
+        if (manager == null || map == null) return;
+
+        if (!manager.IsMapOwned(map) && !manager.TryPurchaseMap(map)) return;
 
         manager.SelectMap(map);
         manager.SelectModifier(GetSelectedModifier(manager));
         RefreshUI();
+    }
+
+    /// <summary>Returns whether the preview currently matches the owned map selected for the next shift.</summary>
+    /// <returns>True when the previewed map is the active owned map.</returns>
+    public bool IsPreviewApplied() {
+        var manager = GameManager.Instance;
+        var map = GetSelectedMap(manager);
+        var modifier = GetSelectedModifier(manager);
+        return manager != null && map != null && manager.IsMapOwned(map) && manager.currentMap == map && manager.CurrentModifier == modifier;
     }
 
     void RefreshUI() {
@@ -121,24 +136,26 @@ public class MapSelectionPanel : MonoBehaviour {
         if (mapNameText != null) mapNameText.text = map.GetDisplayName();
         if (mapDescriptionText != null) mapDescriptionText.text = map.GetDescription();
 
-        bool rankEligible = manager.CurrentRank >= map.requiredRank;
+        bool mapOwned = manager.IsMapOwned(map);
         bool isSelected = manager.currentMap == map;
         if (mapStatusText != null) {
-            if (!rankEligible) mapStatusText.text = LocalizationManager.Get(mapLockedKey, map.requiredRank);
+            if (!mapOwned) mapStatusText.text = LocalizationManager.Get(mapLockedKey, Mathf.Max(0, map.unlockPrice));
             else if (isSelected) mapStatusText.text = LocalizationManager.Get(mapSelectedKey);
             else mapStatusText.text = LocalizationManager.Get(mapAvailableKey);
         }
         if (selectMapButton != null) {
             // The same action also applies a newly previewed modifier, so it must remain usable
             // when the map itself is already selected.
-            selectMapButton.interactable = rankEligible;
+            selectMapButton.interactable = mapOwned || manager.CanPurchaseMap(map);
             var label = selectMapButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (label != null) label.text = LocalizationManager.Get(selectMapKey);
+            if (label != null) label.text = LocalizationManager.Get(mapOwned ? selectMapKey : mapPurchaseKey);
         }
 
         var modifier = GetSelectedModifier(manager);
         if (modifierNameText != null) modifierNameText.text = modifier != null ? modifier.GetDisplayName() : LocalizationManager.Get(modifierNoneKey);
         if (modifierDescriptionText != null) modifierDescriptionText.text = modifier != null ? modifier.GetDescription() : LocalizationManager.Get(modifierNoneDescriptionKey);
+
+        if (SelectionChanged != null) SelectionChanged.Invoke();
     }
 
     void SetMapControlsActive(bool active) {

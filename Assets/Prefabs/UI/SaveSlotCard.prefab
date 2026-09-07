@@ -300,6 +300,7 @@ GameObject:
   - component: {fileID: 4498533298740448407}
   - component: {fileID: 9017994746436308732}
   - component: {fileID: 652232095010029664}
+  - component: {fileID: 2424749480756640604}
   m_Layer: 0
   m_Name: PrimaryButton
   m_TagString: Untagged
@@ -444,6 +445,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   holdDurationSeconds: 1.5
   fillImage: {fileID: 860393503567764641}
+--- !u!114 &2424749480756640604
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4657748863617572999}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ca8f104daa782c47910776af63452f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickClip: {fileID: 8300000, guid: 24d73765699ce3e46bb23cabc3a46494, type: 3}
+  volume: 0.8
 --- !u!1 &5275129624284498614
 GameObject:
   m_ObjectHideFlags: 0
@@ -1538,6 +1553,7 @@ GameObject:
   - component: {fileID: 8860669278789752254}
   - component: {fileID: 7183578060263114120}
   - component: {fileID: 4876570947232916894}
+  - component: {fileID: 4845462803680749774}
   m_Layer: 0
   m_Name: DeleteButton
   m_TagString: Untagged
@@ -1662,6 +1678,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   holdDurationSeconds: 1.5
   fillImage: {fileID: 7073228797175570953}
+--- !u!114 &4845462803680749774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8362600508432756005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ca8f104daa782c47910776af63452f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickClip: {fileID: 8300000, guid: 24d73765699ce3e46bb23cabc3a46494, type: 3}
+  volume: 0.8
 --- !u!1 &8864771019472227106
 GameObject:
   m_ObjectHideFlags: 0
@@ -1809,7 +1839,6 @@ MonoBehaviour:
   subtitleText: {fileID: 8569498286116481221}
   lastPlayedText: {fileID: 5175294239511493024}
   missingContentBadge: {fileID: 6057659487579262169}
-  damagedBadge: {fileID: 0}
   deleteRoot: {fileID: 6922813944732097800}
   deleteButton: {fileID: 7183578060263114120}
   deleteHold: {fileID: 4876570947232916894}
@@ -1825,3 +1854,4 @@ MonoBehaviour:
   overwriteActionKey: slot.action.overwrite
   resetActionKey: slot.action.reset
   deleteActionKey: slot.action.deleteHold
+  copyHereActionKey: slot.action.copyHere

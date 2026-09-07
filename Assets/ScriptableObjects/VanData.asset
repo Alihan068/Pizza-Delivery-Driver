@@ -18,7 +18,7 @@ MonoBehaviour:
   vehiclePrefab: {fileID: 3110664342997613465, guid: 2da1cf1935179804691ee7134dc8b85f, type: 3}
   vehicleIcon: {fileID: 517158029, guid: 29401d560dc39a4429f4c46beaa2a549, type: 3}
   price: 2500
-  requiredRank: 2
+  requiredRank: 0
   speedDesc: stat.speed.description
   turnDesc: stat.turn.description
   healthDesc: stat.health.description

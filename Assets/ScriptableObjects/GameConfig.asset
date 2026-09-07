@@ -18,6 +18,7 @@ MonoBehaviour:
   corruptSuffix: .corrupt_{0}.json
   mainMenuScene: MainMenu
   garageScene: GarageScene
+  mapSelectionScene: MapSelectionScene
   startingMoney: 100
   startingVehicle: {fileID: 11400000, guid: 31b69dec864f54643b7579dbad1d82d6, type: 2}
   startingMap: {fileID: 11400000, guid: f9ffa1b2bfe46c84c98b23993ae0bc17, type: 2}

@@ -6,6 +6,7 @@ public class ScoreHandler : MonoBehaviour {
     [SerializeField] float levelDurationInMinutes = 3f;
     float currentTimer;
     float totalDurationSeconds;
+    float activeSessionSeconds;
     bool isGameActive = true;
 
     [Header("Session Data")]
@@ -13,7 +14,14 @@ public class ScoreHandler : MonoBehaviour {
     public int sessionEarnings { get; private set; }
     public int missedCustomers { get; private set; }
     public int ordersCompleted { get; private set; }
+    /// <summary>Number of collision damage events recorded during this shift.</summary>
+    public int collisionDamageEvents { get; private set; }
+    /// <summary>Number of pizzas lost during this shift.</summary>
+    public int pizzasLost { get; private set; }
     public bool IsGameActive => isGameActive;
+
+    /// <summary>True when this score handler is running an endless session.</summary>
+    public bool IsFreeplay => GameManager.Instance != null && GameManager.Instance.IsFreeplayMode;
 
     /// <summary>Seconds remaining in the active shift.</summary>
     public float RemainingTimeSeconds => Mathf.Max(0f, currentTimer);
@@ -30,16 +38,18 @@ public class ScoreHandler : MonoBehaviour {
     void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         resultPanel = FindFirstObjectByType<SessionResultPanel>(FindObjectsInactive.Include);
-        currentTimer = levelDurationInMinutes * 60f;
+        currentTimer = IsFreeplay ? 0f : levelDurationInMinutes * 60f;
         totalDurationSeconds = currentTimer;
 
-        if (GameManager.Instance != null) GameManager.Instance.MarkShiftStarted();
+        if (!IsFreeplay && GameManager.Instance != null) GameManager.Instance.MarkShiftStarted();
         CreateShiftObjectives();
+        if (IsFreeplay && gameUIManager != null) gameUIManager.ShowEndlessTimer();
         UpdateUI();
     }
 
     void CreateShiftObjectives() {
         ActiveObjectives.Clear();
+        if (IsFreeplay) return;
         if (GameManager.Instance == null || GameManager.Instance.Career == null || GameManager.Instance.CareerData == null) return;
 
         var data = GameManager.Instance.CareerData;
@@ -62,8 +72,15 @@ public class ScoreHandler : MonoBehaviour {
     void Update() {
         if (!isGameActive) return;
 
+        if (IsFreeplay) {
+            activeSessionSeconds += Time.deltaTime;
+            return;
+        }
+
         if (currentTimer > 0f) {
-            currentTimer -= Time.deltaTime;
+            float elapsed = Mathf.Min(Time.deltaTime, currentTimer);
+            activeSessionSeconds += elapsed;
+            currentTimer -= elapsed;
             if (gameUIManager != null) gameUIManager.UpdateTimerText(currentTimer);
         }
         else {
@@ -116,11 +133,13 @@ public class ScoreHandler : MonoBehaviour {
 
     /// <summary>Registers one collision that caused damage during this shift.</summary>
     public void RegisterCollisionDamageEvent() {
+        collisionDamageEvents++;
         RegisterObjectiveViolation(ShiftObjectiveType.CleanRun);
     }
 
     /// <summary>Registers one pizza lost because of a damaging impact.</summary>
     public void RegisterPizzaLost() {
+        pizzasLost++;
         RegisterObjectiveViolation(ShiftObjectiveType.CargoGuard);
     }
 
@@ -201,7 +220,14 @@ public class ScoreHandler : MonoBehaviour {
         CustomerManager customerManager = FindFirstObjectByType<CustomerManager>();
         int ordersOffered = customerManager != null ? customerManager.ordersOffered : 0;
 
-        SessionResult result = GameManager.Instance.SettleSession(sessionEarnings, hp, maxHp, reason, ordersCompleted, ordersOffered);
+        bool freeplay = IsFreeplay;
+        SessionResult result = GameManager.Instance.SettleSession(sessionEarnings, hp, maxHp, reason,
+            ordersCompleted, ordersOffered, missedCustomers, activeSessionSeconds, delivered, currentScore, freeplay);
+        result.noMissedOrders = missedCustomers == 0;
+        result.noCollisionDamage = collisionDamageEvents == 0;
+        result.noPizzasLost = pizzasLost == 0;
+        result.perfectShift = !freeplay && result.noMissedOrders && result.noCollisionDamage && result.noPizzasLost &&
+                              (reason == EndReason.TimeUp || reason == EndReason.Extracted);
 
         if (resultPanel != null) resultPanel.Show(result, delivered, missedCustomers, currentScore, destinationScene);
         Time.timeScale = 0f;

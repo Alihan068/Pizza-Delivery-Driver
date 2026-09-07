@@ -1,7 +1,8 @@
 ﻿<Solution>
-  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="PizzaGame.Runtime.csproj" />
   <Project Path="VFolders.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="AllIn1SpriteShaderAssembly.csproj" />
+  <Project Path="PizzaGame.EditModeTests.csproj" />
   <Project Path="Wingman.csproj" />
 </Solution>

@@ -28,7 +28,9 @@ public static class SaveMigration {
     static readonly MigrationStep[] steps = {
         MigrateV0ToV1,
         MigrateV1ToV2,
-        MigrateV2ToV3
+        MigrateV2ToV3,
+        MigrateV3ToV4,
+        MigrateV4ToV5
     };
 
     /// <summary>The schema version this build writes.</summary>
@@ -114,5 +116,30 @@ public static class SaveMigration {
         data.lastRentChargeRank = 1;
         data.reachedEnding = false;
         notes.Add("career layer initialized at rank 1, day 1");
+    }
+
+    // v3 profiles had a selected map but no persistent ownership list. The selected map is treated
+    // as owned so migration never takes away content the player had already been using. New careers
+    // receive their starter map in GameManager.InitializeMaps.
+    static void MigrateV3ToV4(GameSaveData data, Func<string, string> resolveVehicleIdFromName, List<string> notes) {
+        if (data.ownedMapIds == null) data.ownedMapIds = new List<string>();
+        if (!string.IsNullOrEmpty(data.currentMapId) && !data.ownedMapIds.Contains(data.currentMapId)) {
+            data.ownedMapIds.Add(data.currentMapId);
+            notes.Add("selected map marked as owned");
+        }
+    }
+
+    // v4 profiles predate career records and the explicit final-shift completion flag. The new
+    // fields intentionally start at zero; no honest personal-best value can be reconstructed from
+    // the old profile because old sessions did not persist their metrics.
+    static void MigrateV4ToV5(GameSaveData data, Func<string, string> resolveVehicleIdFromName, List<string> notes) {
+        data.careerCompleted = false;
+        data.totalShiftsSettled = Mathf.Max(0, data.totalShiftsSettled);
+        data.totalOrdersCompleted = Mathf.Max(0, data.totalOrdersCompleted);
+        data.totalPizzasDelivered = Mathf.Max(0, data.totalPizzasDelivered);
+        data.bestShiftScore = Mathf.Max(0, data.bestShiftScore);
+        data.bestShiftDeliveries = Mathf.Max(0, data.bestShiftDeliveries);
+        data.bestFreeplayDeliveries = Mathf.Max(0, data.bestFreeplayDeliveries);
+        notes.Add("career record fields initialized");
     }
 }

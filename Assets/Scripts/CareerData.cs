@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// Every tunable number behind the career layer: day length, rank thresholds, reputation and rent
-/// formulas, and shift objective rewards. Authored once by design, read everywhere else.
+/// Every tunable number behind the career layer: day length, visual rank thresholds, courier rating,
+/// rent formulas, and shift objective rewards. Authored once by design, read everywhere else.
 /// </summary>
 /// <remarks>
 /// Numbers here come from a joint Game Designer / Economy Designer pass (2026-09-06); see
-/// <c>memory-bank/productContext.md</c>, "Kariyer omurgası" for the reasoning behind each one.
+/// <c>memory-bank/productContext.md</c>, "Career foundation" for the reasoning behind each one.
 /// </remarks>
 [CreateAssetMenu(fileName = "CareerData", menuName = "PizzaGame/Career Data")]
 public class CareerData : ScriptableObject {
@@ -19,8 +19,17 @@ public class CareerData : ScriptableObject {
     [Tooltip("Cumulative reputation required for each rank. Index 0 is rank 1 and must be 0.")]
     public int[] rankThresholds = { 0, 70, 190, 355, 575 };
 
-    [Tooltip("Reputation that triggers the generic ending, once the highest rank is already reached.")]
+    [Tooltip("Legacy threshold retained for old assets; courier rating never ends the career.")]
+    // Legacy field retained for save and asset compatibility. Courier rating does not end the
+    // career; finalShiftDay and finalShiftOrderTarget define the authored ending challenge.
     public int endingThreshold = 870;
+
+    [Header("Career Ending")]
+    [Tooltip("Once this day is reached, the next unsettled career shift becomes the final career challenge.")]
+    [Min(1)] public int finalShiftDay = 5;
+
+    [Tooltip("Fully completed customer orders required to win the final career challenge.")]
+    [Min(1)] public int finalShiftOrderTarget = 8;
 
     [Header("Region Reputation Cap")]
     [Tooltip("Live reputation is clamped to the cap of the highest region tier unlocked so far. Index 0 is tier 1.")]
@@ -29,17 +38,18 @@ public class CareerData : ScriptableObject {
     [Tooltip("Rank required to unlock each region tier past the first. Index 0 is tier 2's required rank. Must match the tier-1 entry of regionCapByTier exactly, or the cap can lock the player out of ever reaching the rank that would raise it.")]
     public int[] regionUnlockRank = { 3, 5 };
 
-    [Header("Reputation Formula")]
-    [Tooltip("Base reputation for a region tier-1 shift. Each tier above adds baseRepPerTier.")]
+    [Header("Legacy Reputation Formula")]
+    [Tooltip("Legacy positive-reputation value retained for save and asset compatibility. It is not used by courier-rating settlement.")]
     public float baseRepAtTier1 = 10f;
+    [Tooltip("Legacy field retained for compatibility. Courier rating is not region-scaled.")]
     public float baseRepPerTier = 4f;
-    [Tooltip("Quality multiplier from on-time delivery rate: clamp(onTimeMin + onTimeWeight*rate, onTimeMin, 1).")]
+    [Tooltip("Legacy field retained for compatibility. Courier rating uses the signed tuning below.")]
     public float qualityOnTimeMin = 0.4f;
     public float qualityOnTimeWeight = 0.6f;
-    [Tooltip("Quality multiplier from health retained: clamp(healthMin + healthWeight*ratio, healthMin, 1).")]
+    [Tooltip("Legacy field retained for compatibility. Courier rating uses the signed tuning below.")]
     public float qualityHealthMin = 0.5f;
     public float qualityHealthWeight = 0.5f;
-    [Tooltip("Reputation earned is multiplied by the entry matching how the shift ended.")]
+    [Tooltip("Legacy field retained for compatibility. Courier rating uses signed end-reason offsets.")]
     public EndReasonMultiplier[] endReasonMultipliers = {
         new EndReasonMultiplier { reason = EndReason.TimeUp, multiplier = 1.0f },
         new EndReasonMultiplier { reason = EndReason.Extracted, multiplier = 1.1f },
@@ -48,20 +58,48 @@ public class CareerData : ScriptableObject {
         new EndReasonMultiplier { reason = EndReason.Interrupted, multiplier = 0.5f }
     };
 
+    [Header("Courier Rating")]
+    [Tooltip("Positive rating points granted for each minute the player actively spends in a shift. Paused time contributes zero.")]
+    public float ratingPointsPerActiveMinute = 2f;
+
+    [Tooltip("Positive rating points granted for each order completed during the shift.")]
+    public float ratingPointsPerCompletedOrder = 3f;
+
+    [Tooltip("Rating points removed for each customer order that times out.")]
+    public float ratingPenaltyPerMissedOrder = 4f;
+
+    [Tooltip("Neutral quality ratio. On-time and health ratios above this add rating; ratios below it remove rating.")]
+    [Range(0f, 1f)] public float ratingNeutralQuality = 0.5f;
+
+    [Tooltip("Signed rating weight applied to the on-time completion ratio relative to ratingNeutralQuality.")]
+    public float ratingOnTimeWeight = 8f;
+
+    [Tooltip("Signed rating weight applied to retained health relative to ratingNeutralQuality.")]
+    public float ratingHealthWeight = 4f;
+
+    [Tooltip("Signed rating adjustment for the way a shift ended. Extraction and time-up are neutral by default.")]
+    public EndReasonRatingOffset[] ratingEndReasonOffsets = {
+        new EndReasonRatingOffset { reason = EndReason.TimeUp, offset = 0 },
+        new EndReasonRatingOffset { reason = EndReason.Extracted, offset = 0 },
+        new EndReasonRatingOffset { reason = EndReason.Wrecked, offset = -5 },
+        new EndReasonRatingOffset { reason = EndReason.Abandoned, offset = -8 },
+        new EndReasonRatingOffset { reason = EndReason.Interrupted, offset = -5 }
+    };
+
     [Header("Rent")]
-    [Tooltip("rent(rank) = rentBase + rentPerRankStep * (rank - 1). Charged inside the day's final settlement, never as a separate check the player can spend ahead of.")]
+    [Tooltip("Flat daily rent charged inside the day's final settlement. Rank never changes the amount.")]
     public int rentBase = 400;
     public int rentPerRankStep = 350;
-    [Tooltip("Unpaid rent converts to reputation loss, never debt: penalty = round(shortfall / divisor(rank)).")]
+    [Tooltip("Legacy fields retained for compatibility. Unpaid rent never changes courier rating.")]
     public int repShortfallDivisorBase = 60;
     public int repShortfallDivisorPerRank = 7;
 
     [Header("Shift Objectives")]
     [Tooltip("How many objectives are offered per shift, drawn without replacement from objectiveTypes.")]
     public int objectivesPerShift = 2;
-    [Tooltip("A completed objective pays objectiveCapFraction * GTypical(rank) * its own reward fraction.")]
+    [Tooltip("A completed objective pays objectiveCapFraction * typical shift gross * its own reward fraction. Rank is visual only.")]
     public float objectiveCapFraction = 0.25f;
-    [Tooltip("GTypical(rank) = gTypicalBase + gTypicalPerRankStep * (rank - 1): a rank-indexed stand-in for typical shift gross, used only to scale objective rewards.")]
+    [Tooltip("Authored typical shift gross used only to scale objective rewards. Rank is visual only.")]
     public int gTypicalBase = 400;
     public int gTypicalPerRankStep = 300;
     public ShiftObjectiveTuning[] objectiveTypes = {
@@ -74,10 +112,10 @@ public class CareerData : ScriptableObject {
     };
 
     [Header("Objective Target Coefficients")]
-    [Tooltip("Quota target = ceil(capacity * quotaCapacityMultiplier) + floor(rank / quotaRankDivisor).")]
+    [Tooltip("Quota target = ceil(capacity * quotaCapacityMultiplier). Rank is visual only.")]
     public float quotaCapacityMultiplier = 2.2f;
     public int quotaRankDivisor = 2;
-    [Tooltip("Big Order target order size = max(bigOrderMinPizzas, capacity); target count = 1 + floor(rank / bigOrderRankDivisor).")]
+    [Tooltip("Big Order target order size = max(bigOrderMinPizzas, capacity). Rank is visual only.")]
     public int bigOrderMinPizzas = 3;
     public int bigOrderRankDivisor = 3;
     [Tooltip("Fast Extraction requires at least this many seconds left on the clock at extraction.")]
@@ -96,20 +134,17 @@ public class CareerData : ScriptableObject {
         return null;
     }
 
-    /// <summary>Calculates a target from the tuning entry, capacity and rank.</summary>
+    /// <summary>Calculates an objective target from the tuning entry and capacity.</summary>
     /// <param name="type">Objective type to calculate.</param>
     /// <param name="capacity">Current pizza capacity.</param>
-    /// <param name="rank">Current career rank.</param>
+    /// <param name="rank">Legacy compatibility parameter; ignored because rank is visual only.</param>
     /// <returns>The non-negative target.</returns>
     public int GetObjectiveTarget(ShiftObjectiveType type, int capacity, int rank) {
         var tuning = GetObjectiveTuning(type);
         if (tuning == null || tuning.zeroTarget) return 0;
 
-        int rankContribution = tuning.targetRankDivisor > 0
-            ? Mathf.FloorToInt((float)Mathf.Max(0, rank) / tuning.targetRankDivisor)
-            : 0;
         int capacityContribution = Mathf.CeilToInt(Mathf.Max(0, capacity) * tuning.targetCapacityMultiplier);
-        return Mathf.Max(tuning.minimumTarget, tuning.targetBase + capacityContribution + rankContribution);
+        return Mathf.Max(tuning.minimumTarget, tuning.targetBase + capacityContribution);
     }
 
     /// <summary>Calculates the optional secondary parameter for an objective.</summary>
@@ -122,31 +157,31 @@ public class CareerData : ScriptableObject {
         return Mathf.Max(0, tuning.parameterBase + Mathf.CeilToInt(Mathf.Max(0, capacity) * tuning.parameterCapacityMultiplier));
     }
 
-    /// <summary>Calculates the currency reward for one objective at a rank.</summary>
+    /// <summary>Calculates the currency reward for one objective.</summary>
     /// <param name="type">Objective type to reward.</param>
-    /// <param name="rank">Current career rank.</param>
+    /// <param name="rank">Legacy compatibility parameter; ignored because rank is visual only.</param>
     /// <returns>The non-negative currency reward.</returns>
     public int GetObjectiveReward(ShiftObjectiveType type, int rank) {
         return Mathf.Max(0, Mathf.RoundToInt(GetObjectiveCap(rank) * GetObjectiveRewardFraction(type)));
     }
 
-    /// <summary>Rent due for a given rank.</summary>
-    /// <param name="rank">One-based rank.</param>
+    /// <summary>Rent due for a day. Rank never changes the amount.</summary>
+    /// <param name="rank">Legacy compatibility parameter; ignored because rank is visual only.</param>
     /// <returns>The currency amount due.</returns>
     public int GetRentAmount(int rank) {
-        return rentBase + rentPerRankStep * Mathf.Max(0, rank - 1);
+        return Mathf.Max(0, rentBase);
     }
 
-    /// <summary>How much unpaid rent currency converts to one point of reputation loss.</summary>
-    /// <param name="rank">One-based rank.</param>
-    /// <returns>The divisor; higher means a gentler penalty.</returns>
+    /// <summary>Legacy rent shortfall divisor retained for compatibility.</summary>
+    /// <param name="rank">Legacy compatibility parameter; ignored because rating is not rent-based.</param>
+    /// <returns>The authored base divisor.</returns>
     public int GetRepShortfallDivisor(int rank) {
-        return repShortfallDivisorBase + repShortfallDivisorPerRank * Mathf.Max(0, rank - 1);
+        return Mathf.Max(1, repShortfallDivisorBase);
     }
 
-    /// <summary>The reputation cap in effect for a region tier.</summary>
+    /// <summary>Legacy reputation cap retained for old content and save compatibility.</summary>
     /// <param name="regionTier">One-based region tier.</param>
-    /// <returns>The cap, or the highest authored cap when the tier exceeds the table.</returns>
+    /// <returns>The authored legacy cap, or the highest value when the tier exceeds the table.</returns>
     public int GetRegionCap(int regionTier) {
         if (regionCapByTier == null || regionCapByTier.Length == 0) return int.MaxValue;
         int index = Mathf.Clamp(regionTier - 1, 0, regionCapByTier.Length - 1);
@@ -154,10 +189,9 @@ public class CareerData : ScriptableObject {
     }
 
     /// <summary>
-    /// Computes the rank a total reputation total has reached, and whether it has cleared the
-    /// generic ending.
+    /// Computes the visual rank represented by a non-negative courier-rating total.
     /// </summary>
-    /// <param name="totalReputation">Live, cappable reputation total.</param>
+    /// <param name="totalReputation">Current courier rating. It is not region-capped.</param>
     /// <param name="reachedEnding">True once <see cref="endingThreshold"/> has been reached.</param>
     /// <returns>The one-based rank, never above the number of authored thresholds.</returns>
     public int ComputeRank(int totalReputation, out bool reachedEnding) {
@@ -171,7 +205,7 @@ public class CareerData : ScriptableObject {
         return rank;
     }
 
-    /// <summary>The highest region tier a given rank has unlocked.</summary>
+    /// <summary>Legacy region-tier calculation retained for old content compatibility.</summary>
     /// <param name="rank">One-based rank.</param>
     /// <returns>The tier, starting at 1 (always unlocked).</returns>
     public int ComputeUnlockedRegionTier(int rank) {
@@ -184,7 +218,7 @@ public class CareerData : ScriptableObject {
         return tier;
     }
 
-    /// <summary>The reputation-earning multiplier for how a shift ended.</summary>
+    /// <summary>Legacy reputation multiplier retained for compatibility with old callers.</summary>
     /// <param name="reason">How the shift ended.</param>
     /// <returns>The multiplier, or 1 when the reason has no authored entry.</returns>
     public float GetEndReasonMultiplier(EndReason reason) {
@@ -195,15 +229,26 @@ public class CareerData : ScriptableObject {
         return 1f;
     }
 
-    /// <summary>The rank-indexed stand-in for typical shift gross, used to scale objective rewards.</summary>
-    /// <param name="rank">One-based rank.</param>
-    /// <returns>The scaled value.</returns>
-    public int GetGTypical(int rank) {
-        return gTypicalBase + gTypicalPerRankStep * Mathf.Max(0, rank - 1);
+    /// <summary>Returns the signed courier-rating adjustment for a shift ending.</summary>
+    /// <param name="reason">How the shift ended.</param>
+    /// <returns>The authored signed adjustment, or zero when no entry exists.</returns>
+    public int GetRatingEndReasonOffset(EndReason reason) {
+        if (ratingEndReasonOffsets == null) return 0;
+        foreach (var entry in ratingEndReasonOffsets) {
+            if (entry != null && entry.reason == reason) return entry.offset;
+        }
+        return 0;
     }
 
-    /// <summary>The currency ceiling a single completed objective can pay at a given rank.</summary>
-    /// <param name="rank">One-based rank.</param>
+    /// <summary>The typical shift gross used to scale objective rewards.</summary>
+    /// <param name="rank">Legacy compatibility parameter; ignored because rank is visual only.</param>
+    /// <returns>The authored value.</returns>
+    public int GetGTypical(int rank) {
+        return Mathf.Max(0, gTypicalBase);
+    }
+
+    /// <summary>The currency ceiling a single completed objective can pay.</summary>
+    /// <param name="rank">Legacy compatibility parameter; ignored because rank is visual only.</param>
     /// <returns>The cap; a type's actual payout is this times its own reward fraction.</returns>
     public int GetObjectiveCap(int rank) {
         return Mathf.RoundToInt(objectiveCapFraction * GetGTypical(rank));

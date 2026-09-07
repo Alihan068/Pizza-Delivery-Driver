@@ -15,6 +15,8 @@ MonoBehaviour:
   shiftsPerDay: 3
   rankThresholds: 0000000046000000be000000630100003f020000
   endingThreshold: 870
+  finalShiftDay: 5
+  finalShiftOrderTarget: 8
   regionCapByTier: be0000003f02000066030000
   regionUnlockRank: 0300000005000000
   baseRepAtTier1: 10
@@ -34,6 +36,23 @@ MonoBehaviour:
     multiplier: 0.15
   - reason: 4
     multiplier: 0.5
+  ratingPointsPerActiveMinute: 2
+  ratingPointsPerCompletedOrder: 3
+  ratingPenaltyPerMissedOrder: 4
+  ratingNeutralQuality: 0.5
+  ratingOnTimeWeight: 8
+  ratingHealthWeight: 4
+  ratingEndReasonOffsets:
+  - reason: 0
+    offset: 0
+  - reason: 1
+    offset: 0
+  - reason: 2
+    offset: -5
+  - reason: 3
+    offset: -8
+  - reason: 4
+    offset: -5
   rentBase: 400
   rentPerRankStep: 350
   repShortfallDivisorBase: 60

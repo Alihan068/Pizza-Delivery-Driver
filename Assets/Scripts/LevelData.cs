@@ -27,6 +27,10 @@ public class LevelData : ScriptableObject {
     public int pizzaCost = 1;
     public int maxActiveCustomers = 4;
 
+    [Header("First Shift Onboarding")]
+    [Tooltip("When enabled, the first career shift starts with one order larger than the driver's capacity so partial delivery is demonstrated once.")]
+    public bool demonstratePartialDeliveryOnFirstShift = true;
+
     [Header("Difficulty Ramp")]
     /// <summary>Normalized shift progress at which the authored difficulty ramp begins.</summary>
     [Range(0f, 1f)] public float difficultyRampStart = 0.25f;

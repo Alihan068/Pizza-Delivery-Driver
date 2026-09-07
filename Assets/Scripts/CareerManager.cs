@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Pure calculations for the career layer: reputation earned per shift, rank from reputation, and
+/// Pure calculations for the career layer: signed courier rating, rank from rating, and
 /// a day's rent settlement. Holds no mutable state of its own — <see cref="GameManager"/> owns the
 /// live totals and applies whatever this returns, the same division of labour as
 /// <see cref="SaveSlotService"/>.
@@ -16,12 +16,34 @@ public class CareerManager {
         this.data = data;
     }
 
-    /// <summary>Reputation earned for one completed shift.</summary>
-    /// <param name="regionTier">One-based tier of the map that was played.</param>
-    /// <param name="onTimeRate">Orders completed divided by orders offered, 0 to 1.</param>
-    /// <param name="healthRetainedRatio">Health remaining divided by max health, 0 to 1.</param>
+    /// <summary>Calculates the signed courier-rating change for one completed shift.</summary>
+    /// <param name="activeSessionSeconds">Unpaused seconds spent in the shift.</param>
+    /// <param name="ordersCompleted">Orders fully completed during the shift.</param>
+    /// <param name="ordersOffered">Orders offered during the shift.</param>
+    /// <param name="missedCustomers">Orders that timed out during the shift.</param>
+    /// <param name="healthRetainedRatio">Health remaining divided by max health, from zero to one.</param>
     /// <param name="reason">How the shift ended.</param>
-    /// <returns>The reputation to add, never negative.</returns>
+    /// <returns>A signed rating delta. It may be negative, but the caller owns the floor on the total.</returns>
+    public int ComputeRatingDelta(float activeSessionSeconds, int ordersCompleted, int ordersOffered, int missedCustomers, float healthRetainedRatio, EndReason reason) {
+        float activeMinutes = Mathf.Max(0f, activeSessionSeconds) / 60f;
+        float onTimeRate = ordersOffered > 0
+            ? Mathf.Clamp01((float)Mathf.Max(0, ordersCompleted) / ordersOffered)
+            : 0f;
+        float retainedHealth = Mathf.Clamp01(healthRetainedRatio);
+        float qualityDelta = (onTimeRate - data.ratingNeutralQuality) * data.ratingOnTimeWeight
+            + (retainedHealth - data.ratingNeutralQuality) * data.ratingHealthWeight;
+        float performanceDelta = Mathf.Max(0, ordersCompleted) * data.ratingPointsPerCompletedOrder
+            - Mathf.Max(0, missedCustomers) * data.ratingPenaltyPerMissedOrder;
+        float participationDelta = activeMinutes * data.ratingPointsPerActiveMinute;
+        return Mathf.RoundToInt(participationDelta + performanceDelta + qualityDelta + data.GetRatingEndReasonOffset(reason));
+    }
+
+    /// <summary>Legacy positive-reputation calculation retained for older callers.</summary>
+    /// <param name="regionTier">Legacy map region tier.</param>
+    /// <param name="onTimeRate">Orders completed divided by orders offered, from zero to one.</param>
+    /// <param name="healthRetainedRatio">Health remaining divided by max health, from zero to one.</param>
+    /// <param name="reason">How the shift ended.</param>
+    /// <returns>The legacy non-negative reputation amount.</returns>
     public int ComputeShiftReputation(int regionTier, float onTimeRate, float healthRetainedRatio, EndReason reason) {
         float baseRep = data.baseRepAtTier1 + data.baseRepPerTier * Mathf.Max(0, regionTier - 1);
         float onTimeQuality = Mathf.Clamp(data.qualityOnTimeMin + data.qualityOnTimeWeight * onTimeRate, data.qualityOnTimeMin, 1f);
@@ -72,27 +94,25 @@ public class CareerManager {
     /// <param name="rankRentLastChargedAt">Rank recorded the last time rent was settled.</param>
     /// <param name="everPaidRent">False before this career's first rent day.</param>
     /// <param name="bankBeforeRent">Bank balance before rent is deducted.</param>
-    /// <returns>What was charged, what remained unpaid, and the reputation penalty for that shortfall.</returns>
+    /// <returns>What was charged and what remained unpaid. Rent never changes courier rating.</returns>
     public RentSettlementResult ComputeRentSettlement(int rankAtDayEnd, int rankRentLastChargedAt, bool everPaidRent, int bankBeforeRent) {
         if (!everPaidRent) {
             return new RentSettlementResult { wasFree = true, rentDue = 0, bankAfter = bankBeforeRent, shortfall = 0, reputationPenalty = 0 };
         }
 
-        // A rank-up's first rent day is billed at the rank the player was earning at until
-        // yesterday, not the one they just reached — otherwise the day rent jumps is also the day
-        // they've had zero chances yet to earn at the new rate.
+        // Keep the historical grace-day parameters for save/API compatibility. The authored rent
+        // amount is flat now, so rank cannot change the actual charge.
         int chargeRank = rankAtDayEnd > rankRentLastChargedAt ? rankRentLastChargedAt : rankAtDayEnd;
         int rent = data.GetRentAmount(chargeRank);
         int paid = Mathf.Min(bankBeforeRent, rent);
         int shortfall = rent - paid;
-        int penalty = shortfall > 0 ? Mathf.RoundToInt((float)shortfall / data.GetRepShortfallDivisor(rankAtDayEnd)) : 0;
 
         return new RentSettlementResult {
             wasFree = false,
             rentDue = rent,
             bankAfter = bankBeforeRent - paid,
             shortfall = shortfall,
-            reputationPenalty = penalty
+            reputationPenalty = 0
         };
     }
 }

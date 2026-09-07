@@ -24,6 +24,7 @@ public class GameUIManager : MonoBehaviour {
     [SerializeField] TextMeshProUGUI pizzaCountText;
     [SerializeField] TextMeshProUGUI carryText;
     [SerializeField] TextMeshProUGUI timerText;
+    [SerializeField] string endlessKey = "hud.endless";
 
     [SerializeField] Slider healthbar;
     [SerializeField] TextMeshProUGUI repairCostText;
@@ -132,6 +133,13 @@ public class GameUIManager : MonoBehaviour {
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
         timerText.text = minutes.ToString("00") + ":" + seconds.ToString("00");
+    }
+
+    /// <summary>Replaces the countdown with the localized label used by endless sessions.</summary>
+    public void ShowEndlessTimer() {
+        if (timerText == null) return;
+        lastDisplayedSeconds = -1;
+        timerText.text = LocalizationManager.Get(endlessKey);
     }
 
     /// <summary>Updates health and localized driving values, retaining those values for a subsequent language change.</summary>

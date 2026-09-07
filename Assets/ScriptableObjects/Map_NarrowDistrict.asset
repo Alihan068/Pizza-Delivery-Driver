@@ -18,6 +18,6 @@ MonoBehaviour:
   previewImage: {fileID: 0}
   sceneName: NarrowDistrict
   levelData: {fileID: 11400000, guid: 5cd93f98fbf183047bb5233b5597b48f, type: 2}
-  requiredRank: 2
+  requiredRank: 0
   regionTier: 2
   unlockPrice: 1200

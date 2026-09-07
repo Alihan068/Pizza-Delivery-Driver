@@ -27,19 +27,22 @@ public class GameSaveData {
     /// <summary>Permanent id of the map the player last selected.</summary>
     public string currentMapId;
 
+    /// <summary>Permanent map ids purchased by this profile. Introduced in version 4.</summary>
+    public List<string> ownedMapIds;
+
     /// <summary>Per-vehicle upgrade levels and unlock state.</summary>
     public List<VehicleSaveData> vehicleSaveList;
 
     /// <summary>The driver's own upgrades, carried across every vehicle. Introduced in version 2.</summary>
     public DriverSaveData driverStats;
 
-    /// <summary>Live, penalty-adjustable reputation total. Introduced in version 3.</summary>
+    /// <summary>Persistent courier rating total. Introduced in version 3 and floored at zero.</summary>
     public int totalReputation;
 
-    /// <summary>Highest rank ever reached. A high-water mark: never lowered by a later reputation penalty.</summary>
+    /// <summary>Highest visual rank ever reached. It does not unlock content.</summary>
     public int highestRankAchieved = 1;
 
-    /// <summary>Highest region tier ever unlocked. A high-water mark, same as <see cref="highestRankAchieved"/>.</summary>
+    /// <summary>Legacy region progress retained for save compatibility; it does not unlock content.</summary>
     public int highestUnlockedRegionTier = 1;
 
     /// <summary>One-based day counter. Advances when the day's last shift settles.</summary>
@@ -54,8 +57,29 @@ public class GameSaveData {
     /// <summary>Rank rent was charged at the last time a day ended. Drives the post-rank-up grace day.</summary>
     public int lastRentChargeRank = 1;
 
-    /// <summary>True once the career's reputation ending threshold has been reached.</summary>
+    /// <summary>Legacy completion flag retained for save compatibility.</summary>
     public bool reachedEnding;
+
+    /// <summary>True after the authored final career shift has been completed successfully.</summary>
+    public bool careerCompleted;
+
+    /// <summary>Total shifts settled in this career, excluding endless sessions.</summary>
+    public int totalShiftsSettled;
+
+    /// <summary>Total customer orders completed across settled career shifts.</summary>
+    public int totalOrdersCompleted;
+
+    /// <summary>Total pizzas delivered across settled career shifts.</summary>
+    public int totalPizzasDelivered;
+
+    /// <summary>Highest score reached in a settled career shift.</summary>
+    public int bestShiftScore;
+
+    /// <summary>Highest number of pizzas delivered in one settled career shift.</summary>
+    public int bestShiftDeliveries;
+
+    /// <summary>Highest number of pizzas delivered in one settled endless session.</summary>
+    public int bestFreeplayDeliveries;
 
     /// <summary>
     /// True while a session is running. Set when a shift starts and cleared at settlement, so a

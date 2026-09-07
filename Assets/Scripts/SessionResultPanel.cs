@@ -26,6 +26,15 @@ public class SessionResultPanel : MonoBehaviour {
     [SerializeField] string rentPaidKey = "result.rent.paid";
     [SerializeField] string rentShortfallKey = "result.rent.shortfall";
     [SerializeField] string rentFreeKey = "result.rent.free";
+    [SerializeField] string personalBestScoreKey = "result.personalBestScore";
+    [SerializeField] string personalBestDeliveriesKey = "result.personalBestDeliveries";
+    [SerializeField] string personalBestFreeplayKey = "result.personalBestFreeplay";
+    [SerializeField] string perfectShiftKey = "result.perfectShift";
+    [SerializeField] string finalChallengeKey = "ending.finalChallenge";
+    [SerializeField] string finalCompleteKey = "ending.complete";
+    [SerializeField] string finalCreditsKey = "ending.credits";
+    [SerializeField] string checkKey = "common.check";
+    [SerializeField] string crossKey = "common.cross";
     SessionResult shownResult;
     int shownDelivered, shownMissed, shownScore;
     bool hasResult;
@@ -50,6 +59,9 @@ public class SessionResultPanel : MonoBehaviour {
     [SerializeField] TextMeshProUGUI reputationText;
     [Tooltip("Shown only when this shift ended the day, reporting that day's rent settlement.")]
     [SerializeField] TextMeshProUGUI rentText;
+    [SerializeField] TextMeshProUGUI recordText;
+    [SerializeField] TextMeshProUGUI perfectShiftText;
+    [SerializeField] TextMeshProUGUI finalCreditsText;
 
     [SerializeField] Button returnToGarageButton;
 
@@ -109,7 +121,11 @@ public class SessionResultPanel : MonoBehaviour {
         // confirmation rather than something conditional on a save result.
         if (savedText != null) savedText.text = LocalizationManager.Get(savedKey);
 
-        if (reputationText != null) LocalizationManager.SetText(reputationText, reputationKey, result.reputationEarned, result.rankAfter);
+        if (reputationText != null) {
+            string signedDelta = result.ratingDelta > 0 ? "+" + result.ratingDelta.ToString()
+                : result.ratingDelta.ToString();
+            reputationText.text = LocalizationManager.Get(reputationKey, signedDelta, result.rankAfter);
+        }
 
         if (rentText != null) {
             rentText.gameObject.SetActive(result.dayEnded);
@@ -118,11 +134,43 @@ public class SessionResultPanel : MonoBehaviour {
                     LocalizationManager.SetText(rentText, rentFreeKey, result.dayNumber);
                 }
                 else if (result.rent.shortfall > 0) {
-                    rentText.text = LocalizationManager.Get(rentShortfallKey, result.dayNumber, result.rent.rentDue, result.rent.shortfall, result.rent.reputationPenalty);
+                    rentText.text = LocalizationManager.Get(rentShortfallKey, result.dayNumber, result.rent.rentDue, result.rent.shortfall);
                 }
                 else {
                     LocalizationManager.SetText(rentText, rentPaidKey, result.dayNumber, result.rent.rentDue);
                 }
+            }
+        }
+
+        if (recordText != null) {
+            bool hasRecord = result.personalBestScore || result.personalBestDeliveries || result.personalBestFreeplayDeliveries;
+            recordText.gameObject.SetActive(hasRecord);
+            if (hasRecord) {
+                string key = result.personalBestFreeplayDeliveries ? personalBestFreeplayKey :
+                    (result.personalBestScore && result.personalBestDeliveries ? personalBestScoreKey : personalBestDeliveriesKey);
+                recordText.text = LocalizationManager.Get(key);
+            }
+        }
+
+        if (perfectShiftText != null) {
+            perfectShiftText.gameObject.SetActive(!result.isFreeplay);
+            if (!result.isFreeplay) {
+                string check = LocalizationManager.Get(checkKey);
+                string cross = LocalizationManager.Get(crossKey);
+                perfectShiftText.text = LocalizationManager.Get(perfectShiftKey,
+                    result.noMissedOrders ? check : cross,
+                    result.noCollisionDamage ? check : cross,
+                    result.noPizzasLost ? check : cross,
+                    result.perfectShift ? check : cross);
+            }
+        }
+
+        if (finalCreditsText != null) {
+            finalCreditsText.gameObject.SetActive(result.isFinalShift || result.careerCompleted);
+            if (result.isFinalShift || result.careerCompleted) {
+                finalCreditsText.text = LocalizationManager.Get(
+                    result.finalShiftSucceeded || result.careerCompleted ? finalCompleteKey : finalChallengeKey);
+                if (result.careerCompleted) finalCreditsText.text += "\n" + LocalizationManager.Get(finalCreditsKey);
             }
         }
     }

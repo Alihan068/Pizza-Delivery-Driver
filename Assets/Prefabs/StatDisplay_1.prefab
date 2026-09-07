@@ -439,9 +439,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87014d3d76298c943b02979d9dbdf658, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  levelKey: stat.level
+  maxKey: stat.max
+  costKey: common.money
   statNameText: {fileID: 3402115640057252975}
   descriptionText: {fileID: 4449105202504398269}
   levelText: {fileID: 8592160368974381462}
+  valueText: {fileID: 0}
   costText: {fileID: 996996100126401505}
   upgradeButton: {fileID: 639362346657585927}
 --- !u!1 &5691859888922317848
@@ -592,6 +596,7 @@ GameObject:
   - component: {fileID: 8271998152644659193}
   - component: {fileID: 6752241309094911588}
   - component: {fileID: 639362346657585927}
+  - component: {fileID: 1249883459515422125}
   m_Layer: 5
   m_Name: UpgradeButton
   m_TagString: Untagged
@@ -701,6 +706,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1249883459515422125
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6471804045199012062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ca8f104daa782c47910776af63452f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickClip: {fileID: 8300000, guid: 24d73765699ce3e46bb23cabc3a46494, type: 3}
+  volume: 0.8
 --- !u!1 &7525105153192834648
 GameObject:
   m_ObjectHideFlags: 0

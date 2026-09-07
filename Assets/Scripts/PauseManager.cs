@@ -36,17 +36,23 @@ public class PauseManager : MonoBehaviour {
         }
 
         if (resumeButton != null) resumeButton.onClick.AddListener(OnClickResume);
-        if (garageButton != null) garageButton.onClick.AddListener(OnClickReturnToGarage);
-        if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
         if (settingsButton != null) settingsButton.onClick.AddListener(OnClickSettings);
-        if (settingsPanel != null) settingsPanel.Closed += CloseSettings;
+        if (settingsPanel != null) {
+            settingsPanel.Closed += CloseSettings;
+            settingsPanel.ReturnToGarageRequested += OnClickReturnToGarage;
+            settingsPanel.ReturnToMainMenuRequested += OnClickMainMenu;
+        }
 
         if (pauseCanvas != null) pauseCanvas.SetActive(false);
         if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
     }
 
     void OnDestroy() {
-        if (settingsPanel != null) settingsPanel.Closed -= CloseSettings;
+        if (settingsPanel != null) {
+            settingsPanel.Closed -= CloseSettings;
+            settingsPanel.ReturnToGarageRequested -= OnClickReturnToGarage;
+            settingsPanel.ReturnToMainMenuRequested -= OnClickMainMenu;
+        }
     }
 
     void Update() {

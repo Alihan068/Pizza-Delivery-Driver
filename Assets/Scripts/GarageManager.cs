@@ -57,11 +57,15 @@ public class GarageManager : MonoBehaviour {
 
     [Header("Navigation")]
     public Button mainMenuButton;
+    /// <summary>Opens the shared settings panel from the garage corner control.</summary>
+    public Button settingsButton;
+    /// <summary>Shared settings panel instance owned by this garage scene.</summary>
+    public SettingsPanel settingsPanel;
 
     [Header("Map Selection")]
-    /// <summary>Button that opens the map and modifier picker.</summary>
+    /// <summary>Legacy inline map button. The active garage uses <see cref="startButton"/> to open the separate map selection scene.</summary>
     public Button mapSelectionButton;
-    /// <summary>Map and modifier picker shown above the garage.</summary>
+    /// <summary>Legacy inline picker reference. It should remain empty after the map selection scene migration.</summary>
     public MapSelectionPanel mapSelectionPanel;
 
     [Header("Slot Management")]
@@ -83,11 +87,15 @@ public class GarageManager : MonoBehaviour {
         }
 
         if (purchaseButton != null) purchaseButton.onClick.AddListener(OnClickPurchaseVehicle);
-        if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
-        if (mapSelectionButton != null && mapSelectionPanel != null) mapSelectionButton.onClick.AddListener(mapSelectionPanel.Open);
-        if (copyToSlotButton != null) copyToSlotButton.onClick.AddListener(OnClickCopyToSlot);
+        if (settingsPanel != null) settingsPanel.Closed += CloseSettings;
+        if (settingsButton != null) settingsButton.onClick.AddListener(OnClickSettings);
+        if (startButton != null) startButton.onClick.AddListener(OnClickMapSelection);
 
         UpdateUI();
+    }
+
+    void OnDestroy() {
+        if (settingsPanel != null) settingsPanel.Closed -= CloseSettings;
     }
 
     void UpdateUI() {
@@ -98,7 +106,7 @@ public class GarageManager : MonoBehaviour {
         if (rankText != null) {
             bool hasCareerLayer = GameManager.Instance.Career != null;
             rankText.gameObject.SetActive(hasCareerLayer);
-            if (hasCareerLayer) LocalizationManager.SetText(rankText, rankKey, GameManager.Instance.CurrentRank, GameManager.Instance.totalReputation);
+            if (hasCareerLayer) LocalizationManager.SetText(rankText, rankKey, GameManager.Instance.CurrentRank, GameManager.Instance.CourierRating);
         }
 
         var currentVehicle = GameManager.Instance.currentVehicle;
@@ -197,17 +205,24 @@ public class GarageManager : MonoBehaviour {
         UpdateUI();
     }
 
-    /// <summary>Starts a session on the selected map, when the vehicle is owned.</summary>
-    public void OnClickStartJob() {
-        var save = GameManager.Instance.GetCurrentVehicleSave();
+    /// <summary>Opens the separate map selection screen when the current vehicle is owned.</summary>
+    public void OnClickMapSelection() {
+        var save = GameManager.Instance != null ? GameManager.Instance.GetCurrentVehicleSave() : null;
         if (save == null || !save.isUnlocked) return;
 
-        var map = GameManager.Instance.currentMap;
-        if (map == null || string.IsNullOrEmpty(map.sceneName)) {
-            Debug.LogError("No map is selected, or the selected map has no scene assigned.");
+        var config = GameManager.Instance != null ? GameManager.Instance.Config : null;
+        if (config == null || string.IsNullOrEmpty(config.mapSelectionScene)) {
+            Debug.LogError("No map selection scene is configured in GameConfig.");
             return;
         }
-        SceneManager.LoadScene(map.sceneName);
+
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(config.mapSelectionScene);
+    }
+
+    /// <summary>Legacy entry point retained for scene and external compatibility.</summary>
+    public void OnClickStartJob() {
+        OnClickMapSelection();
     }
 
     /// <summary>Returns to the main menu.</summary>
@@ -218,6 +233,15 @@ public class GarageManager : MonoBehaviour {
             return;
         }
         SceneManager.LoadScene(config.mainMenuScene);
+    }
+
+    /// <summary>Opens the shared garage settings panel.</summary>
+    public void OnClickSettings() {
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(true);
+    }
+
+    void CloseSettings() {
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
     }
 
     /// <summary>Opens the slot picker to copy the active career onto another slot.</summary>

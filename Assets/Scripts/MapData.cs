@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// One playable map: which scene it loads, how a session in it is configured, and how it is
-/// presented and gated in the map selection screen.
+/// presented in the map selection screen and purchased once with in-game currency.
 /// </summary>
 /// <remarks>
 /// Maps are content, exactly like vehicles. They are discovered through <see cref="ContentRegistry"/>
@@ -37,13 +37,13 @@ public class MapData : ScriptableObject {
     public LevelData levelData;
 
     [Header("Progression")]
-    [Tooltip("Rank the player must reach before this map can be selected. Zero means available from the start.")]
+    [Tooltip("Legacy field retained for compatibility. Map access is never gated by rank.")]
     public int requiredRank;
 
-    [Tooltip("One-based region tier this map belongs to. Sets both its base reputation rate and which region reputation cap applies.")]
+    [Tooltip("Legacy region grouping retained for content compatibility. It does not affect courier rating or access.")]
     public int regionTier = 1;
 
-    [Tooltip("One-time currency fee to unlock this region's maps. Zero means free once the rank gate is met.")]
+    [Tooltip("One-time currency price to purchase this map. Zero makes it free.")]
     public int unlockPrice;
 
     /// <summary>Name shown to the player, resolved from <see cref="displayNameKey"/>.</summary>

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour {
     public static GameManager Instance;
@@ -22,8 +23,12 @@ public class GameManager : MonoBehaviour {
     [SerializeField] float repairBankSafetyRate = 0.5f;
 
     [Header("Upgrade Cost")]
-    [SerializeField] float upgradeCostBase = 460f;
-    [SerializeField] float upgradeCostStep = 380f;
+    [SerializeField] float upgradeCostBase = 100f;
+    [SerializeField] float upgradeCostStep = 40f;
+
+    [Header("Audio")]
+    [Tooltip("Sound played when a career shift raises the courier's visual rank.")]
+    [SerializeField] AudioClip rankUpClip;
 
     [Header("Built-in Content")]
     [Tooltip("Vehicles that ship with the build. Externally supplied vehicles are added through the content registry, not here.")]
@@ -41,6 +46,8 @@ public class GameManager : MonoBehaviour {
     public MapData currentMap;
     ShiftModifierData currentModifier;
     public List<VehicleSaveData> vehicleSaveList = new List<VehicleSaveData>();
+    /// <summary>Permanent map ids the active profile has purchased or received as a starter.</summary>
+    public List<string> ownedMapIds = new List<string>();
     public DriverSaveData driverStats = new DriverSaveData();
 
     [Header("Career Progress")]
@@ -52,6 +59,24 @@ public class GameManager : MonoBehaviour {
     public bool everPaidRent;
     public int lastRentChargeRank = 1;
     public bool reachedEnding;
+    /// <summary>True after the authored final career challenge has been completed successfully.</summary>
+    public bool careerCompleted;
+
+    [Header("Career Records")]
+    /// <summary>Total settled career shifts, excluding endless sessions.</summary>
+    public int totalShiftsSettled;
+    /// <summary>Total customer orders completed across settled career shifts.</summary>
+    public int totalOrdersCompleted;
+    /// <summary>Total pizzas delivered across settled career shifts.</summary>
+    public int totalPizzasDelivered;
+    /// <summary>Highest score reached in one settled career shift.</summary>
+    public int bestShiftScore;
+    /// <summary>Highest pizza delivery count reached in one settled career shift.</summary>
+    public int bestShiftDeliveries;
+    /// <summary>Highest pizza delivery count reached in one endless session.</summary>
+    public int bestFreeplayDeliveries;
+
+    bool isFreeplayMode;
 
     /// <summary>Every vehicle and map the game knows about, from all content sources.</summary>
     public ContentRegistry Content { get; private set; }
@@ -75,8 +100,40 @@ public class GameManager : MonoBehaviour {
     /// <summary>Modifier selected for the next shift, or null for an unmodified shift.</summary>
     public ShiftModifierData CurrentModifier => currentModifier;
 
-    /// <summary>Rank the active career has reached, from <see cref="totalReputation"/>.</summary>
-    public int CurrentRank => Career != null ? Career.ComputeRank(totalReputation, out _) : 1;
+    /// <summary>Persistent courier rating shown in career UI and available to future leaderboards.</summary>
+    public int CourierRating => Mathf.Max(0, totalReputation);
+
+    /// <summary>Visual rank represented by the active courier rating.</summary>
+    public int CurrentRank => Career != null ? Career.ComputeRank(CourierRating, out _) : 1;
+
+    /// <summary>True while the current gameplay scene is running an endless session.</summary>
+    public bool IsFreeplayMode => isFreeplayMode;
+
+    /// <summary>True after the authored final career challenge has been completed.</summary>
+    public bool IsCareerCompleted => careerCompleted;
+
+    /// <summary>
+    /// True when the next career shift is the authored final challenge. This is driven by career
+    /// day data rather than courier rating, so the rating remains a display-only performance score.
+    /// </summary>
+    public bool IsFinalShift {
+        get {
+            return !isFreeplayMode && !careerCompleted && CareerData != null &&
+                   currentDay >= Mathf.Max(1, CareerData.finalShiftDay);
+        }
+    }
+
+    /// <summary>Plays a one-shot sound through the persistent SFX audio source.</summary>
+    /// <param name="clip">Clip to play; ignored when null or when the shared source is unavailable.</param>
+    /// <param name="volume">Relative one-shot volume in the range 0 to 1.</param>
+    public void PlaySfx(AudioClip clip, float volume = 1f) {
+        if (clip == null) return;
+        var source = GetComponent<AudioSource>();
+        if (source != null) source.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+
+    /// <summary>Number of orders required by the authored final career challenge.</summary>
+    public int FinalShiftOrderTarget => CareerData != null ? Mathf.Max(1, CareerData.finalShiftOrderTarget) : 1;
 
     /// <summary>
     /// True when the loaded profile was written while a session was still running, meaning the game
@@ -132,6 +189,7 @@ public class GameManager : MonoBehaviour {
     /// <param name="slotIndex">Slot to load.</param>
     /// <returns>How reading the slot turned out.</returns>
     public SaveLoadStatus LoadCareer(int slotIndex) {
+        isFreeplayMode = false;
         ActiveSlot = Mathf.Clamp(slotIndex, 0, Saves.SlotCount - 1);
         PlayerPrefs.SetInt(LastSlotKey, ActiveSlot);
         PlayerPrefs.Save();
@@ -141,6 +199,7 @@ public class GameManager : MonoBehaviour {
         else ApplySaveData(data);
 
         InitializeVehicles();
+        InitializeMaps();
 
         // Runs after InitializeVehicles because the repair bill needs the vehicle's stats.
         SettleInterruptedShiftIfNeeded();
@@ -150,6 +209,7 @@ public class GameManager : MonoBehaviour {
     /// <summary>Wipes a slot and begins a brand new career in it.</summary>
     /// <param name="slotIndex">Slot the new career occupies.</param>
     public void StartNewCareer(int slotIndex) {
+        isFreeplayMode = false;
         ActiveSlot = Mathf.Clamp(slotIndex, 0, Saves.SlotCount - 1);
         PlayerPrefs.SetInt(LastSlotKey, ActiveSlot);
         PlayerPrefs.Save();
@@ -157,12 +217,34 @@ public class GameManager : MonoBehaviour {
         Saves.Delete(ActiveSlot);
         StartFreshCareer();
         InitializeVehicles();
+        InitializeMaps();
         SaveGame();
+    }
+
+    /// <summary>
+    /// Starts an endless session on the currently selected owned map without changing career day,
+    /// courier rating, rent state, or career objectives. The session still settles money and repair
+    /// costs when it ends, and its best delivery count is stored as a personal record.
+    /// </summary>
+    public void StartFreeplay() {
+        if (currentMap == null || string.IsNullOrEmpty(currentMap.sceneName)) {
+            Debug.LogError("Cannot start freeplay because the selected map has no gameplay scene.");
+            return;
+        }
+        if (!IsMapOwned(currentMap)) {
+            Debug.LogError("Cannot start freeplay because the selected map is not owned.");
+            return;
+        }
+
+        isFreeplayMode = true;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(currentMap.sceneName);
     }
 
     void StartFreshCareer() {
         totalMoney = config != null ? config.startingMoney : totalMoney;
         vehicleSaveList = new List<VehicleSaveData>();
+        ownedMapIds = new List<string>();
         driverStats = new DriverSaveData();
         currentVehicle = Content.ResolveStartingVehicle(config != null ? config.startingVehicle : null);
         currentMap = Content.ResolveStartingMap(config != null ? config.startingMap : null);
@@ -176,11 +258,19 @@ public class GameManager : MonoBehaviour {
         everPaidRent = false;
         lastRentChargeRank = 1;
         reachedEnding = false;
+        careerCompleted = false;
+        totalShiftsSettled = 0;
+        totalOrdersCompleted = 0;
+        totalPizzasDelivered = 0;
+        bestShiftScore = 0;
+        bestShiftDeliveries = 0;
+        bestFreeplayDeliveries = 0;
     }
 
     void ApplySaveData(GameSaveData data) {
         totalMoney = data.totalMoney;
         vehicleSaveList = data.vehicleSaveList ?? new List<VehicleSaveData>();
+        ownedMapIds = data.ownedMapIds ?? new List<string>();
         driverStats = data.driverStats ?? new DriverSaveData();
         HasInterruptedShift = data.shiftInProgress;
 
@@ -194,7 +284,7 @@ public class GameManager : MonoBehaviour {
         currentMap = Content.GetMap(data.currentMapId);
         if (currentMap == null) currentMap = Content.ResolveStartingMap(config != null ? config.startingMap : null);
 
-        totalReputation = data.totalReputation;
+        totalReputation = Mathf.Max(0, data.totalReputation);
         highestRankAchieved = Mathf.Max(1, data.highestRankAchieved);
         highestUnlockedRegionTier = Mathf.Max(1, data.highestUnlockedRegionTier);
         currentDay = Mathf.Max(1, data.currentDay);
@@ -202,6 +292,13 @@ public class GameManager : MonoBehaviour {
         everPaidRent = data.everPaidRent;
         lastRentChargeRank = Mathf.Max(1, data.lastRentChargeRank);
         reachedEnding = data.reachedEnding;
+        careerCompleted = data.careerCompleted;
+        totalShiftsSettled = Mathf.Max(0, data.totalShiftsSettled);
+        totalOrdersCompleted = Mathf.Max(0, data.totalOrdersCompleted);
+        totalPizzasDelivered = Mathf.Max(0, data.totalPizzasDelivered);
+        bestShiftScore = Mathf.Max(0, data.bestShiftScore);
+        bestShiftDeliveries = Mathf.Max(0, data.bestShiftDeliveries);
+        bestFreeplayDeliveries = Mathf.Max(0, data.bestFreeplayDeliveries);
     }
 
     GameSaveData BuildSaveData() {
@@ -211,6 +308,7 @@ public class GameManager : MonoBehaviour {
             currentVehicleId = currentVehicle != null ? currentVehicle.vehicleId : string.Empty,
             currentMapId = currentMap != null ? currentMap.mapId : string.Empty,
             vehicleSaveList = vehicleSaveList,
+            ownedMapIds = ownedMapIds,
             driverStats = driverStats,
             shiftInProgress = HasInterruptedShift,
             totalReputation = totalReputation,
@@ -220,7 +318,14 @@ public class GameManager : MonoBehaviour {
             shiftsCompletedToday = shiftsCompletedToday,
             everPaidRent = everPaidRent,
             lastRentChargeRank = lastRentChargeRank,
-            reachedEnding = reachedEnding
+            reachedEnding = reachedEnding,
+            careerCompleted = careerCompleted,
+            totalShiftsSettled = totalShiftsSettled,
+            totalOrdersCompleted = totalOrdersCompleted,
+            totalPizzasDelivered = totalPizzasDelivered,
+            bestShiftScore = bestShiftScore,
+            bestShiftDeliveries = bestShiftDeliveries,
+            bestFreeplayDeliveries = bestFreeplayDeliveries
         };
     }
 
@@ -268,7 +373,7 @@ public class GameManager : MonoBehaviour {
             HasInterruptedShift = false;
             return;
         }
-        PendingInterruptedResult = SettleSession(0, 0f, GetHealth(), EndReason.Interrupted, 0, 0);
+        PendingInterruptedResult = SettleSession(0, 0f, GetHealth(), EndReason.Interrupted, 0, 0, 0, 0f);
     }
 
     void InitializeVehicles() {
@@ -279,6 +384,20 @@ public class GameManager : MonoBehaviour {
         foreach (var vehicle in Content.Vehicles) {
             if (vehicleSaveList.Exists(x => x.vehicleId == vehicle.vehicleId)) continue;
             vehicleSaveList.Add(new VehicleSaveData(vehicle.vehicleId, vehicle == starter));
+        }
+    }
+
+    void InitializeMaps() {
+        if (ownedMapIds == null) ownedMapIds = new List<string>();
+
+        var starter = Content.ResolveStartingMap(config != null ? config.startingMap : null);
+        if (starter != null && !string.IsNullOrEmpty(starter.mapId) && !ownedMapIds.Contains(starter.mapId)) {
+            ownedMapIds.Add(starter.mapId);
+        }
+
+        // Preserve a map that a legacy profile had already selected under the former rank gate.
+        if (currentMap != null && !string.IsNullOrEmpty(currentMap.mapId) && !ownedMapIds.Contains(currentMap.mapId)) {
+            ownedMapIds.Add(currentMap.mapId);
         }
     }
 
@@ -446,16 +565,16 @@ public class GameManager : MonoBehaviour {
         return true;
     }
 
-    /// <summary>Buys the active vehicle when it is still locked, rank-eligible, and affordable.</summary>
+    /// <summary>Buys the active vehicle when it is still locked and affordable.</summary>
     /// <returns>True when the vehicle was unlocked and money was spent.</returns>
     public bool TryPurchaseVehicle() {
         var save = GetCurrentVehicleSave();
         if (save == null || currentVehicle == null) return false;
         if (save.isUnlocked) return false;
-        if (CurrentRank < currentVehicle.requiredRank) return false;
-        if (totalMoney < currentVehicle.price) return false;
+        int price = Mathf.Max(0, currentVehicle.price);
+        if (totalMoney < price) return false;
 
-        totalMoney -= currentVehicle.price;
+        totalMoney -= price;
         save.isUnlocked = true;
         SaveGame();
         return true;
@@ -480,10 +599,38 @@ public class GameManager : MonoBehaviour {
         SaveGame();
     }
 
-    /// <summary>Selects the map the next session will be played on.</summary>
-    /// <param name="map">Map to select. Ignored when null.</param>
+    /// <summary>Returns whether a map has been purchased by the active profile.</summary>
+    /// <param name="map">Map to inspect.</param>
+    /// <returns>True when the map id is present in the persistent ownership list.</returns>
+    public bool IsMapOwned(MapData map) {
+        return map != null && ownedMapIds != null && !string.IsNullOrEmpty(map.mapId) && ownedMapIds.Contains(map.mapId);
+    }
+
+    /// <summary>Returns whether the active profile can purchase a map right now.</summary>
+    /// <param name="map">Map to inspect.</param>
+    /// <returns>True when the map is registered, unowned, and affordable.</returns>
+    public bool CanPurchaseMap(MapData map) {
+        if (map == null || Content == null || Content.GetMap(map.mapId) != map || IsMapOwned(map)) return false;
+        return totalMoney >= Mathf.Max(0, map.unlockPrice);
+    }
+
+    /// <summary>Purchases a map once and stores ownership by its permanent id.</summary>
+    /// <param name="map">Map to purchase.</param>
+    /// <returns>True when ownership was newly granted and currency was spent.</returns>
+    public bool TryPurchaseMap(MapData map) {
+        if (!CanPurchaseMap(map)) return false;
+
+        int price = Mathf.Max(0, map.unlockPrice);
+        totalMoney -= price;
+        ownedMapIds.Add(map.mapId);
+        SaveGame();
+        return true;
+    }
+
+    /// <summary>Selects an owned map for the next session.</summary>
+    /// <param name="map">Map to select. Ignored when null or unowned.</param>
     public void SelectMap(MapData map) {
-        if (map == null || CurrentRank < map.requiredRank) return;
+        if (map == null || !IsMapOwned(map)) return;
         currentMap = map;
         SaveGame();
     }
@@ -508,34 +655,31 @@ public class GameManager : MonoBehaviour {
     /// <param name="died">True when the vehicle was wrecked, which bills the full health bar.</param>
     /// <returns>The repair cost before the bank safety clamp.</returns>
     public int CalculateRepairCost(float currentHealth, float maxHealth, bool died) {
-        if (maxHealth <= 0f) return 0;
-        float hpLost = died ? maxHealth : Mathf.Clamp(maxHealth - currentHealth, 0f, maxHealth);
-        float damageRatio = hpLost / maxHealth;
-        return Mathf.RoundToInt(hpLost * repairCostPerHP + GetVehicleValue() * repairValueRate * damageRatio);
+        return SessionSettlementMath.CalculateRepairCost(currentHealth, maxHealth, died, GetVehicleValue(),
+            repairCostPerHP, repairValueRate);
     }
 
     /// <summary>
-    /// Closes a session: banks the kept earnings, charges repairs, earns reputation, settles the
-    /// day's rent if this was its last shift, and writes the result to disk.
+    /// Closes a session: banks the kept earnings, charges repairs, applies signed courier rating,
+    /// settles the day's rent if this was its last shift, and writes the result to disk.
     /// </summary>
     /// <param name="sessionEarnings">Money earned during the session, not yet banked.</param>
     /// <param name="currentHealth">Health remaining at the end.</param>
     /// <param name="maxHealth">The vehicle's maximum health.</param>
     /// <param name="reason">How the session ended, which decides how much of the earnings survive.</param>
-    /// <param name="ordersCompleted">Orders fully delivered this shift, for the reputation quality signal.</param>
-    /// <param name="ordersOffered">Customers that appeared this shift, for the reputation quality signal.</param>
+    /// <param name="ordersCompleted">Orders fully delivered this shift.</param>
+    /// <param name="ordersOffered">Customers that appeared this shift.</param>
+    /// <param name="missedCustomers">Customers that timed out this shift.</param>
+    /// <param name="activeSessionSeconds">Unpaused seconds spent in the shift.</param>
+    /// <param name="deliveredPizzas">Pizzas delivered during the shift.</param>
+    /// <param name="score">Score produced during the shift.</param>
+    /// <param name="freeplay">True when this is an endless session and career day state must not change.</param>
     /// <returns>A breakdown of the settlement for the result screen.</returns>
-    public SessionResult SettleSession(int sessionEarnings, float currentHealth, float maxHealth, EndReason reason, int ordersCompleted, int ordersOffered) {
+    public SessionResult SettleSession(int sessionEarnings, float currentHealth, float maxHealth, EndReason reason, int ordersCompleted, int ordersOffered, int missedCustomers, float activeSessionSeconds, int deliveredPizzas = 0, int score = 0, bool freeplay = false) {
+        bool wasFinalShift = !freeplay && IsFinalShift;
         int bankBefore = totalMoney;
 
-        int kept;
-        switch (reason) {
-            case EndReason.Wrecked: kept = Mathf.FloorToInt(sessionEarnings * deathEarningsKeep); break;
-            case EndReason.Abandoned: kept = 0; break;
-            case EndReason.Interrupted: kept = 0; break;
-            default: kept = sessionEarnings; break;
-        }
-        kept = Mathf.Max(0, kept);
+        int kept = SessionSettlementMath.CalculateKeptEarnings(sessionEarnings, reason, deathEarningsKeep);
 
         // An interrupted shift is billed like a wreck: the vehicle was left in the street, so the
         // full health bar is charged. The bank safety clamp below still caps the damage, which is
@@ -543,10 +687,9 @@ public class GameManager : MonoBehaviour {
         bool died = (reason == EndReason.Wrecked || reason == EndReason.Interrupted);
         int repairRaw = CalculateRepairCost(currentHealth, maxHealth, died);
 
-        int maxCharge = kept + Mathf.FloorToInt(bankBefore * repairBankSafetyRate);
-        int repair = Mathf.Clamp(repairRaw, 0, maxCharge);
+        int repair = SessionSettlementMath.ClampRepairCost(repairRaw, kept, bankBefore, repairBankSafetyRate);
 
-        totalMoney = Mathf.Max(0, bankBefore + kept - repair);
+        totalMoney = SessionSettlementMath.CalculateBankAfter(bankBefore, kept, repair);
 
         var result = new SessionResult {
             reason = reason,
@@ -556,36 +699,31 @@ public class GameManager : MonoBehaviour {
             repairBeforeClamp = repairRaw,
             bankBefore = bankBefore,
             bankAfter = totalMoney,
-            rankAfter = CurrentRank
+            rankAfter = CurrentRank,
+            isFreeplay = freeplay,
+            isFinalShift = wasFinalShift
         };
 
         // Rent is charged inside this same call, atomically with the day's last shift, rather than
-        // as a separate check the garage could run later - otherwise a player could spend the bank
-        // to zero the instant a day ends and dodge rent on demand every single day, no matter how
-        // gentle the shortfall penalty is (BF-021-adjacent finding from the Economy Designer pass).
-        if (Career != null) {
-            int regionTier = currentMap != null ? currentMap.regionTier : 1;
-            float onTimeRate = ordersOffered > 0 ? (float)ordersCompleted / ordersOffered : (ordersCompleted > 0 ? 1f : 0f);
+        // as a separate check the garage could run later. Rent affects currency only and never rating.
+        if (!freeplay && Career != null) {
+            int rankBefore = CurrentRank;
             float healthRetainedRatio = maxHealth > 0f ? Mathf.Clamp01(currentHealth / maxHealth) : 0f;
-            int reputationEarned = Career.ComputeShiftReputation(regionTier, onTimeRate, healthRetainedRatio, reason);
+            int ratingDelta = Career.ComputeRatingDelta(activeSessionSeconds, ordersCompleted, ordersOffered,
+                missedCustomers, healthRetainedRatio, reason);
+            totalReputation = Mathf.Max(0, totalReputation + ratingDelta);
 
-            int cap = Career.GetRegionCap(highestUnlockedRegionTier);
-            totalReputation = Mathf.Clamp(totalReputation + reputationEarned, 0, cap);
-
-            int rankAfter = Career.ComputeRank(totalReputation, out bool reachedEndingNow);
+            int rankAfter = Career.ComputeRank(totalReputation, out _);
             if (rankAfter > highestRankAchieved) highestRankAchieved = rankAfter;
-            int unlockedTier = Career.ComputeUnlockedRegionTier(rankAfter);
-            if (unlockedTier > highestUnlockedRegionTier) highestUnlockedRegionTier = unlockedTier;
-            if (reachedEndingNow) reachedEnding = true;
+            if (rankAfter > rankBefore) PlaySfx(rankUpClip);
 
-            result.reputationEarned = reputationEarned;
+            result.ratingDelta = ratingDelta;
             result.rankAfter = rankAfter;
 
             shiftsCompletedToday++;
             if (shiftsCompletedToday >= careerData.shiftsPerDay) {
                 var rent = Career.ComputeRentSettlement(rankAfter, lastRentChargeRank, everPaidRent, totalMoney);
                 totalMoney = rent.bankAfter;
-                if (rent.reputationPenalty > 0) totalReputation = Mathf.Max(0, totalReputation - rent.reputationPenalty);
                 everPaidRent = true;
                 lastRentChargeRank = rankAfter;
 
@@ -599,11 +737,45 @@ public class GameManager : MonoBehaviour {
             }
         }
 
+        bool finalShiftSucceeded = wasFinalShift &&
+            (reason == EndReason.TimeUp || reason == EndReason.Extracted) &&
+            ordersCompleted >= FinalShiftOrderTarget;
+        if (finalShiftSucceeded) {
+            careerCompleted = true;
+            reachedEnding = true;
+        }
+
+        RecordSessionStatistics(freeplay, deliveredPizzas, ordersCompleted, score);
+        result.careerCompleted = careerCompleted;
+        result.finalShiftSucceeded = finalShiftSucceeded;
+        result.personalBestScore = !freeplay && score > 0 && score >= bestShiftScore;
+        result.personalBestDeliveries = !freeplay && deliveredPizzas > 0 && deliveredPizzas >= bestShiftDeliveries;
+        result.personalBestFreeplayDeliveries = freeplay && deliveredPizzas > 0 && deliveredPizzas >= bestFreeplayDeliveries;
+        result.bankAfter = totalMoney;
+
         // The shift is over however it ended, so the interrupted-shift flag is cleared here rather
         // than on any one ending path.
         HasInterruptedShift = false;
+        isFreeplayMode = false;
         SaveGame();
 
         return result;
+    }
+
+    void RecordSessionStatistics(bool freeplay, int deliveredPizzas, int ordersCompleted, int score) {
+        int safeDelivered = Mathf.Max(0, deliveredPizzas);
+        int safeOrders = Mathf.Max(0, ordersCompleted);
+        int safeScore = Mathf.Max(0, score);
+
+        if (freeplay) {
+            bestFreeplayDeliveries = Mathf.Max(bestFreeplayDeliveries, safeDelivered);
+            return;
+        }
+
+        totalShiftsSettled++;
+        totalOrdersCompleted += safeOrders;
+        totalPizzasDelivered += safeDelivered;
+        bestShiftScore = Mathf.Max(bestShiftScore, safeScore);
+        bestShiftDeliveries = Mathf.Max(bestShiftDeliveries, safeDelivered);
     }
 }

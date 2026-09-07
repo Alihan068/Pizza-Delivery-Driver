@@ -36,6 +36,9 @@ public class GameConfig : ScriptableObject {
     [Tooltip("Scene name of the garage hub. Must be present in Build Settings.")]
     public string garageScene = "GarageScene";
 
+    [Tooltip("Scene name of the map selection screen. Must be present in Build Settings.")]
+    public string mapSelectionScene = "MapSelectionScene";
+
     [Header("New Career")]
     [Tooltip("Money a brand new career starts with.")]
     public int startingMoney = 100;
@@ -54,6 +57,31 @@ public class GameConfig : ScriptableObject {
     /// <summary>Lower bound for the gameplay camera orthographic size on wide displays.</summary>
     [Tooltip("Smallest orthographic size allowed when preserving the authored horizontal framing on wide displays.")]
     [Min(0.1f)] public float cameraMinimumOrthographicSize = 3f;
+
+    [Header("Display Defaults")]
+    /// <summary>Default window width used before a saved display preference exists.</summary>
+    [Tooltip("Default window width used before the player chooses a resolution.")]
+    [Min(1)] public int defaultResolutionWidth = 1920;
+
+    /// <summary>Default window height used before a saved display preference exists.</summary>
+    [Tooltip("Default window height used before the player chooses a resolution.")]
+    [Min(1)] public int defaultResolutionHeight = 1080;
+
+    /// <summary>Default fullscreen mode used before a saved display preference exists.</summary>
+    [Tooltip("Default fullscreen mode used before the player chooses a display mode.")]
+    public FullScreenMode defaultFullscreenMode = FullScreenMode.FullScreenWindow;
+
+    /// <summary>Default vertical sync count used before a saved display preference exists.</summary>
+    [Tooltip("Default vertical sync count. Zero enables the explicit target frame rate cap.")]
+    [Min(0)] public int defaultVSyncCount = 0;
+
+    /// <summary>Default target frame rate used when vertical sync is disabled.</summary>
+    [Tooltip("Default target frame rate when vertical sync is disabled. Zero leaves the platform uncapped.")]
+    [Min(0)] public int defaultTargetFrameRate = 60;
+
+    /// <summary>Target frame rates presented by the display settings control; zero means uncapped.</summary>
+    [Tooltip("Target frame rates cycled by the settings screen. Use zero for an uncapped option.")]
+    public int[] frameRateOptions = { 30, 60, 120, 0 };
 
     /// <summary>
     /// Builds the file name for a profile slot.

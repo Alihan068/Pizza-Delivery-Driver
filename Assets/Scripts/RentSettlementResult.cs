@@ -13,6 +13,6 @@ public class RentSettlementResult {
     /// <summary>Portion of the rent that could not be paid. Never carried forward as debt.</summary>
     public int shortfall;
 
-    /// <summary>Reputation lost for the shortfall. Zero when it was fully paid.</summary>
+    /// <summary>Legacy field retained for save and API compatibility. Always zero in the rating model.</summary>
     public int reputationPenalty;
 }

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// Player preferences that are not part of game progress: currently music volume.
+/// Player preferences that are not part of game progress: audio volume settings.
 /// </summary>
 /// <remarks>
 /// Stored in <see cref="PlayerPrefs"/> rather than in <c>save.json</c> on purpose. Settings and
@@ -27,12 +27,22 @@ public static class GameSettings {
         PlayerPrefs.Save();
     }
 
+    const string MasterVolumeKey = "settings.masterVolume";
     const string MusicVolumeKey = "settings.musicVolume";
+    const string SfxVolumeKey = "settings.sfxVolume";
+
+    /// <summary>Audio volume used when the player has never changed it, on a 0-100 scale.</summary>
+    public const int DefaultMasterVolume = 100;
 
     /// <summary>Music volume used when the player has never changed it, on a 0-100 scale.</summary>
     public const int DefaultMusicVolume = 100;
 
+    /// <summary>Sound-effect volume used when the player has never changed it, on a 0-100 scale.</summary>
+    public const int DefaultSfxVolume = 100;
+
+    static int masterVolume;
     static int musicVolume;
+    static int sfxVolume;
     static bool loaded;
 
     /// <summary>
@@ -63,12 +73,60 @@ public static class GameSettings {
         }
     }
 
+    /// <summary>
+    /// Master audio volume on a 0-100 scale. Assigning clamps the value, persists it and notifies
+    /// the active audio mixer controller.
+    /// </summary>
+    public static int MasterVolume {
+        get {
+            Load();
+            return masterVolume;
+        }
+        set {
+            Load();
+            int clamped = Mathf.Clamp(value, 0, 100);
+            if (clamped == masterVolume) return;
+            masterVolume = clamped;
+            PlayerPrefs.SetInt(MasterVolumeKey, clamped);
+            PlayerPrefs.Save();
+            Changed?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Sound-effect volume on a 0-100 scale. Assigning clamps the value, persists it and notifies
+    /// the active audio mixer controller.
+    /// </summary>
+    public static int SfxVolume {
+        get {
+            Load();
+            return sfxVolume;
+        }
+        set {
+            Load();
+            int clamped = Mathf.Clamp(value, 0, 100);
+            if (clamped == sfxVolume) return;
+            sfxVolume = clamped;
+            PlayerPrefs.SetInt(SfxVolumeKey, clamped);
+            PlayerPrefs.Save();
+            Changed?.Invoke();
+        }
+    }
+
     /// <summary>Music volume as a 0-1 multiplier, ready to be applied to an AudioSource.</summary>
     public static float MusicVolumeNormalized => MusicVolume / 100f;
+
+    /// <summary>Master volume as a 0-1 multiplier for the audio mixer.</summary>
+    public static float MasterVolumeNormalized => MasterVolume / 100f;
+
+    /// <summary>Sound-effect volume as a 0-1 multiplier for the audio mixer.</summary>
+    public static float SfxVolumeNormalized => SfxVolume / 100f;
 
     static void Load() {
         if (loaded) return;
         loaded = true;
+        masterVolume = Mathf.Clamp(PlayerPrefs.GetInt(MasterVolumeKey, DefaultMasterVolume), 0, 100);
         musicVolume = Mathf.Clamp(PlayerPrefs.GetInt(MusicVolumeKey, DefaultMusicVolume), 0, 100);
+        sfxVolume = Mathf.Clamp(PlayerPrefs.GetInt(SfxVolumeKey, DefaultSfxVolume), 0, 100);
     }
 }

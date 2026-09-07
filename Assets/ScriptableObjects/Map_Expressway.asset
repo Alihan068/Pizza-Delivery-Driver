@@ -18,6 +18,6 @@ MonoBehaviour:
   previewImage: {fileID: 0}
   sceneName: Expressway
   levelData: {fileID: 11400000, guid: d3adb80f3967a9c48bfe5eb0a29f6ed8, type: 2}
-  requiredRank: 3
+  requiredRank: 0
   regionTier: 3
   unlockPrice: 3000

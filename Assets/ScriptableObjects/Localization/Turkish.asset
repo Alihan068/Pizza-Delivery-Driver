@@ -30,10 +30,12 @@ MonoBehaviour:
     text: Geri
   - key: common.cancel
     text: "\u0130ptal"
+  - key: common.check
+    text: Tamam
+  - key: common.cross
+    text: X
   - key: common.money
     text: $ {0}
-  - key: garage.startJob
-    text: "\u0130\u015Fe Ba\u015Fla"
   - key: garage.next
     text: Sonraki
   - key: garage.previous
@@ -52,6 +54,10 @@ MonoBehaviour:
     text: Devam Et
   - key: settings.title
     text: Ayarlar
+  - key: settings.open
+    text: Ayarlar
+  - key: mods.close
+    text: "\xD7"
   - key: settings.music
     text: "M\xFCzik"
   - key: settings.language
@@ -145,6 +151,8 @@ MonoBehaviour:
       --'
   - key: hud.timePlaceholder
     text: "S\xFCre:\n--"
+  - key: hud.endless
+    text: Sonsuz
   - key: hud.repairCost
     text: 'Tamir: ${0}'
   - key: vehicle.scooter.name
@@ -161,6 +169,8 @@ MonoBehaviour:
     text: Yeni Oyun
   - key: menu.loadGame
     text: "Oyunu Y\xFCkle"
+  - key: menu.freeplay
+    text: Serbest Oyun
   - key: panel.newGame.title
     text: Yeni Oyun
   - key: panel.loadGame.title
@@ -227,15 +237,30 @@ MonoBehaviour:
   - key: stat.persistentSuffix
     text: " (Kal\u0131c\u0131)"
   - key: result.reputation
-    text: "\u0130tibar: +{0} (R\xFCtbe {1})"
+    text: "Kurye puan\u0131: {0} (R\xFCtbe {1})"
   - key: result.rent.paid
     text: "{0}. g\xFCn kiras\u0131 \xF6dendi: -{1}$"
   - key: result.rent.shortfall
-    text: "{0}. g\xFCn kiras\u0131: -{1}$ ({2}$ \xF6denemedi, -{3} itibar)"
+    text: "{0}. g\xFCn kiras\u0131: -{1}$ ({2}$ \xF6denemedi)"
   - key: result.rent.free
     text: "{0}. g\xFCn: ilk kira ba\u011F\u0131\u015Fland\u0131"
+  - key: result.personalBestScore
+    text: "Yeni ki\u015Fisel rekorlar: skor ve teslimat!"
+  - key: result.personalBestDeliveries
+    text: "Yeni ki\u015Fisel rekor: teslimat!"
+  - key: result.personalBestFreeplay
+    text: Yeni sonsuz mod rekoru!
+  - key: result.perfectShift
+    text: Kusursuz Vardiya - Hizmet {0} | Hasar {1} | Kargo {2} | Genel {3}
+  - key: ending.finalChallenge
+    text: "Final meydan okamas\u0131 ba\u015Far\u0131s\u0131z. Kariyeri bitirmek
+      i\xE7in hedef sipari\u015Fleri tamamla."
+  - key: ending.complete
+    text: "Kariyer Tamamland\u0131"
+  - key: ending.credits
+    text: "Pizza Delivery Driver'\u0131 oynad\u0131\u011F\u0131n i\xE7in te\u015Fekk\xFCrler."
   - key: garage.rank
-    text: "R\xFCtbe {0} ({1} itibar)"
+    text: "R\xFCtbe {0} (Kurye puan\u0131 {1})"
   - key: objective.quota.name
     text: "Teslimat Kotas\u0131"
   - key: objective.quota.description
@@ -293,13 +318,15 @@ MonoBehaviour:
   - key: modifier.busyHour.description
     text: "Daha yo\u011Fun trafik bask\u0131s\u0131, daha h\u0131zl\u0131 tempo."
   - key: garage.mapSelection.locked
-    text: "R\xFCtbe {0} gerekli"
+    text: "Sat\u0131n alma bedeli: {0}$"
   - key: garage.mapSelection.available
     text: Uygun
   - key: garage.mapSelection.selected
     text: "Se\xE7ili"
   - key: garage.mapSelection.select
     text: "Haritay\u0131 Se\xE7"
+  - key: garage.mapSelection.purchase
+    text: "Haritay\u0131 Sat\u0131n Al"
   - key: garage.modifier.none
     text: Modifier Yok
   - key: garage.modifier.noneDescription
@@ -312,3 +339,42 @@ MonoBehaviour:
     text: Kapat
   - key: garage.mapSelection.open
     text: Haritalar
+  - key: garage.mapSelection.startJob
+    text: "\u0130\u015F Ba\u015Flat"
+  - key: garage.mapSelection.backToGarage
+    text: "Garaja D\xF6n"
+  - key: settings.master
+    text: Ana Ses
+  - key: settings.sfx
+    text: Ses Efektleri
+  - key: settings.displayOptions
+    text: "G\xF6r\xFCnt\xFC"
+  - key: settings.resolutionValue
+    text: '{0} x {1}'
+  - key: settings.fullscreenOn
+    text: Tam Ekran
+  - key: settings.fullscreenOff
+    text: Pencereli
+  - key: settings.frameRateValue
+    text: '{0} FPS'
+  - key: settings.uncapped
+    text: "S\u0131n\u0131rs\u0131z"
+  - key: settings.vSyncOn
+    text: "VSync A\xE7\u0131k"
+  - key: settings.vSyncOff
+    text: "VSync Kapal\u0131"
+  - key: common.close
+    text: Kapat
+  - key: settings.resolution
+    text: "\xC7\xF6z\xFCn\xFCrl\xFCk"
+  - key: settings.fullscreen
+    text: Tam Ekran
+  - key: settings.frameRate
+    text: "Kare H\u0131z\u0131"
+  - key: settings.vSync
+    text: VSync
+  - key: onboarding.controls
+    text: "WASD / Ok Tu\u015Flar\u0131: S\xFCr.\nPizza toplama noktas\u0131ndan pizza
+      al.\nS\xFCre dolmadan m\xFC\u015Fterilere teslim et.\nEngellerden ka\xE7\u0131n:
+      \xE7arpmalar can g\xF6t\xFCr\xFCr ve pizza d\xFC\u015F\xFCrebilir.\nVardiyay\u0131
+      bitirmek i\xE7in b\xF6lgede extraction tu\u015Funa bas\u0131l\u0131 tut."
