@@ -27,8 +27,14 @@ public class GameSaveData {
     /// <summary>Permanent id of the map the player last selected.</summary>
     public string currentMapId;
 
+    /// <summary>Permanent id of the difficulty last selected inside the current map.</summary>
+    public string currentDifficultyId;
+
     /// <summary>Permanent map ids purchased by this profile. Introduced in version 4.</summary>
     public List<string> ownedMapIds;
+
+    /// <summary>Best score records for map difficulty tiers. Introduced in version 6.</summary>
+    public List<MapDifficultyProgress> mapDifficultyProgress;
 
     /// <summary>Per-vehicle upgrade levels and unlock state.</summary>
     public List<VehicleSaveData> vehicleSaveList;

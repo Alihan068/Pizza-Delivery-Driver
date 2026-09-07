@@ -30,7 +30,8 @@ public static class SaveMigration {
         MigrateV1ToV2,
         MigrateV2ToV3,
         MigrateV3ToV4,
-        MigrateV4ToV5
+        MigrateV4ToV5,
+        MigrateV5ToV6
     };
 
     /// <summary>The schema version this build writes.</summary>
@@ -141,5 +142,14 @@ public static class SaveMigration {
         data.bestShiftDeliveries = Mathf.Max(0, data.bestShiftDeliveries);
         data.bestFreeplayDeliveries = Mathf.Max(0, data.bestFreeplayDeliveries);
         notes.Add("career record fields initialized");
+    }
+
+    // v5 profiles predate map-local difficulty progress. Existing players start on the first
+    // authored tier and earn later tiers from new scores; no old score has enough context to be
+    // assigned to an arbitrary map difficulty honestly.
+    static void MigrateV5ToV6(GameSaveData data, Func<string, string> resolveVehicleIdFromName, List<string> notes) {
+        if (data.mapDifficultyProgress == null) data.mapDifficultyProgress = new List<MapDifficultyProgress>();
+        data.currentDifficultyId = string.Empty;
+        notes.Add("map difficulty progress initialized");
     }
 }

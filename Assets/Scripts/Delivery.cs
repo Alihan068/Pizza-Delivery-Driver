@@ -9,11 +9,14 @@ public class Delivery : MonoBehaviour {
     [Header("References")]
     [SerializeField] GameObject pizzaObject;
     [SerializeField] GameObject wastedPizzaPrefab;
+    [Tooltip("Legacy score penalty used only when the selected map has no difficulty tier.")]
+    [SerializeField] int legacyScorePenaltyPerPizzaLost = 50;
 
     GameUIManager gameUIManager;
     DriverTarget driverTarget;
     CustomerManager customerManager;
     LevelData levelData;
+    MapDifficultyData difficultyData;
     AudioSource audioSource;
     ScoreHandler scoreHandler;
     Driver driver;
@@ -28,6 +31,9 @@ public class Delivery : MonoBehaviour {
     private void Start() {
         customerManager = FindFirstObjectByType<CustomerManager>();
         levelData = customerManager != null ? customerManager.LevelData : null;
+        difficultyData = customerManager != null ? customerManager.DifficultyData : null;
+        if (difficultyData == null && GameManager.Instance != null)
+            difficultyData = GameManager.Instance.CurrentDifficulty;
         driverTarget = GetComponentInChildren<DriverTarget>();
         audioSource = GetComponent<AudioSource>();
         gameUIManager = FindFirstObjectByType<GameUIManager>();
@@ -53,37 +59,54 @@ public class Delivery : MonoBehaviour {
         if (IsFull) return;
 
         int cost = levelData != null ? levelData.pizzaCost : 0;
-        int spendable = 0;
-        if (GameManager.Instance != null) spendable += GameManager.Instance.totalMoney;
-        if (scoreHandler != null) spendable += scoreHandler.sessionEarnings;
-
-        int charge = Mathf.Clamp(cost, 0, Mathf.Max(0, spendable));
-        if (charge > 0 && scoreHandler != null) scoreHandler.AddMoney(-charge);
+        if (cost > 0 && GameManager.Instance != null)
+            GameManager.Instance.TrySpendMoney(cost);
 
         carryPizzaAmount += 1;
         UpdateCarryUI();
         havePizzaStatus(true);
     }
 
+    /// <summary>
+    /// Resolves the selected map tier's pizza-loss budget for one damaging impact.
+    /// </summary>
+    /// <param name="dropPosition">World position where lost pizza visuals are spawned.</param>
+    /// <remarks>
+    /// The authored value is an unbounded percentage budget. Stabilizer reduces that budget and
+    /// the remaining fractional part is rolled once, allowing values above 100 to guarantee more
+    /// than one lost pizza without adding special-case rules to each difficulty tier.
+    /// </remarks>
     public void AttemptDropPizza(Vector3 dropPosition) {
         if (carryPizzaAmount <= 0) return;
 
-        if (Random.value < protectionChance) {
+        float authoredLossPercent = difficultyData != null ? difficultyData.pizzaLossChancePercent : 100f;
+        float randomPercent = Random.value * 100f;
+        int lossCount = MapDifficultyRules.CalculatePizzaLossCount(authoredLossPercent, protectionChance,
+            randomPercent, carryPizzaAmount);
+        if (lossCount <= 0) {
             if (driver != null) driver.PlayProtectionFlash();
             return;
         }
 
-        Instantiate(wastedPizzaPrefab, dropPosition, Quaternion.identity);
-        if (scoreHandler != null) scoreHandler.AddScore(-50);
+        int scorePenalty = difficultyData != null ? difficultyData.scorePenaltyPerPizzaLost : legacyScorePenaltyPerPizzaLost;
+        if (wastedPizzaPrefab != null) {
+            for (int i = 0; i < lossCount; i++)
+                Instantiate(wastedPizzaPrefab, dropPosition, Quaternion.identity);
+        }
+        if (scoreHandler != null) scoreHandler.AddScore(-Mathf.Max(0, scorePenalty) * lossCount);
 
-        LosePizza();
-        if (scoreHandler != null) scoreHandler.RegisterPizzaLost();
+        LosePizza(lossCount);
+        if (scoreHandler != null) {
+            for (int i = 0; i < lossCount; i++) scoreHandler.RegisterPizzaLost();
+        }
     }
 
-    public void LosePizza() {
+    /// <summary>Removes a requested number of pizzas from the carried inventory.</summary>
+    /// <param name="amount">Number of pizzas to remove, clamped to the current inventory.</param>
+    public void LosePizza(int amount) {
         if (carryPizzaAmount <= 0) return;
 
-        carryPizzaAmount -= 1;
+        carryPizzaAmount -= Mathf.Clamp(amount, 0, carryPizzaAmount);
         UpdateCarryUI();
         if (carryPizzaAmount <= 0) {
             carryPizzaAmount = 0;

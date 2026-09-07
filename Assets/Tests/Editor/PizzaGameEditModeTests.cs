@@ -116,6 +116,75 @@ public class PizzaGameEditModeTests {
         }
     }
 
+    /// <summary>Verifies that authored difficulty order ranges are inclusive at both ends.</summary>
+    [Test]
+    public void MapDifficulty_OrderRangeIsInclusive() {
+        var difficulty = new MapDifficultyData {
+            orderMin = 3,
+            orderMax = 3
+        };
+
+        Assert.AreEqual(3, difficulty.RollOrderAmount());
+        Assert.AreEqual(3, difficulty.GetSafeOrderMin());
+        Assert.AreEqual(3, difficulty.GetSafeOrderMax());
+    }
+
+    /// <summary>Verifies that loss budgets above one hundred guarantee whole losses and roll one extra.</summary>
+    [Test]
+    public void MapDifficulty_LossBudgetSupportsGuaranteedAndFractionalLosses() {
+        Assert.AreEqual(1, MapDifficultyRules.CalculatePizzaLossCount(120f, 0f, 80f, 4));
+        Assert.AreEqual(2, MapDifficultyRules.CalculatePizzaLossCount(120f, 0f, 10f, 4));
+        Assert.AreEqual(2, MapDifficultyRules.CalculatePizzaLossCount(250f, 0f, 99f, 4));
+        Assert.AreEqual(3, MapDifficultyRules.CalculatePizzaLossCount(250f, 0f, 10f, 4));
+    }
+
+    /// <summary>Verifies that Stabilizer reduces both guaranteed and fractional pizza losses.</summary>
+    [Test]
+    public void MapDifficulty_StabilizerReducesLossBudget() {
+        Assert.AreEqual(1, MapDifficultyRules.CalculatePizzaLossCount(120f, 0.5f, 99f, 4));
+        Assert.AreEqual(0, MapDifficultyRules.CalculatePizzaLossCount(20f, 1f, 0f, 4));
+    }
+
+    /// <summary>Verifies that map ownership and the previous tier score both gate later tiers.</summary>
+    [Test]
+    public void MapDifficulty_TierUnlockRequiresPreviousTarget() {
+        var previous = new MapDifficultyData { unlockTargetScoreForNext = 800 };
+
+        Assert.IsFalse(MapDifficultyRules.IsTierUnlocked(false, 0, null, 0));
+        Assert.IsTrue(MapDifficultyRules.IsTierUnlocked(true, 0, null, 0));
+        Assert.IsFalse(MapDifficultyRules.IsTierUnlocked(true, 1, previous, 799));
+        Assert.IsTrue(MapDifficultyRules.IsTierUnlocked(true, 1, previous, 800));
+        Assert.IsFalse(MapDifficultyRules.IsTierUnlocked(true, 1,
+            new MapDifficultyData { unlockTargetScoreForNext = 0 }, 9999));
+    }
+
+    /// <summary>Verifies that difficulty rewards scale without allowing negative authored values.</summary>
+    [Test]
+    public void MapDifficulty_RewardMultiplierScalesPositiveRewards() {
+        var difficulty = new MapDifficultyData { rewardMultiplier = 1.5f };
+
+        Assert.AreEqual(15, difficulty.ApplyRewardMultiplier(10f));
+        difficulty.rewardMultiplier = -2f;
+        Assert.AreEqual(0, difficulty.ApplyRewardMultiplier(10f));
+    }
+
+    /// <summary>Verifies that version five saves receive initialized difficulty progress storage.</summary>
+    [Test]
+    public void SaveMigration_V5InitializesDifficultyProgress() {
+        var data = new GameSaveData {
+            saveVersion = 5,
+            currentDifficultyId = "old-tier",
+            mapDifficultyProgress = null
+        };
+
+        SaveMigration.Migrate(data, name => name);
+
+        Assert.AreEqual(SaveMigration.CurrentVersion, data.saveVersion);
+        Assert.IsNotNull(data.mapDifficultyProgress);
+        Assert.IsEmpty(data.mapDifficultyProgress);
+        Assert.IsEmpty(data.currentDifficultyId);
+    }
+
     /// <summary>Verifies that time-up and extraction keep all non-negative earnings.</summary>
     [Test]
     public void SessionSettlement_TimeUpAndExtractionKeepEarnings() {

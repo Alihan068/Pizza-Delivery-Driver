@@ -25,6 +25,7 @@ public class Customer : MonoBehaviour {
 
     public CustomerOrder currentOrder { get; private set; }
     LevelData levelData;
+    MapDifficultyData difficultyData;
 
     public float timeLeft;
 
@@ -99,10 +100,26 @@ public class Customer : MonoBehaviour {
         leaveCoroutine = null;
     }
 
-    // Called by CustomerManager right before SetActive(true).
+    /// <summary>
+    /// Assigns a new order and the tuning data that governs its wait time and rewards.
+    /// </summary>
+    /// <param name="order">Fresh runtime order state for this pooled customer.</param>
+    /// <param name="data">Map-wide timing and reward data.</param>
+    /// <remarks>The customer must receive this data before it is activated by the manager.</remarks>
     public void Setup(CustomerOrder order, LevelData data) {
+        Setup(order, data, null);
+    }
+
+    /// <summary>
+    /// Assigns a new order together with its selected map difficulty tier.
+    /// </summary>
+    /// <param name="order">Fresh runtime order state for this pooled customer.</param>
+    /// <param name="data">Map-wide timing and reward data.</param>
+    /// <param name="difficulty">Selected tier, or null for legacy fallback behavior.</param>
+    public void Setup(CustomerOrder order, LevelData data, MapDifficultyData difficulty) {
         currentOrder = order;
         levelData = data;
+        difficultyData = difficulty;
     }
 
     void ResetState() {
@@ -142,7 +159,11 @@ public class Customer : MonoBehaviour {
         if (pizzaInHand != null) pizzaInHand.SetActive(true);
 
         if (scoreHandler != null) {
-            scoreHandler.AddMoney(accepted * levelData.pizzaBaseReward);
+            int pizzaBaseReward = levelData != null ? Mathf.Max(0, levelData.pizzaBaseReward) : 0;
+            int baseReward = difficultyData != null
+                ? difficultyData.ApplyRewardMultiplier(accepted * pizzaBaseReward)
+                : accepted * pizzaBaseReward;
+            scoreHandler.AddMoney(baseReward);
             scoreHandler.AddScore(accepted * 10);
         }
 
@@ -157,8 +178,10 @@ public class Customer : MonoBehaviour {
     }
 
     void ExtendWaitForPartialDelivery() {
-        float cap = currentOrder.waitTime * levelData.partialExtensionCapMult;
-        timeLeft = Mathf.Min(timeLeft + levelData.partialExtension, cap);
+        float extension = levelData != null ? Mathf.Max(0f, levelData.partialExtension) : 0f;
+        float capMultiplier = levelData != null ? Mathf.Max(0f, levelData.partialExtensionCapMult) : 1f;
+        float cap = currentOrder.waitTime * capMultiplier;
+        timeLeft = Mathf.Min(timeLeft + extension, cap);
         UpdateTimeDisplay();
     }
 
@@ -168,8 +191,13 @@ public class Customer : MonoBehaviour {
         RefreshLanguage();
 
         float timeRatio = Mathf.Clamp01(timeLeft / currentOrder.waitTime);
-        int tip = Mathf.RoundToInt(currentOrder.totalPizzas * levelData.tipPerPizza * timeRatio);
-        int bonus = Mathf.RoundToInt(levelData.completionBonusBase * Mathf.Pow(currentOrder.totalPizzas, levelData.bonusExponent));
+        int tipPerPizza = levelData != null ? levelData.tipPerPizza : 0;
+        float completionBonusBase = levelData != null ? Mathf.Max(0f, levelData.completionBonusBase) : 0f;
+        float bonusExponent = levelData != null ? Mathf.Max(0f, levelData.bonusExponent) : 1f;
+        float tipBeforeMultiplier = currentOrder.totalPizzas * tipPerPizza * timeRatio;
+        float bonusBeforeMultiplier = completionBonusBase * Mathf.Pow(currentOrder.totalPizzas, bonusExponent);
+        int tip = difficultyData != null ? difficultyData.ApplyRewardMultiplier(tipBeforeMultiplier) : Mathf.RoundToInt(tipBeforeMultiplier);
+        int bonus = difficultyData != null ? difficultyData.ApplyRewardMultiplier(bonusBeforeMultiplier) : Mathf.RoundToInt(bonusBeforeMultiplier);
 
         if (scoreHandler != null) {
             scoreHandler.AddMoney(tip + bonus);
@@ -177,7 +205,8 @@ public class Customer : MonoBehaviour {
             scoreHandler.RegisterCompletedOrder(currentOrder.totalPizzas);
         }
 
-        if (customerManager != null) customerManager.CustomerRoutine(gameObject, 0, levelData.completedDespawnDelay);
+        float despawnDelay = levelData != null ? Mathf.Max(0f, levelData.completedDespawnDelay) : 0f;
+        if (customerManager != null) customerManager.CustomerRoutine(gameObject, 0, despawnDelay);
     }
 
     IEnumerator LeaveAfterTime() {
@@ -193,9 +222,11 @@ public class Customer : MonoBehaviour {
 
         if (scoreHandler != null) {
             scoreHandler.RegisterMissedCustomer();
-            if (remaining > 0) scoreHandler.AddMoney(-remaining * levelData.failPenaltyPerPizza);
+            int penaltyPerPizza = levelData != null ? Mathf.Max(0, levelData.failPenaltyPerPizza) : 0;
+            if (remaining > 0) scoreHandler.AddMoney(-remaining * penaltyPerPizza);
         }
 
-        if (customerManager != null) customerManager.CustomerRoutine(gameObject, remaining, levelData.timedOutDespawnDelay);
+        float despawnDelay = levelData != null ? Mathf.Max(0f, levelData.timedOutDespawnDelay) : 0f;
+        if (customerManager != null) customerManager.CustomerRoutine(gameObject, remaining, despawnDelay);
     }
 }

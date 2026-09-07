@@ -15,6 +15,7 @@ MonoBehaviour:
   mapId: 4c46aef37a1f4f468fc0915175730643
   displayNameKey: map.narrowDistrict.name
   descriptionKey: map.narrowDistrict.desc
+  previewFallbackColor: {r: 0.24, g: 0.42, b: 0.22, a: 1}
   previewImage: {fileID: 0}
   sceneName: NarrowDistrict
   levelData: {fileID: 11400000, guid: 5cd93f98fbf183047bb5233b5597b48f, type: 2}

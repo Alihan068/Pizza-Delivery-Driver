@@ -6,13 +6,20 @@ public class CustomerManager : MonoBehaviour {
     [SerializeField] LevelData levelData;
     [SerializeField] float demandCheckInterval = 0.5f;
 
+    /// <summary>Number of logically active customer orders in this shift.</summary>
     public int activeCustomers = 0;
+
+    /// <summary>Total number of pizzas still owed across active customer orders.</summary>
     public int outstandingDemand = 0;
 
     /// <summary>How many customers have spawned this shift. Feeds the reputation on-time rate.</summary>
     public int ordersOffered = 0;
 
+    /// <summary>Map-wide tuning used by this shift, or null when the legacy fallback is active.</summary>
     public LevelData LevelData => levelData;
+
+    /// <summary>Difficulty rules active for the current map shift.</summary>
+    public MapDifficultyData DifficultyData { get; private set; }
 
     GameObject[] allCustomers;
     readonly List<GameObject> inactiveCustomers = new List<GameObject>();
@@ -23,6 +30,7 @@ public class CustomerManager : MonoBehaviour {
     bool firstShiftTutorialOrderUsed;
 
     void Start() {
+        ResolveActiveTuning();
         indicatorManager = FindFirstObjectByType<IndicatorManager>();
         delivery = FindFirstObjectByType<Delivery>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
@@ -33,6 +41,18 @@ public class CustomerManager : MonoBehaviour {
         }
 
         StartCoroutine(DemandCheckRoutine());
+    }
+
+    void ResolveActiveTuning() {
+        GameManager manager = GameManager.Instance;
+        if (manager != null && manager.currentMap != null && manager.currentMap.levelData != null) {
+            levelData = manager.currentMap.levelData;
+            DifficultyData = manager.GetCurrentDifficulty();
+        }
+
+        if (levelData == null) {
+            Debug.LogWarning("CustomerManager has no active LevelData. Legacy scene fallback will be used.");
+        }
     }
 
     // The invariant that keeps the pizza-loop from deadlocking: as long as the
@@ -96,28 +116,44 @@ public class CustomerManager : MonoBehaviour {
         // Pick Random inavtive Customer
         GameObject selectedCustomerObj = inactiveCustomers[Random.Range(0, inactiveCustomers.Count)];
 
-        // Ceil, not Round: rounding produced flat spots where two or three consecutive capacity
-        // levels all yielded the same order ceiling, so those upgrades were paid for and changed
-        // nothing. Ceiling keeps the ladder climbing.
         int capacity = GameManager.Instance != null ? GameManager.Instance.GetShiftCapacity() : 2;
-        int orderMax = Mathf.Max(levelData.orderMin + 1, Mathf.CeilToInt(capacity * levelData.orderScale));
-        bool shouldDemonstratePartialDelivery = levelData.demonstratePartialDeliveryOnFirstShift &&
+        bool shouldDemonstratePartialDelivery = levelData != null && levelData.demonstratePartialDeliveryOnFirstShift &&
             !firstShiftTutorialOrderUsed && GameManager.Instance != null &&
             !GameManager.Instance.IsFreeplayMode && GameManager.Instance.totalShiftsSettled == 0;
         int totalPizzas;
-        if (shouldDemonstratePartialDelivery) {
-            totalPizzas = Mathf.Max(levelData.orderMin, capacity + 1);
-            firstShiftTutorialOrderUsed = true;
+        MapDifficultyData activeDifficulty = DifficultyData;
+        int legacyOrderMin = levelData != null ? levelData.orderMin : 1;
+        float legacyOrderScale = levelData != null ? levelData.orderScale : 0.6f;
+        int orderMin = activeDifficulty != null ? activeDifficulty.GetSafeOrderMin() : Mathf.Max(1, legacyOrderMin);
+        int orderMax;
+        if (activeDifficulty != null) {
+            orderMax = activeDifficulty.GetSafeOrderMax();
         }
         else {
-            totalPizzas = Random.Range(levelData.orderMin, orderMax + 1);
+            orderMax = Mathf.Max(orderMin + 1, Mathf.CeilToInt(capacity * legacyOrderScale));
         }
-        float baseWaitTime = levelData.waitBase + levelData.waitPerOrderPizza * totalPizzas;
+
+        if (shouldDemonstratePartialDelivery) {
+            int tutorialOrder = Mathf.Clamp(capacity + 1, orderMin, orderMax);
+            if (tutorialOrder > capacity) {
+                totalPizzas = tutorialOrder;
+                firstShiftTutorialOrderUsed = true;
+            }
+            else {
+                totalPizzas = activeDifficulty != null ? activeDifficulty.RollOrderAmount() : Random.Range(orderMin, orderMax + 1);
+            }
+        }
+        else {
+            totalPizzas = activeDifficulty != null ? activeDifficulty.RollOrderAmount() : Random.Range(orderMin, orderMax + 1);
+        }
+        float waitBase = levelData != null ? levelData.waitBase : 40f;
+        float waitPerPizza = levelData != null ? levelData.waitPerOrderPizza : 0f;
+        float baseWaitTime = waitBase + waitPerPizza * totalPizzas;
         float shiftProgress = scoreHandler != null ? scoreHandler.ShiftProgress01 : 0f;
-        float waitTime = baseWaitTime * levelData.GetCustomerWaitMultiplier(shiftProgress);
+        float waitTime = levelData != null ? baseWaitTime * levelData.GetCustomerWaitMultiplier(shiftProgress) : baseWaitTime;
 
         Customer customerScript = selectedCustomerObj.GetComponent<Customer>();
-        customerScript.Setup(new CustomerOrder(totalPizzas, waitTime), levelData);
+        customerScript.Setup(new CustomerOrder(totalPizzas, waitTime), levelData, DifficultyData);
 
         selectedCustomerObj.SetActive(true);
         activeCustomers++;

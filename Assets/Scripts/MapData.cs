@@ -27,6 +27,9 @@ public class MapData : ScriptableObject {
     public string descriptionKey;
 
     [Header("Presentation")]
+    [Tooltip("Visible fallback tint used until an authored preview image is assigned.")]
+    /// <summary>Fallback tint used by the map browser when no preview image is assigned.</summary>
+    public Color previewFallbackColor = new Color(0.18f, 0.36f, 0.46f, 1f);
     public Sprite previewImage;
 
     [Header("Content")]

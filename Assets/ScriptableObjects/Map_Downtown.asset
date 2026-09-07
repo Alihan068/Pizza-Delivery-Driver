@@ -15,6 +15,7 @@ MonoBehaviour:
   mapId: 12f40ff5e28b46f9a2c5e09f2bdb72d3
   displayNameKey: map.downtown.name
   descriptionKey: map.downtown.desc
+  previewFallbackColor: {r: 0.16, g: 0.38, b: 0.52, a: 1}
   previewImage: {fileID: 0}
   sceneName: GameScene
   levelData: {fileID: 11400000, guid: f369e6c24ae62724297cf9ae2bed9b20, type: 2}

@@ -15,6 +15,7 @@ MonoBehaviour:
   mapId: 8f350d4ea56b4fe4bccd87dd90ba7cc1
   displayNameKey: map.expressway.name
   descriptionKey: map.expressway.desc
+  previewFallbackColor: {r: 0.42, g: 0.26, b: 0.16, a: 1}
   previewImage: {fileID: 0}
   sceneName: Expressway
   levelData: {fileID: 11400000, guid: d3adb80f3967a9c48bfe5eb0a29f6ed8, type: 2}

@@ -346,6 +346,38 @@ MonoBehaviour:
     text: Start Job
   - key: garage.mapSelection.backToGarage
     text: Back to Garage
+  - key: difficulty.tier1.name
+    text: Tier 1
+  - key: difficulty.tier1.description
+    text: Small orders and a low chance to lose pizza on impact.
+  - key: difficulty.tier2.name
+    text: Tier 2
+  - key: difficulty.tier2.description
+    text: Larger orders and a higher chance to lose pizza on impact.
+  - key: difficulty.tier3.name
+    text: Tier 3
+  - key: difficulty.tier3.description
+    text: Large orders and a high chance to lose pizza on impact. Pays more.
+  - key: map.difficulty.orders
+    text: 'Orders: {0}-{1} pizzas'
+  - key: map.difficulty.loss
+    text: 'Pizza loss on impact: {0}%'
+  - key: map.difficulty.reward
+    text: 'Reward multiplier: x{0:0.##}'
+  - key: map.difficulty.best
+    text: 'Best score: {0}'
+  - key: map.difficulty.unlock
+    text: 'Unlock at {0} score in the previous tier'
+  - key: map.difficulty.requires
+    text: 'Requires {0} score in the previous tier'
+  - key: map.difficulty.counter
+    text: '{0}/{1}'
+  - key: map.difficulty.unlocked
+    text: Unlocked
+  - key: map.difficulty.locked
+    text: Locked
+  - key: map.difficulty.unavailable
+    text: No difficulty data
   - key: settings.master
     text: Master Volume
   - key: settings.sfx

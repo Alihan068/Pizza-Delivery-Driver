@@ -44,10 +44,14 @@ public class GameManager : MonoBehaviour {
     [Header("Career State")]
     public VehicleData currentVehicle;
     public MapData currentMap;
+    /// <summary>Permanent id of the selected difficulty inside currentMap.</summary>
+    public string currentDifficultyId;
     ShiftModifierData currentModifier;
     public List<VehicleSaveData> vehicleSaveList = new List<VehicleSaveData>();
     /// <summary>Permanent map ids the active profile has purchased or received as a starter.</summary>
     public List<string> ownedMapIds = new List<string>();
+    /// <summary>Best-score progress for each map and difficulty pair.</summary>
+    public List<MapDifficultyProgress> mapDifficultyProgress = new List<MapDifficultyProgress>();
     public DriverSaveData driverStats = new DriverSaveData();
 
     [Header("Career Progress")]
@@ -99,6 +103,9 @@ public class GameManager : MonoBehaviour {
 
     /// <summary>Modifier selected for the next shift, or null for an unmodified shift.</summary>
     public ShiftModifierData CurrentModifier => currentModifier;
+
+    /// <summary>Currently selected and unlocked difficulty inside the active map.</summary>
+    public MapDifficultyData CurrentDifficulty => GetCurrentDifficulty();
 
     /// <summary>Persistent courier rating shown in career UI and available to future leaderboards.</summary>
     public int CourierRating => Mathf.Max(0, totalReputation);
@@ -245,9 +252,11 @@ public class GameManager : MonoBehaviour {
         totalMoney = config != null ? config.startingMoney : totalMoney;
         vehicleSaveList = new List<VehicleSaveData>();
         ownedMapIds = new List<string>();
+        mapDifficultyProgress = new List<MapDifficultyProgress>();
         driverStats = new DriverSaveData();
         currentVehicle = Content.ResolveStartingVehicle(config != null ? config.startingVehicle : null);
         currentMap = Content.ResolveStartingMap(config != null ? config.startingMap : null);
+        currentDifficultyId = string.Empty;
         HasInterruptedShift = false;
 
         totalReputation = 0;
@@ -268,9 +277,10 @@ public class GameManager : MonoBehaviour {
     }
 
     void ApplySaveData(GameSaveData data) {
-        totalMoney = data.totalMoney;
+        totalMoney = Mathf.Max(0, data.totalMoney);
         vehicleSaveList = data.vehicleSaveList ?? new List<VehicleSaveData>();
         ownedMapIds = data.ownedMapIds ?? new List<string>();
+        mapDifficultyProgress = data.mapDifficultyProgress ?? new List<MapDifficultyProgress>();
         driverStats = data.driverStats ?? new DriverSaveData();
         HasInterruptedShift = data.shiftInProgress;
 
@@ -283,6 +293,7 @@ public class GameManager : MonoBehaviour {
 
         currentMap = Content.GetMap(data.currentMapId);
         if (currentMap == null) currentMap = Content.ResolveStartingMap(config != null ? config.startingMap : null);
+        currentDifficultyId = data.currentDifficultyId;
 
         totalReputation = Mathf.Max(0, data.totalReputation);
         highestRankAchieved = Mathf.Max(1, data.highestRankAchieved);
@@ -307,8 +318,10 @@ public class GameManager : MonoBehaviour {
             totalMoney = totalMoney,
             currentVehicleId = currentVehicle != null ? currentVehicle.vehicleId : string.Empty,
             currentMapId = currentMap != null ? currentMap.mapId : string.Empty,
+            currentDifficultyId = currentDifficultyId ?? string.Empty,
             vehicleSaveList = vehicleSaveList,
             ownedMapIds = ownedMapIds,
+            mapDifficultyProgress = mapDifficultyProgress,
             driverStats = driverStats,
             shiftInProgress = HasInterruptedShift,
             totalReputation = totalReputation,
@@ -389,6 +402,7 @@ public class GameManager : MonoBehaviour {
 
     void InitializeMaps() {
         if (ownedMapIds == null) ownedMapIds = new List<string>();
+        if (mapDifficultyProgress == null) mapDifficultyProgress = new List<MapDifficultyProgress>();
 
         var starter = Content.ResolveStartingMap(config != null ? config.startingMap : null);
         if (starter != null && !string.IsNullOrEmpty(starter.mapId) && !ownedMapIds.Contains(starter.mapId)) {
@@ -399,6 +413,8 @@ public class GameManager : MonoBehaviour {
         if (currentMap != null && !string.IsNullOrEmpty(currentMap.mapId) && !ownedMapIds.Contains(currentMap.mapId)) {
             ownedMapIds.Add(currentMap.mapId);
         }
+
+        EnsureCurrentDifficulty();
     }
 
     /// <summary>
@@ -424,6 +440,16 @@ public class GameManager : MonoBehaviour {
     /// <param name="amount">Amount to add; may be negative.</param>
     public void AddMoneyToBank(int amount) {
         totalMoney = Mathf.Max(0, totalMoney + amount);
+    }
+
+    /// <summary>Spends as much banked money as possible without allowing a negative balance.</summary>
+    /// <param name="requestedAmount">Amount requested by a small gameplay purchase.</param>
+    /// <returns>The amount actually removed from the bank.</returns>
+    public int TrySpendMoney(int requestedAmount) {
+        int requested = Mathf.Max(0, requestedAmount);
+        int spent = Mathf.Min(requested, Mathf.Max(0, totalMoney));
+        totalMoney -= spent;
+        return spent;
     }
 
     // ------------------------------------------------------------------ stats
@@ -583,17 +609,30 @@ public class GameManager : MonoBehaviour {
     /// <summary>Steps to the next or previous vehicle in the registry, wrapping at both ends.</summary>
     /// <param name="direction">Positive to advance, negative to go back.</param>
     public void ChangeVehicle(int direction) {
-        var vehicles = Content.Vehicles;
-        if (vehicles.Count == 0) return;
+        if (Content == null || Content.Vehicles == null || Content.Vehicles.Count == 0) return;
 
-        int currentIndex = 0;
+        var vehicles = Content.Vehicles;
+        int currentIndex = -1;
         for (int i = 0; i < vehicles.Count; i++) {
-            if (vehicles[i] == currentVehicle) { currentIndex = i; break; }
+            var vehicle = vehicles[i];
+            if (vehicle == currentVehicle ||
+                (vehicle != null && currentVehicle != null &&
+                 !string.IsNullOrEmpty(vehicle.vehicleId) &&
+                 string.Equals(vehicle.vehicleId, currentVehicle.vehicleId, System.StringComparison.Ordinal))) {
+                currentIndex = i;
+                break;
+            }
         }
 
-        int newIndex = currentIndex + direction;
-        if (newIndex < 0) newIndex = vehicles.Count - 1;
-        if (newIndex >= vehicles.Count) newIndex = 0;
+        // A profile can contain an asset reference from before the content registry was rebuilt.
+        // Use a deterministic fallback so navigation never silently remains on the same vehicle.
+        if (currentIndex < 0) currentIndex = direction < 0 ? 0 : vehicles.Count - 1;
+
+        int step = direction > 0 ? 1 : direction < 0 ? -1 : 0;
+        if (step == 0) return;
+
+        int newIndex = (currentIndex + step) % vehicles.Count;
+        if (newIndex < 0) newIndex += vehicles.Count;
 
         currentVehicle = vehicles[newIndex];
         SaveGame();
@@ -632,7 +671,116 @@ public class GameManager : MonoBehaviour {
     public void SelectMap(MapData map) {
         if (map == null || !IsMapOwned(map)) return;
         currentMap = map;
+        EnsureCurrentDifficulty();
         SaveGame();
+    }
+
+    /// <summary>Returns the selected difficulty when it is authored and currently unlocked.</summary>
+    /// <returns>The active map difficulty, or null when the map has no difficulty data.</returns>
+    public MapDifficultyData GetCurrentDifficulty() {
+        if (currentMap == null || currentMap.levelData == null) return null;
+
+        MapDifficultyData selected = currentMap.levelData.GetDifficulty(currentDifficultyId);
+        if (selected != null) {
+            int selectedIndex = FindDifficultyIndex(currentMap, selected.difficultyId);
+            if (IsDifficultyUnlocked(currentMap, selectedIndex)) return selected;
+        }
+
+        return GetFirstUnlockedDifficulty(currentMap);
+    }
+
+    /// <summary>Returns whether a map difficulty is available to the active profile.</summary>
+    /// <param name="map">Map containing the difficulty.</param>
+    /// <param name="difficultyIndex">Zero-based index in the map's difficulty list.</param>
+    /// <returns>True when the map is owned and the previous tier target has been reached.</returns>
+    public bool IsDifficultyUnlocked(MapData map, int difficultyIndex) {
+        if (map == null || map.levelData == null || !IsMapOwned(map)) return false;
+        MapDifficultyData difficulty = map.levelData.GetDifficultyAt(difficultyIndex);
+        if (difficulty == null) return false;
+        if (difficultyIndex <= 0) return true;
+
+        MapDifficultyData previous = map.levelData.GetDifficultyAt(difficultyIndex - 1);
+        return MapDifficultyRules.IsTierUnlocked(IsMapOwned(map), difficultyIndex, previous,
+            previous != null ? GetBestDifficultyScore(map, previous.difficultyId) : 0);
+    }
+
+    /// <summary>Returns the best saved score for a map difficulty.</summary>
+    /// <param name="map">Map containing the difficulty.</param>
+    /// <param name="difficultyId">Permanent difficulty identifier.</param>
+    /// <returns>The saved best score, or zero when no record exists.</returns>
+    public int GetBestDifficultyScore(MapData map, string difficultyId) {
+        if (map == null || string.IsNullOrEmpty(difficultyId) || mapDifficultyProgress == null) return 0;
+        int bestScore = 0;
+        foreach (var progress in mapDifficultyProgress) {
+            if (progress == null || progress.mapId != map.mapId || progress.difficultyId != difficultyId) continue;
+            bestScore = Mathf.Max(bestScore, progress.bestScore);
+        }
+        return bestScore;
+    }
+
+    /// <summary>Applies an authored unlocked difficulty to the selected map.</summary>
+    /// <param name="map">Owned map to select.</param>
+    /// <param name="difficultyId">Permanent difficulty identifier.</param>
+    /// <returns>True when the selection was applied and saved.</returns>
+    public bool SelectDifficulty(MapData map, string difficultyId) {
+        if (map == null || map != currentMap || !IsMapOwned(map) || map.levelData == null) return false;
+        MapDifficultyData difficulty = map.levelData.GetDifficulty(difficultyId);
+        int index = difficulty != null ? FindDifficultyIndex(map, difficulty.difficultyId) : -1;
+        if (difficulty == null || !IsDifficultyUnlocked(map, index)) return false;
+
+        currentDifficultyId = difficulty.difficultyId;
+        SaveGame();
+        return true;
+    }
+
+    /// <summary>Records a settled career score for the active map difficulty.</summary>
+    /// <param name="score">Score reached during the settled session.</param>
+    /// <param name="reason">Ending reason used to reject abandoned sessions.</param>
+    /// <returns>True when a best-score record was created or improved.</returns>
+    public bool RecordDifficultyScore(int score, EndReason reason) {
+        if (IsFreeplayMode || reason == EndReason.Abandoned || reason == EndReason.Interrupted) return false;
+        if (currentMap == null || mapDifficultyProgress == null) return false;
+
+        MapDifficultyData difficulty = GetCurrentDifficulty();
+        if (difficulty == null || string.IsNullOrEmpty(currentMap.mapId) || string.IsNullOrEmpty(difficulty.difficultyId)) return false;
+
+        int safeScore = Mathf.Max(0, score);
+        foreach (var progress in mapDifficultyProgress) {
+            if (progress == null || progress.mapId != currentMap.mapId || progress.difficultyId != difficulty.difficultyId) continue;
+            if (safeScore <= progress.bestScore) return false;
+            progress.bestScore = safeScore;
+            return true;
+        }
+
+        mapDifficultyProgress.Add(new MapDifficultyProgress(currentMap.mapId, difficulty.difficultyId, safeScore));
+        return true;
+    }
+
+    MapDifficultyData GetFirstUnlockedDifficulty(MapData map) {
+        if (map == null || map.levelData == null || map.levelData.difficultyLevels == null) return null;
+        for (int i = 0; i < map.levelData.difficultyLevels.Count; i++) {
+            if (map.levelData.GetDifficultyAt(i) != null && IsDifficultyUnlocked(map, i))
+                return map.levelData.GetDifficultyAt(i);
+        }
+        return null;
+    }
+
+    void EnsureCurrentDifficulty() {
+        MapDifficultyData selected = GetCurrentDifficulty();
+        if (selected != null) {
+            currentDifficultyId = selected.difficultyId;
+            return;
+        }
+        currentDifficultyId = string.Empty;
+    }
+
+    int FindDifficultyIndex(MapData map, string difficultyId) {
+        if (map == null || map.levelData == null || string.IsNullOrEmpty(difficultyId) || map.levelData.difficultyLevels == null) return -1;
+        for (int i = 0; i < map.levelData.difficultyLevels.Count; i++) {
+            MapDifficultyData difficulty = map.levelData.GetDifficultyAt(i);
+            if (difficulty != null && difficulty.difficultyId == difficultyId) return i;
+        }
+        return -1;
     }
 
     // --------------------------------------------------------------- economy
@@ -746,6 +894,7 @@ public class GameManager : MonoBehaviour {
         }
 
         RecordSessionStatistics(freeplay, deliveredPizzas, ordersCompleted, score);
+        RecordDifficultyScore(score, reason);
         result.careerCompleted = careerCompleted;
         result.finalShiftSucceeded = finalShiftSucceeded;
         result.personalBestScore = !freeplay && score > 0 && score >= bestShiftScore;

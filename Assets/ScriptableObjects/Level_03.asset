@@ -14,6 +14,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   orderMin: 1
   orderScale: 1
+  difficultyLevels:
+  - difficultyId: tier_01
+    displayNameKey: difficulty.tier1.name
+    descriptionKey: difficulty.tier1.description
+    orderMin: 1
+    orderMax: 2
+    pizzaLossChancePercent: 20
+    scorePenaltyPerPizzaLost: 50
+    rewardMultiplier: 1
+    unlockTargetScoreForNext: 1200
+  - difficultyId: tier_02
+    displayNameKey: difficulty.tier2.name
+    descriptionKey: difficulty.tier2.description
+    orderMin: 2
+    orderMax: 4
+    pizzaLossChancePercent: 50
+    scorePenaltyPerPizzaLost: 50
+    rewardMultiplier: 1.2
+    unlockTargetScoreForNext: 2600
+  - difficultyId: tier_03
+    displayNameKey: difficulty.tier3.name
+    descriptionKey: difficulty.tier3.description
+    orderMin: 3
+    orderMax: 6
+    pizzaLossChancePercent: 70
+    scorePenaltyPerPizzaLost: 50
+    rewardMultiplier: 1.5
+    unlockTargetScoreForNext: 0
   waitBase: 34
   waitPerOrderPizza: 9
   partialExtension: 14

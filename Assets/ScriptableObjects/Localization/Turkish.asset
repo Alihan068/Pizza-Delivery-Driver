@@ -343,6 +343,38 @@ MonoBehaviour:
     text: "\u0130\u015F Ba\u015Flat"
   - key: garage.mapSelection.backToGarage
     text: "Garaja D\xF6n"
+  - key: difficulty.tier1.name
+    text: Zorluk 1
+  - key: difficulty.tier1.description
+    text: "Küçük siparişler ve kaza başına düşük pizza kaybı riski."
+  - key: difficulty.tier2.name
+    text: Zorluk 2
+  - key: difficulty.tier2.description
+    text: "Daha büyük siparişler ve kaza başına daha yüksek pizza kaybı riski."
+  - key: difficulty.tier3.name
+    text: Zorluk 3
+  - key: difficulty.tier3.description
+    text: "Büyük siparişler ve yüksek pizza kaybı riski. Daha fazla kazandırır."
+  - key: map.difficulty.orders
+    text: 'Siparişler: {0}-{1} pizza'
+  - key: map.difficulty.loss
+    text: 'Kazada pizza kaybı: %{0}'
+  - key: map.difficulty.reward
+    text: 'Kazanç çarpanı: x{0:0.##}'
+  - key: map.difficulty.best
+    text: 'En iyi skor: {0}'
+  - key: map.difficulty.unlock
+    text: 'Önceki zorlukta {0} skoruna ulaş'
+  - key: map.difficulty.requires
+    text: 'Önceki zorlukta {0} skor gerekli'
+  - key: map.difficulty.counter
+    text: '{0}/{1}'
+  - key: map.difficulty.unlocked
+    text: Açık
+  - key: map.difficulty.locked
+    text: Kilitli
+  - key: map.difficulty.unavailable
+    text: Zorluk verisi yok
   - key: settings.master
     text: Ana Ses
   - key: settings.sfx
