@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Full screen slot picker used for New Game, Load Game, and picking a destination to copy the
@@ -29,6 +30,7 @@ public class SaveSlotSelectPanel : MonoBehaviour {
 
     [Header("Navigation")]
     [SerializeField] Button backButton;
+    [SerializeField] Button closeButton;
 
     [Header("Confirmation")]
     [Tooltip("Seconds the player must hold a card to overwrite it when starting a new career over one that already exists.")]
@@ -41,6 +43,11 @@ public class SaveSlotSelectPanel : MonoBehaviour {
 
     void Awake() {
         if (backButton != null) backButton.onClick.AddListener(Close);
+        if (closeButton != null) closeButton.onClick.AddListener(Close);
+    }
+
+    void Update() {
+        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Close();
     }
 
     void OnEnable() { LocalizationManager.LanguageChanged += RefreshCards; }

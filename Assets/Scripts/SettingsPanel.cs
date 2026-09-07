@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -33,10 +34,14 @@ public class SettingsPanel : MonoBehaviour {
     [SerializeField] Button displayOptionsButton;
     [SerializeField] GameObject displayOptionsOverlay;
     [SerializeField] Button displayOptionsCloseButton;
+    [SerializeField] Button closeButton;
+    [SerializeField] Button resolutionPreviousButton;
     [SerializeField] Button resolutionButton;
     [SerializeField] TextMeshProUGUI resolutionValueText;
+    [SerializeField] Button fullscreenPreviousButton;
     [SerializeField] Button fullscreenButton;
     [SerializeField] TextMeshProUGUI fullscreenValueText;
+    [SerializeField] FullScreenMode[] fullscreenModes;
     [SerializeField] Button frameRateButton;
     [SerializeField] TextMeshProUGUI frameRateValueText;
     [SerializeField] Button vSyncButton;
@@ -101,7 +106,10 @@ public class SettingsPanel : MonoBehaviour {
         ConfigureVolumeSlider(sfxSlider, OnSfxSliderChanged);
         if (displayOptionsButton != null) displayOptionsButton.onClick.AddListener(OnDisplayOptionsButtonClicked);
         if (displayOptionsCloseButton != null) displayOptionsCloseButton.onClick.AddListener(OnDisplayOptionsCloseButtonClicked);
+        if (closeButton != null) closeButton.onClick.AddListener(OnClickBack);
+        if (resolutionPreviousButton != null) resolutionPreviousButton.onClick.AddListener(OnResolutionPreviousButtonClicked);
         if (resolutionButton != null) resolutionButton.onClick.AddListener(OnResolutionButtonClicked);
+        if (fullscreenPreviousButton != null) fullscreenPreviousButton.onClick.AddListener(OnFullscreenPreviousButtonClicked);
         if (fullscreenButton != null) fullscreenButton.onClick.AddListener(OnFullscreenButtonClicked);
         if (frameRateButton != null) frameRateButton.onClick.AddListener(OnFrameRateButtonClicked);
         if (vSyncButton != null) vSyncButton.onClick.AddListener(OnVSyncButtonClicked);
@@ -125,6 +133,22 @@ public class SettingsPanel : MonoBehaviour {
         if (displayOptionsOverlay != null) displayOptionsOverlay.SetActive(false);
         SetConfirmVisible(false);
         ApplyContextVisibility();
+    }
+
+    void Update() {
+        if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame) return;
+
+        if (displayOptionsOverlay != null && displayOptionsOverlay.activeSelf) {
+            OnDisplayOptionsCloseButtonClicked();
+            return;
+        }
+
+        if (confirmGroup != null && confirmGroup.activeSelf) {
+            OnClickCancelReset();
+            return;
+        }
+
+        OnClickBack();
     }
 
     void OnDisable() {
@@ -167,28 +191,84 @@ public class SettingsPanel : MonoBehaviour {
         if (target != null) target.SetText("{0}", volume);
     }
 
+    void OnResolutionPreviousButtonClicked() {
+        CycleResolution(-1);
+    }
+
     void OnResolutionButtonClicked() {
+        CycleResolution(1);
+    }
+
+    void CycleResolution(int direction) {
         Resolution[] resolutions = Screen.resolutions;
         if (resolutions == null || resolutions.Length == 0) return;
 
-        int currentIndex = 0;
+        int currentIndex = -1;
+        int uniqueIndex = 0;
         for (int i = 0; i < resolutions.Length; i++) {
-            if (resolutions[i].width == Screen.width && resolutions[i].height == Screen.height) {
+            bool isDuplicate = false;
+            for (int j = 0; j < i; j++) {
+                if (resolutions[j].width == resolutions[i].width && resolutions[j].height == resolutions[i].height) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (isDuplicate) continue;
+            if (resolutions[i].width == Screen.width && resolutions[i].height == Screen.height) currentIndex = uniqueIndex;
+            uniqueIndex++;
+        }
+
+        if (uniqueIndex == 0) return;
+        if (currentIndex < 0) currentIndex = 0;
+        int nextIndex = (currentIndex + direction) % uniqueIndex;
+        if (nextIndex < 0) nextIndex += uniqueIndex;
+
+        int uniqueResolutionIndex = 0;
+        Resolution next = resolutions[0];
+        for (int i = 0; i < resolutions.Length; i++) {
+            bool isDuplicate = false;
+            for (int j = 0; j < i; j++) {
+                if (resolutions[j].width == resolutions[i].width && resolutions[j].height == resolutions[i].height) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (isDuplicate) continue;
+            if (uniqueResolutionIndex == nextIndex) {
+                next = resolutions[i];
+                break;
+            }
+            uniqueResolutionIndex++;
+        }
+
+        DisplaySettings.SetResolution(next.width, next.height, DisplaySettings.GetFullscreenMode());
+        RefreshDisplayLabels();
+    }
+
+    void OnFullscreenPreviousButtonClicked() {
+        CycleFullscreen(-1);
+    }
+
+    void OnFullscreenButtonClicked() {
+        CycleFullscreen(1);
+    }
+
+    void CycleFullscreen(int direction) {
+        if (fullscreenModes == null || fullscreenModes.Length == 0) return;
+
+        int currentIndex = 0;
+        for (int i = 0; i < fullscreenModes.Length; i++) {
+            if (fullscreenModes[i] == Screen.fullScreenMode) {
                 currentIndex = i;
                 break;
             }
         }
 
-        Resolution next = resolutions[(currentIndex + 1) % resolutions.Length];
-        DisplaySettings.SetResolution(next.width, next.height, DisplaySettings.GetFullscreenMode());
-        RefreshDisplayLabels();
-    }
-
-    void OnFullscreenButtonClicked() {
-        FullScreenMode next = Screen.fullScreenMode == FullScreenMode.Windowed
-            ? FullScreenMode.FullScreenWindow
-            : FullScreenMode.Windowed;
-        DisplaySettings.SetFullscreenMode(next);
+        int nextIndex = (currentIndex + direction) % fullscreenModes.Length;
+        if (nextIndex < 0) nextIndex += fullscreenModes.Length;
+        DisplaySettings.SetFullscreenMode(fullscreenModes[nextIndex]);
         RefreshDisplayLabels();
     }
 

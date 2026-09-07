@@ -341,7 +341,7 @@ MonoBehaviour:
   - key: garage.mapSelection.close
     text: Close
   - key: garage.mapSelection.open
-    text: Maps
+    text: Select Map
   - key: garage.mapSelection.startJob
     text: Start Job
   - key: garage.mapSelection.backToGarage
@@ -376,6 +376,10 @@ MonoBehaviour:
     text: Frame Rate
   - key: settings.vSync
     text: VSync
+  - key: settings.previous
+    text: '<'
+  - key: settings.next
+    text: '>'
   - key: onboarding.controls
     text: 'WASD / Arrow Keys: Drive
 

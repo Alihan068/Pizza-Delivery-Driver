@@ -2867,19 +2867,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1464541892}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1998568265}
-        m_TargetAssemblyTypeName: GarageManager, Assembly-CSharp
-        m_MethodName: OnClickNextVehicle
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1464541892
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3151,19 +3139,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1615110091}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1998568265}
-        m_TargetAssemblyTypeName: GarageManager, Assembly-CSharp
-        m_MethodName: OnClickPrevVehicle
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &1615110091
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4423,6 +4399,8 @@ MonoBehaviour:
   purchasePriceText: {fileID: 1439298720}
   purchaseButton: {fileID: 1979235659}
   mainMenuButton: {fileID: 0}
+  nextVehicleButton: {fileID: 1464541891}
+  previousVehicleButton: {fileID: 1615110090}
   settingsButton: {fileID: 58981724}
   settingsPanel: {fileID: 200169352}
   mapSelectionButton: {fileID: 0}

@@ -57,6 +57,8 @@ public class GarageManager : MonoBehaviour {
 
     [Header("Navigation")]
     public Button mainMenuButton;
+    [SerializeField] Button nextVehicleButton;
+    [SerializeField] Button previousVehicleButton;
     /// <summary>Opens the shared settings panel from the garage corner control.</summary>
     public Button settingsButton;
     /// <summary>Shared settings panel instance owned by this garage scene.</summary>
@@ -90,6 +92,8 @@ public class GarageManager : MonoBehaviour {
         if (settingsPanel != null) settingsPanel.Closed += CloseSettings;
         if (settingsButton != null) settingsButton.onClick.AddListener(OnClickSettings);
         if (startButton != null) startButton.onClick.AddListener(OnClickMapSelection);
+        if (nextVehicleButton != null) nextVehicleButton.onClick.AddListener(OnClickNextVehicle);
+        if (previousVehicleButton != null) previousVehicleButton.onClick.AddListener(OnClickPrevVehicle);
 
         UpdateUI();
     }

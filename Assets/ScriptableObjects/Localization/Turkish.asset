@@ -338,7 +338,7 @@ MonoBehaviour:
   - key: garage.mapSelection.close
     text: Kapat
   - key: garage.mapSelection.open
-    text: Haritalar
+    text: "Harita Seç"
   - key: garage.mapSelection.startJob
     text: "\u0130\u015F Ba\u015Flat"
   - key: garage.mapSelection.backToGarage
@@ -373,6 +373,10 @@ MonoBehaviour:
     text: "Kare H\u0131z\u0131"
   - key: settings.vSync
     text: VSync
+  - key: settings.previous
+    text: '<'
+  - key: settings.next
+    text: '>'
   - key: onboarding.controls
     text: "WASD / Ok Tu\u015Flar\u0131: S\xFCr.\nPizza toplama noktas\u0131ndan pizza
       al.\nS\xFCre dolmadan m\xFC\u015Fterilere teslim et.\nEngellerden ka\xE7\u0131n:
