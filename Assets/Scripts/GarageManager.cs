@@ -64,6 +64,11 @@ public class GarageManager : MonoBehaviour {
     /// <summary>Shared settings panel instance owned by this garage scene.</summary>
     public SettingsPanel settingsPanel;
 
+    [Header("Responsive Settings Entry Point")]
+    [Tooltip("Percentage anchors used by the Garage Settings button so it stays inside the screen at every aspect ratio.")]
+    [SerializeField] Vector2 settingsButtonAnchorMin = new Vector2(0.82f, 0.03f);
+    [SerializeField] Vector2 settingsButtonAnchorMax = new Vector2(0.98f, 0.11f);
+
     [Header("Map Selection")]
     /// <summary>Legacy inline map button. The active garage uses <see cref="startButton"/> to open the separate map selection scene.</summary>
     public Button mapSelectionButton;
@@ -77,6 +82,7 @@ public class GarageManager : MonoBehaviour {
 
     void Start() {
         Time.timeScale = 1f;
+        ConfigureSettingsEntryPoint();
 
         // Bound in code rather than through Inspector events: a persistent UnityEvent left behind
         // on one of these buttons once made a single click buy two levels (BF-016).
@@ -96,6 +102,33 @@ public class GarageManager : MonoBehaviour {
         if (previousVehicleButton != null) previousVehicleButton.onClick.AddListener(OnClickPrevVehicle);
 
         UpdateUI();
+    }
+
+    void ConfigureSettingsEntryPoint() {
+        if (settingsPanel != null) settingsPanel.gameObject.SetActive(false);
+        if (settingsButton == null) {
+            Debug.LogWarning("Garage settings button is not assigned.");
+            return;
+        }
+
+        settingsButton.gameObject.SetActive(true);
+        RectTransform buttonRect = settingsButton.transform as RectTransform;
+        if (buttonRect == null) return;
+
+        buttonRect.anchorMin = settingsButtonAnchorMin;
+        buttonRect.anchorMax = settingsButtonAnchorMax;
+        buttonRect.pivot = new Vector2(0.5f, 0.5f);
+        buttonRect.offsetMin = Vector2.zero;
+        buttonRect.offsetMax = Vector2.zero;
+        TMP_Text buttonLabel = settingsButton.GetComponentInChildren<TMP_Text>(true);
+        if (buttonLabel != null) {
+            buttonLabel.enableAutoSizing = true;
+            buttonLabel.fontSizeMin = 12f;
+            buttonLabel.fontSizeMax = 24f;
+            buttonLabel.alignment = TextAlignmentOptions.Center;
+            buttonLabel.raycastTarget = false;
+        }
+        settingsButton.transform.SetAsLastSibling();
     }
 
     void OnDestroy() {

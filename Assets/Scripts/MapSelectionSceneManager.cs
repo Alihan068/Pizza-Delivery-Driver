@@ -49,7 +49,7 @@ public class MapSelectionSceneManager : MonoBehaviour {
     }
 
     void RefreshButtonLabels() {
-        SetButtonLabel(startJobButton, startJobKey);
+        if (mapSelectionPanel == null) SetButtonLabel(startJobButton, startJobKey);
         SetButtonLabel(backToGarageButton, backToGarageKey);
     }
 
@@ -64,8 +64,9 @@ public class MapSelectionSceneManager : MonoBehaviour {
         var manager = GameManager.Instance;
         var save = manager != null ? manager.GetCurrentVehicleSave() : null;
         bool canStart = manager != null && save != null && save.isUnlocked &&
-                        manager.currentMap != null && manager.IsMapOwned(manager.currentMap) &&
-                        (mapSelectionPanel == null || mapSelectionPanel.IsPreviewApplied());
+                        (mapSelectionPanel == null
+                            ? manager.currentMap != null && manager.IsMapOwned(manager.currentMap)
+                            : mapSelectionPanel.CanApplyPreviewSelection());
         startJobButton.interactable = canStart;
     }
 
@@ -73,12 +74,23 @@ public class MapSelectionSceneManager : MonoBehaviour {
     public void OnClickStartJob() {
         var manager = GameManager.Instance;
         var save = manager != null ? manager.GetCurrentVehicleSave() : null;
-        var map = manager != null ? manager.currentMap : null;
-        if (manager == null || save == null || !save.isUnlocked || map == null ||
-            !manager.IsMapOwned(map) || (mapSelectionPanel != null && !mapSelectionPanel.IsPreviewApplied())) {
+        if (manager == null || save == null || !save.isUnlocked) {
             RefreshUI();
             return;
         }
+        var map = manager.currentMap;
+        if (mapSelectionPanel != null) {
+            if (!mapSelectionPanel.TryApplyPreviewSelection()) {
+                RefreshUI();
+                return;
+            }
+            map = manager.currentMap;
+        }
+        else if (map == null || !manager.IsMapOwned(map)) {
+            RefreshUI();
+            return;
+        }
+        map = manager.currentMap;
         if (string.IsNullOrEmpty(map.sceneName)) {
             Debug.LogError("The selected map has no gameplay scene assigned.");
             return;

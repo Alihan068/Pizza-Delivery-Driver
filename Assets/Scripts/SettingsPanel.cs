@@ -20,6 +20,15 @@ public class SettingsPanel : MonoBehaviour {
     [Tooltip("Determines which optional navigation and save actions are visible on this instance.")]
     [SerializeField] SettingsContext context = SettingsContext.Pause;
 
+    [Header("Responsive Layout")]
+    [Tooltip("Percentage anchors keep the shared settings panel inside the visible screen area.")]
+    [SerializeField] Vector2 panelAnchorMin = new Vector2(0.18f, 0.04f);
+    [SerializeField] Vector2 panelAnchorMax = new Vector2(0.82f, 0.96f);
+    [SerializeField] TextMeshProUGUI titleText;
+    [SerializeField] RectTransform displayOptionsBox;
+    [SerializeField] Vector2 developerToolsAnchorMin = new Vector2(0.28f, 0.02f);
+    [SerializeField] Vector2 developerToolsAnchorMax = new Vector2(0.72f, 0.15f);
+
     [Header("Music")]
     [SerializeField] Slider musicSlider;
     [SerializeField] TextMeshProUGUI musicValueText;
@@ -132,6 +141,7 @@ public class SettingsPanel : MonoBehaviour {
     public event System.Action ReturnToMainMenuRequested;
 
     void Awake() {
+        ConfigureResponsivePanelLayout();
         BuildDeveloperToolsUI();
         if (musicSlider != null) {
             musicSlider.minValue = 0f;
@@ -157,6 +167,82 @@ public class SettingsPanel : MonoBehaviour {
         if (copyToSlotButton != null) copyToSlotButton.onClick.AddListener(OnClickCopyToSlot);
         if (garageButton != null) garageButton.onClick.AddListener(OnClickGarage);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
+    }
+
+    void ConfigureResponsivePanelLayout() {
+        RectTransform panelRect = transform as RectTransform;
+        if (panelRect == null) return;
+
+        SetResponsiveRect(panelRect, panelAnchorMin, panelAnchorMax);
+        ConfigureResponsiveChildLayout();
+        ConfigureDisplayOptionsLayout();
+    }
+
+    void ConfigureResponsiveChildLayout() {
+        SetResponsiveRect(titleText != null ? titleText.transform as RectTransform : null,
+            new Vector2(0.08f, 0.91f), new Vector2(0.92f, 0.98f));
+        SetResponsiveRect(GetRowRect(musicSlider), new Vector2(0.08f, 0.81f), new Vector2(0.92f, 0.88f));
+        SetResponsiveRect(GetRowRect(masterSlider), new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.79f));
+        SetResponsiveRect(GetRowRect(sfxSlider), new Vector2(0.08f, 0.63f), new Vector2(0.92f, 0.70f));
+        SetResponsiveRect(languageSelector != null ? languageSelector.transform as RectTransform : null,
+            new Vector2(0.08f, 0.54f), new Vector2(0.92f, 0.61f));
+        SetResponsiveRect(saveChip != null ? saveChip.transform as RectTransform : null,
+            new Vector2(0.08f, 0.45f), new Vector2(0.92f, 0.52f));
+        SetResponsiveRect(copyToSlotButton != null ? copyToSlotButton.transform as RectTransform : null,
+            new Vector2(0.08f, 0.36f), new Vector2(0.92f, 0.43f));
+        SetResponsiveRect(garageButton != null ? garageButton.transform as RectTransform : null,
+            new Vector2(0.08f, 0.27f), new Vector2(0.92f, 0.34f));
+        SetResponsiveRect(mainMenuButton != null ? mainMenuButton.transform as RectTransform : null,
+            new Vector2(0.08f, 0.18f), new Vector2(0.92f, 0.25f));
+        SetResponsiveRect(resetProgressButton != null ? resetProgressButton.transform as RectTransform : null,
+            new Vector2(0.08f, 0.09f), new Vector2(0.92f, 0.16f));
+        SetResponsiveRect(backButton != null ? backButton.transform as RectTransform : null,
+            new Vector2(0.08f, 0.01f), new Vector2(0.42f, 0.08f));
+        SetResponsiveRect(displayOptionsButton != null ? displayOptionsButton.transform as RectTransform : null,
+            new Vector2(0.70f, 0.91f), new Vector2(0.88f, 0.98f));
+        SetResponsiveRect(closeButton != null ? closeButton.transform as RectTransform : null,
+            new Vector2(0.90f, 0.91f), new Vector2(0.99f, 0.99f));
+        SetResponsiveRect(confirmGroup != null ? confirmGroup.transform as RectTransform : null,
+            new Vector2(0.15f, 0.35f), new Vector2(0.85f, 0.60f));
+    }
+
+    void ConfigureDisplayOptionsLayout() {
+        SetResponsiveRect(displayOptionsOverlay != null ? displayOptionsOverlay.transform as RectTransform : null,
+            Vector2.zero, Vector2.one);
+        SetResponsiveRect(displayOptionsBox, new Vector2(0.10f, 0.05f), new Vector2(0.90f, 0.95f));
+        SetResponsiveRect(displayOptionsCloseButton != null ? displayOptionsCloseButton.transform as RectTransform : null,
+            new Vector2(0.86f, 0.87f), new Vector2(0.96f, 0.97f));
+        if (displayOptionsBox == null) return;
+
+        SetResponsiveRect(GetDisplayOptionChild(0), new Vector2(0.08f, 0.88f), new Vector2(0.92f, 0.97f));
+        SetResponsiveRect(GetDisplayOptionChild(1), new Vector2(0.08f, 0.68f), new Vector2(0.92f, 0.82f));
+        SetResponsiveRect(GetDisplayOptionChild(2), new Vector2(0.08f, 0.50f), new Vector2(0.92f, 0.64f));
+        SetResponsiveRect(GetDisplayOptionChild(3), new Vector2(0.08f, 0.32f), new Vector2(0.92f, 0.46f));
+        SetResponsiveRect(GetDisplayOptionChild(4), new Vector2(0.08f, 0.14f), new Vector2(0.92f, 0.28f));
+    }
+
+    RectTransform GetRowRect(Slider slider) {
+        return slider != null ? slider.transform.parent as RectTransform : null;
+    }
+
+    RectTransform GetDisplayOptionChild(int index) {
+        return index >= 0 && index < displayOptionsBox.childCount
+            ? displayOptionsBox.GetChild(index) as RectTransform : null;
+    }
+
+    void SetResponsiveRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax) {
+        if (rect == null) return;
+
+        Vector2 min = new Vector2(Mathf.Clamp01(anchorMin.x), Mathf.Clamp01(anchorMin.y));
+        Vector2 max = new Vector2(Mathf.Clamp01(anchorMax.x), Mathf.Clamp01(anchorMax.y));
+        if (max.x <= min.x) max.x = Mathf.Min(1f, min.x + 0.1f);
+        if (max.y <= min.y) max.y = Mathf.Min(1f, min.y + 0.1f);
+
+        rect.anchorMin = min;
+        rect.anchorMax = max;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
     }
 
     void OnEnable() {
@@ -210,11 +296,11 @@ public class SettingsPanel : MonoBehaviour {
         developerToolsRuntimeRoot.transform.SetAsLastSibling();
 
         RectTransform rootRect = developerToolsRuntimeRoot.GetComponent<RectTransform>();
-        rootRect.anchorMin = new Vector2(0.5f, 0f);
-        rootRect.anchorMax = new Vector2(0.5f, 0f);
+        rootRect.anchorMin = developerToolsAnchorMin;
+        rootRect.anchorMax = developerToolsAnchorMax;
         rootRect.pivot = new Vector2(0.5f, 0f);
-        rootRect.anchoredPosition = developerToolsPosition;
-        rootRect.sizeDelta = developerToolsRootSize;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
 
         LayoutElement rootLayout = developerToolsRuntimeRoot.GetComponent<LayoutElement>();
         rootLayout.ignoreLayout = true;
@@ -225,22 +311,22 @@ public class SettingsPanel : MonoBehaviour {
 
         Button toggleButton = CreateDeveloperButton(developerToolsRuntimeRoot.transform, "DeveloperToolsToggle");
         RectTransform toggleRect = toggleButton.transform as RectTransform;
-        toggleRect.anchorMin = new Vector2(0.5f, 0f);
-        toggleRect.anchorMax = new Vector2(0.5f, 0f);
-        toggleRect.pivot = new Vector2(0.5f, 0f);
-        toggleRect.anchoredPosition = Vector2.zero;
-        toggleRect.sizeDelta = developerToolsButtonSize;
+        toggleRect.anchorMin = new Vector2(0.05f, 0f);
+        toggleRect.anchorMax = new Vector2(0.95f, 1f);
+        toggleRect.pivot = new Vector2(0.5f, 0.5f);
+        toggleRect.offsetMin = Vector2.zero;
+        toggleRect.offsetMax = Vector2.zero;
         developerToolsToggleText = toggleButton.GetComponentInChildren<TextMeshProUGUI>(true);
         toggleButton.onClick.AddListener(OnDeveloperToolsToggleClicked);
 
         developerToolsDropdown = new GameObject("DeveloperToolsDropdown", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
         developerToolsDropdown.transform.SetParent(developerToolsRuntimeRoot.transform, false);
         RectTransform dropdownRect = developerToolsDropdown.GetComponent<RectTransform>();
-        dropdownRect.anchorMin = new Vector2(0.5f, 0f);
-        dropdownRect.anchorMax = new Vector2(0.5f, 0f);
+        dropdownRect.anchorMin = new Vector2(0.05f, 1f);
+        dropdownRect.anchorMax = new Vector2(0.95f, 1f);
         dropdownRect.pivot = new Vector2(0.5f, 0f);
-        dropdownRect.anchoredPosition = new Vector2(0f, developerToolsButtonSize.y + 8f);
-        dropdownRect.sizeDelta = developerToolsDropdownSize;
+        dropdownRect.anchoredPosition = new Vector2(0f, 8f);
+        dropdownRect.sizeDelta = new Vector2(0f, developerToolsDropdownSize.y);
         Image dropdownImage = developerToolsDropdown.GetComponent<Image>();
         dropdownImage.color = developerToolsDropdownColor;
 

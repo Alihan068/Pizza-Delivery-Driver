@@ -4,7 +4,7 @@ using UnityEngine.UI;
 /// <summary>Displays a map preview sprite inside a dynamically generated selection card.</summary>
 public class MapCardPreview : MonoBehaviour {
     static Sprite fallbackSprite;
-    Image previewImage;
+    [SerializeField] Image previewImage;
 
     /// <summary>Returns a shared one-pixel sprite used for authored preview fallbacks.</summary>
     /// <returns>A safe sprite that can be tinted by a UI Image.</returns>
@@ -20,17 +20,38 @@ public class MapCardPreview : MonoBehaviour {
     /// <summary>Creates the preview image as a child of the supplied map card.</summary>
     /// <param name="cardRect">RectTransform used as the card parent.</param>
     public void Initialize(RectTransform cardRect) {
-        if (previewImage != null || cardRect == null) return;
+        if (cardRect == null) return;
+        if (previewImage == null) {
+            Image cardBackground = GetComponent<Image>();
+            Image[] childImages = GetComponentsInChildren<Image>(true);
+            for (int i = 0; i < childImages.Length; i++) {
+                if (childImages[i] != cardBackground) {
+                    previewImage = childImages[i];
+                    break;
+                }
+            }
+        }
+        if (previewImage != null) {
+            ConfigurePreviewRect(previewImage.transform as RectTransform);
+            previewImage.preserveAspect = true;
+            previewImage.raycastTarget = false;
+            return;
+        }
+
         GameObject previewObject = new GameObject("MapCardPreviewImage", typeof(RectTransform), typeof(Image));
         previewObject.transform.SetParent(cardRect, false);
         previewImage = previewObject.GetComponent<Image>();
-        RectTransform rect = previewObject.GetComponent<RectTransform>();
+        ConfigurePreviewRect(previewObject.GetComponent<RectTransform>());
+        previewImage.preserveAspect = true;
+        previewImage.raycastTarget = false;
+    }
+
+    void ConfigurePreviewRect(RectTransform rect) {
+        if (rect == null) return;
         rect.anchorMin = new Vector2(0.08f, 0.34f);
         rect.anchorMax = new Vector2(0.92f, 0.94f);
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
-        previewImage.preserveAspect = true;
-        previewImage.raycastTarget = false;
     }
 
     /// <summary>Assigns the preview sprite and keeps a visible tinted fallback when it is missing.</summary>
