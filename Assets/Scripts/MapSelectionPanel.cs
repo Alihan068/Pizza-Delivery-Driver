@@ -20,6 +20,7 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] Button nextMapButton;
     [SerializeField] Button selectMapButton;
     [SerializeField] Image mapPreviewImage;
+    [SerializeField] TextMeshProUGUI panelTitleText;
 
     [Header("Runtime Map Browser")]
     [Tooltip("Builds the registry-driven map card grid when the scene has no authored card references.")]
@@ -35,16 +36,24 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] Color runtimeCardColor = new Color(0.12f, 0.24f, 0.30f, 1f);
     [SerializeField] Color runtimeLockedCardColor = new Color(0.08f, 0.12f, 0.15f, 1f);
     [SerializeField] Color runtimeSelectedCardColor = new Color(0.20f, 0.48f, 0.58f, 1f);
+    [SerializeField] string mapBrowserTitleKey = "garage.mapSelection.title";
 
     [Header("Difficulty Display")]
     [SerializeField] TextMeshProUGUI difficultyNameText;
     [SerializeField] TextMeshProUGUI difficultyDescriptionText;
     [SerializeField] TextMeshProUGUI difficultyStatusText;
     [SerializeField] TextMeshProUGUI difficultySummaryText;
+    [SerializeField] TextMeshProUGUI difficultyStarsText;
     [SerializeField] Button previousDifficultyButton;
     [SerializeField] Button nextDifficultyButton;
+    [Min(1)] [SerializeField] int difficultyStarCount = 6;
+    [SerializeField] string filledStarSymbol = "★";
+    [SerializeField] string emptyStarSymbol = "☆";
+    [SerializeField] Color filledStarColor = new Color(1f, 0.78f, 0.08f, 1f);
+    [SerializeField] Color emptyStarColor = Color.black;
 
     [Header("Modifier Display")]
+    [SerializeField] TextMeshProUGUI modifierTitleText;
     [SerializeField] TextMeshProUGUI modifierNameText;
     [SerializeField] TextMeshProUGUI modifierDescriptionText;
     [SerializeField] Button previousModifierButton;
@@ -77,6 +86,7 @@ public class MapSelectionPanel : MonoBehaviour {
     bool runtimeLayoutBuilt;
     RectTransform runtimeMapContent;
     GameObject runtimeMapBrowser;
+    TextMeshProUGUI runtimeMapBrowserTitle;
     readonly List<Image> runtimeMapCardBackgrounds = new List<Image>();
     readonly List<TMP_Text> runtimeMapCardLabels = new List<TMP_Text>();
 
@@ -194,6 +204,7 @@ public class MapSelectionPanel : MonoBehaviour {
     void RefreshUI() {
         var manager = GameManager.Instance;
         var map = GetSelectedMap(manager);
+        if (runtimeMapBrowserTitle != null) runtimeMapBrowserTitle.text = LocalizationManager.Get(mapBrowserTitleKey);
         if (manager == null || map == null) {
             SetMapControlsActive(false);
             return;
@@ -252,8 +263,6 @@ public class MapSelectionPanel : MonoBehaviour {
         if (detailBox == null) return;
 
         runtimeMapBrowser = CreateRuntimeMapBrowser();
-        GridLayoutGroup grid = runtimeMapBrowser != null ? runtimeMapBrowser.GetComponentInChildren<GridLayoutGroup>() : null;
-        runtimeMapContent = grid != null ? grid.transform as RectTransform : null;
         if (runtimeMapBrowser == null || runtimeMapContent == null) return;
 
         detailBox.anchoredPosition = detailPanelOffset;
@@ -271,35 +280,33 @@ public class MapSelectionPanel : MonoBehaviour {
         browserRect.pivot = new Vector2(0.5f, 0.5f);
         browserRect.anchoredPosition = mapGridOffset;
         browserRect.sizeDelta = mapGridSize;
-        browser.GetComponent<Image>().color = runtimePanelColor;
+        Image browserBackground = browser.GetComponent<Image>();
+        browserBackground.sprite = MapCardPreview.GetFallbackSprite();
+        browserBackground.color = runtimePanelColor;
 
-        GameObject viewport = new GameObject("MapBrowserViewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+        GameObject viewport = new GameObject("MapBrowserViewport", typeof(RectTransform), typeof(RectMask2D));
         viewport.transform.SetParent(browser.transform, false);
         RectTransform viewportRect = viewport.GetComponent<RectTransform>();
         viewportRect.anchorMin = new Vector2(0f, 0f);
         viewportRect.anchorMax = new Vector2(1f, 1f);
         viewportRect.offsetMin = new Vector2(12f, 12f);
-        viewportRect.offsetMax = new Vector2(-12f, -12f);
-        viewport.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
-        viewport.GetComponent<Mask>().showMaskGraphic = false;
+        viewportRect.offsetMax = new Vector2(-12f, -52f);
 
-        GameObject content = new GameObject("MapBrowserContent", typeof(RectTransform), typeof(GridLayoutGroup), typeof(ContentSizeFitter));
+        GameObject content = new GameObject("MapBrowserContent", typeof(RectTransform));
         content.transform.SetParent(viewport.transform, false);
         RectTransform contentRect = content.GetComponent<RectTransform>();
         contentRect.anchorMin = new Vector2(0f, 1f);
-        contentRect.anchorMax = new Vector2(1f, 1f);
-        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.anchorMax = new Vector2(0f, 1f);
+        contentRect.pivot = new Vector2(0f, 1f);
         contentRect.anchoredPosition = Vector2.zero;
-        contentRect.sizeDelta = new Vector2(0f, 0f);
-        GridLayoutGroup grid = content.GetComponent<GridLayoutGroup>();
-        grid.cellSize = mapCardSize;
-        grid.spacing = mapCardSpacing;
-        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = Mathf.Max(1, mapGridColumnCount);
-        grid.childAlignment = TextAnchor.UpperCenter;
-        ContentSizeFitter fitter = content.GetComponent<ContentSizeFitter>();
-        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        contentRect.sizeDelta = new Vector2(Mathf.Max(0f, mapGridSize.x - 24f), Mathf.Max(0f, mapGridSize.y - 64f));
+        runtimeMapContent = contentRect;
+
+        runtimeMapBrowserTitle = CreateRuntimeText(browserRect, mapNameText,
+            new Vector2(0f, mapGridSize.y * 0.5f - 28f), new Vector2(mapGridSize.x - 32f, 30f));
+        runtimeMapBrowserTitle.text = LocalizationManager.Get(mapBrowserTitleKey);
+        runtimeMapBrowserTitle.fontSize = 22f;
+        runtimeMapBrowserTitle.fontStyle = FontStyles.Bold;
 
         ScrollRect scroll = browser.AddComponent<ScrollRect>();
         scroll.viewport = viewportRect;
@@ -311,28 +318,51 @@ public class MapSelectionPanel : MonoBehaviour {
     }
 
     void CreateRuntimeDetailFields(RectTransform detailBox) {
-        CreateRuntimeMapPreview(detailBox);
-        SetRect(mapNameText, new Vector2(0f, 330f), new Vector2(500f, 34f));
-        SetRect(mapDescriptionText, new Vector2(0f, 285f), new Vector2(500f, 42f));
-        SetRect(mapStatusText, new Vector2(0f, 245f), new Vector2(500f, 28f));
-        difficultyNameText = CreateRuntimeText(detailBox, mapNameText, new Vector2(0f, 25f), new Vector2(480f, 30f));
-        difficultyDescriptionText = CreateRuntimeText(detailBox, mapDescriptionText, new Vector2(0f, -12f), new Vector2(480f, 42f));
-        difficultyStatusText = CreateRuntimeText(detailBox, mapStatusText, new Vector2(0f, -60f), new Vector2(480f, 28f));
-        difficultySummaryText = CreateRuntimeText(detailBox, mapDescriptionText, new Vector2(0f, -145f), new Vector2(480f, 100f));
-        previousDifficultyButton = CreateRuntimeButton(detailBox, previousMapButton, new Vector2(-175f, -245f), "<");
-        nextDifficultyButton = CreateRuntimeButton(detailBox, nextMapButton, new Vector2(175f, -245f), ">");
+        SetRect(panelTitleText, new Vector2(0f, 410f), new Vector2(500f, 32f));
+        SetRuntimeTextStyle(panelTitleText, 22f, FontStyles.Bold);
+        SetRect(mapNameText, new Vector2(0f, 360f), new Vector2(500f, 34f));
+        SetRuntimeTextStyle(mapNameText, 20f, FontStyles.Bold);
+        SetRect(mapDescriptionText, new Vector2(0f, 318f), new Vector2(500f, 40f));
+        SetRuntimeTextStyle(mapDescriptionText, 15f, FontStyles.Normal);
+        SetRect(mapStatusText, new Vector2(0f, 275f), new Vector2(500f, 26f));
+        SetRuntimeTextStyle(mapStatusText, 15f, FontStyles.Normal);
+        CreateRuntimeMapPreview(detailBox, new Vector2(0f, 175f), new Vector2(300f, 160f));
+        difficultyNameText = CreateRuntimeText(detailBox, mapNameText, new Vector2(0f, 62f), new Vector2(480f, 28f));
+        difficultyDescriptionText = CreateRuntimeText(detailBox, mapDescriptionText, new Vector2(0f, 28f), new Vector2(480f, 36f));
+        difficultyStatusText = CreateRuntimeText(detailBox, mapStatusText, new Vector2(0f, -4f), new Vector2(480f, 22f));
+        difficultySummaryText = CreateRuntimeText(detailBox, mapDescriptionText, new Vector2(0f, -75f), new Vector2(480f, 92f));
+        difficultyStarsText = CreateRuntimeText(detailBox, mapNameText, new Vector2(0f, -145f), new Vector2(160f, 32f));
+        SetRuntimeTextStyle(difficultyStarsText, 25f, FontStyles.Normal);
+        difficultyStarsText.richText = true;
+        previousDifficultyButton = CreateRuntimeButton(detailBox, previousMapButton, new Vector2(-175f, -145f), "<");
+        nextDifficultyButton = CreateRuntimeButton(detailBox, nextMapButton, new Vector2(175f, -145f), ">");
 
+        RectTransform modifierTitleRect = modifierTitleText != null ? modifierTitleText.transform as RectTransform : null;
         RectTransform modifierNameRect = modifierNameText != null ? modifierNameText.transform as RectTransform : null;
         RectTransform modifierDescriptionRect = modifierDescriptionText != null ? modifierDescriptionText.transform as RectTransform : null;
         RectTransform previousModifierRect = previousModifierButton != null ? previousModifierButton.transform as RectTransform : null;
         RectTransform nextModifierRect = nextModifierButton != null ? nextModifierButton.transform as RectTransform : null;
-        if (modifierNameRect != null) modifierNameRect.anchoredPosition = new Vector2(0f, -315f);
-        if (modifierDescriptionRect != null) modifierDescriptionRect.anchoredPosition = new Vector2(0f, -350f);
-        if (previousModifierRect != null) previousModifierRect.anchoredPosition = new Vector2(-155f, -400f);
-        if (nextModifierRect != null) nextModifierRect.anchoredPosition = new Vector2(155f, -400f);
+        if (modifierTitleRect != null) {
+            modifierTitleRect.anchoredPosition = new Vector2(0f, -180f);
+            modifierTitleRect.sizeDelta = new Vector2(480f, 24f);
+            SetRuntimeTextStyle(modifierTitleText, 14f, FontStyles.Normal);
+        }
+        if (modifierNameRect != null) {
+            modifierNameRect.anchoredPosition = new Vector2(0f, -215f);
+            modifierNameRect.sizeDelta = new Vector2(480f, 26f);
+            SetRuntimeTextStyle(modifierNameText, 18f, FontStyles.Bold);
+        }
+        if (modifierDescriptionRect != null) {
+            modifierDescriptionRect.anchoredPosition = new Vector2(0f, -250f);
+            modifierDescriptionRect.sizeDelta = new Vector2(480f, 34f);
+            SetRuntimeTextStyle(modifierDescriptionText, 14f, FontStyles.Normal);
+        }
+        if (previousModifierRect != null) previousModifierRect.anchoredPosition = new Vector2(-155f, -300f);
+        if (nextModifierRect != null) nextModifierRect.anchoredPosition = new Vector2(155f, -300f);
         if (selectMapButton != null) {
             RectTransform selectRect = selectMapButton.transform as RectTransform;
-            selectRect.anchoredPosition = new Vector2(0f, -455f);
+            selectRect.anchoredPosition = new Vector2(0f, -375f);
+            selectRect.sizeDelta = new Vector2(220f, 40f);
         }
     }
 
@@ -347,15 +377,15 @@ public class MapSelectionPanel : MonoBehaviour {
         rect.sizeDelta = size;
     }
 
-    void CreateRuntimeMapPreview(RectTransform detailBox) {
+    void CreateRuntimeMapPreview(RectTransform detailBox, Vector2 position, Vector2 size) {
         GameObject preview = new GameObject("SelectedMapPreview", typeof(RectTransform), typeof(Image));
         preview.transform.SetParent(detailBox, false);
         RectTransform rect = preview.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(0.5f, 0.5f);
         rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(0f, 125f);
-        rect.sizeDelta = new Vector2(300f, 170f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
         mapPreviewImage = preview.GetComponent<Image>();
         mapPreviewImage.preserveAspect = true;
     }
@@ -374,7 +404,22 @@ public class MapSelectionPanel : MonoBehaviour {
         rect.sizeDelta = size;
         text.text = string.Empty;
         text.raycastTarget = false;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 11f;
+        text.fontSizeMax = Mathf.Min(text.fontSize, 18f);
+        text.alignment = TextAlignmentOptions.Center;
         return text;
+    }
+
+    void SetRuntimeTextStyle(TMP_Text text, float fontSize, FontStyles fontStyle) {
+        if (text == null) return;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 11f;
+        text.fontSizeMax = fontSize;
+        text.fontSize = fontSize;
+        text.fontStyle = fontStyle;
+        text.alignment = TextAlignmentOptions.Center;
+        text.raycastTarget = false;
     }
 
     Button CreateRuntimeButton(RectTransform parent, Button template, Vector2 position, string labelText) {
@@ -387,7 +432,7 @@ public class MapSelectionPanel : MonoBehaviour {
         rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = position;
-        rect.sizeDelta = new Vector2(72f, 34f);
+        rect.sizeDelta = new Vector2(64f, 32f);
         TMP_Text label = buttonObject.GetComponentInChildren<TMP_Text>(true);
         if (label != null) {
             label.text = labelText;
@@ -406,11 +451,30 @@ public class MapSelectionPanel : MonoBehaviour {
         while (runtimeMapContent.childCount > manager.Content.Maps.Count)
             Destroy(runtimeMapContent.GetChild(runtimeMapContent.childCount - 1).gameObject);
 
+        int columnCount = Mathf.Max(1, mapGridColumnCount);
+        int rowCount = (manager.Content.Maps.Count + columnCount - 1) / columnCount;
+        float contentWidth = Mathf.Max(0f, mapGridSize.x - 24f);
+        float requiredHeight = 16f + rowCount * mapCardSize.y + Mathf.Max(0, rowCount - 1) * mapCardSpacing.y;
+        runtimeMapContent.sizeDelta = new Vector2(contentWidth,
+            Mathf.Max(mapGridSize.y - 64f, requiredHeight));
+
         runtimeMapCardBackgrounds.Clear();
         runtimeMapCardLabels.Clear();
         for (int i = 0; i < runtimeMapContent.childCount; i++) {
             MapData map = manager.Content.Maps[i];
             Button button = runtimeMapContent.GetChild(i).GetComponent<Button>();
+            RectTransform cardRect = runtimeMapContent.GetChild(i) as RectTransform;
+            if (cardRect != null) {
+                int column = i % columnCount;
+                int row = i / columnCount;
+                cardRect.anchorMin = new Vector2(0f, 1f);
+                cardRect.anchorMax = new Vector2(0f, 1f);
+                cardRect.pivot = new Vector2(0f, 1f);
+                cardRect.sizeDelta = mapCardSize;
+                cardRect.anchoredPosition = new Vector2(
+                    8f + column * (mapCardSize.x + mapCardSpacing.x),
+                    -8f - row * (mapCardSize.y + mapCardSpacing.y));
+            }
             Image background = button != null ? button.targetGraphic as Image : null;
             TMP_Text label = button != null ? button.GetComponentInChildren<TMP_Text>(true) : null;
             if (background != null) {
@@ -446,6 +510,7 @@ public class MapSelectionPanel : MonoBehaviour {
         cardObject.transform.SetParent(parent, false);
         Button button = cardObject.GetComponent<Button>();
         Image background = cardObject.GetComponent<Image>();
+        background.sprite = MapCardPreview.GetFallbackSprite();
         background.color = runtimeCardColor;
         button.targetGraphic = background;
         int capturedIndex = index;
@@ -535,9 +600,29 @@ public class MapSelectionPanel : MonoBehaviour {
                 difficultySummaryText.text = string.Join("\n", orders, loss, reward, best, target);
             }
         }
+        if (difficultyStarsText != null) difficultyStarsText.text = hasDifficulty ? BuildDifficultyStars() : string.Empty;
         bool canCycle = map != null && map.levelData != null && map.levelData.difficultyLevels != null && map.levelData.difficultyLevels.Count > 1;
         if (previousDifficultyButton != null) previousDifficultyButton.interactable = canCycle;
         if (nextDifficultyButton != null) nextDifficultyButton.interactable = canCycle;
+    }
+
+    string BuildDifficultyStars() {
+        int starCount = Mathf.Max(1, difficultyStarCount);
+        int filledCount = Mathf.Clamp(difficultyIndex + 1, 0, starCount);
+        string filledColor = ColorUtility.ToHtmlStringRGB(filledStarColor);
+        string emptyColor = ColorUtility.ToHtmlStringRGB(emptyStarColor);
+        string filledSymbol = string.IsNullOrEmpty(filledStarSymbol) ? "★" : filledStarSymbol;
+        string emptySymbol = string.IsNullOrEmpty(emptyStarSymbol) ? "☆" : emptyStarSymbol;
+        System.Text.StringBuilder stars = new System.Text.StringBuilder(starCount * 18);
+        for (int i = 0; i < starCount; i++) {
+            bool filled = i < filledCount;
+            stars.Append("<color=#");
+            stars.Append(filled ? filledColor : emptyColor);
+            stars.Append(">");
+            stars.Append(filled ? filledSymbol : emptySymbol);
+            stars.Append("</color>");
+        }
+        return stars.ToString();
     }
 
     int FindMapIndex(IReadOnlyList<MapData> maps, MapData selected) {

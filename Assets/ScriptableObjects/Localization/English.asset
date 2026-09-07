@@ -412,6 +412,32 @@ MonoBehaviour:
     text: '<'
   - key: settings.next
     text: '>'
+  - key: settings.developerTools
+    text: Developer Tools
+  - key: settings.developer.addMoney
+    text: 'Add Money +${0}'
+  - key: settings.developer.addRating
+    text: 'Add Rating +{0}'
+  - key: settings.developer.removeRating
+    text: 'Remove Rating -{0}'
+  - key: settings.developer.unlockVehicles
+    text: Unlock All Vehicles
+  - key: settings.developer.unlockMaps
+    text: Unlock All Maps and Tiers
+  - key: settings.developer.ready
+    text: Select a developer action.
+  - key: settings.developer.unavailable
+    text: Game Manager is unavailable.
+  - key: settings.developer.moneyAdded
+    text: 'Added ${0}.'
+  - key: settings.developer.ratingAdded
+    text: 'Added {0} rating.'
+  - key: settings.developer.ratingRemoved
+    text: 'Removed {0} rating.'
+  - key: settings.developer.vehiclesUnlocked
+    text: 'Vehicle records changed: {0}.'
+  - key: settings.developer.mapsUnlocked
+    text: 'Map records changed: {0}.'
   - key: onboarding.controls
     text: 'WASD / Arrow Keys: Drive
 

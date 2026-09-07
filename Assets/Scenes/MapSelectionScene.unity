@@ -2135,6 +2135,14 @@ MonoBehaviour:
   previousMapButton: {fileID: 14191745}
   nextMapButton: {fileID: 1952384101}
   selectMapButton: {fileID: 1687270372}
+  panelTitleText: {fileID: 542039166}
+  difficultyStarsText: {fileID: 0}
+  difficultyStarCount: 6
+  filledStarSymbol: "★"
+  emptyStarSymbol: "☆"
+  filledStarColor: {r: 1, g: 0.78, b: 0.08, a: 1}
+  emptyStarColor: {r: 0, g: 0, b: 0, a: 1}
+  modifierTitleText: {fileID: 2147442321}
   modifierNameText: {fileID: 1224451551}
   modifierDescriptionText: {fileID: 1958062914}
   previousModifierButton: {fileID: 1787102110}

@@ -409,6 +409,32 @@ MonoBehaviour:
     text: '<'
   - key: settings.next
     text: '>'
+  - key: settings.developerTools
+    text: Geliştirici Araçları
+  - key: settings.developer.addMoney
+    text: 'Para Ekle +{0}$'
+  - key: settings.developer.addRating
+    text: 'Puan Ekle +{0}'
+  - key: settings.developer.removeRating
+    text: 'Puan Çıkar -{0}'
+  - key: settings.developer.unlockVehicles
+    text: Tüm Araçları Aç
+  - key: settings.developer.unlockMaps
+    text: Tüm Haritaları ve Zorlukları Aç
+  - key: settings.developer.ready
+    text: Bir geliştirici işlemi seç.
+  - key: settings.developer.unavailable
+    text: Game Manager kullanılamıyor.
+  - key: settings.developer.moneyAdded
+    text: '{0}$ eklendi.'
+  - key: settings.developer.ratingAdded
+    text: '{0} puan eklendi.'
+  - key: settings.developer.ratingRemoved
+    text: '{0} puan çıkarıldı.'
+  - key: settings.developer.vehiclesUnlocked
+    text: 'Değişen araç kaydı: {0}.'
+  - key: settings.developer.mapsUnlocked
+    text: 'Değişen harita kaydı: {0}.'
   - key: onboarding.controls
     text: "WASD / Ok Tu\u015Flar\u0131: S\xFCr.\nPizza toplama noktas\u0131ndan pizza
       al.\nS\xFCre dolmadan m\xFC\u015Fterilere teslim et.\nEngellerden ka\xE7\u0131n:

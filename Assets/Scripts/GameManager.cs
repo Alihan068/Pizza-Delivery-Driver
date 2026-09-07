@@ -452,6 +452,99 @@ public class GameManager : MonoBehaviour {
         return spent;
     }
 
+    /// <summary>Adds a positive currency amount for temporary developer testing.</summary>
+    /// <param name="amount">Currency to add. Non-positive values are ignored.</param>
+    /// <returns>True when the balance was changed and saved.</returns>
+    public bool DeveloperAddMoney(int amount) {
+        int safeAmount = Mathf.Max(0, amount);
+        if (safeAmount <= 0) return false;
+
+        long nextBalance = (long)Mathf.Max(0, totalMoney) + safeAmount;
+        totalMoney = nextBalance > int.MaxValue ? int.MaxValue : (int)nextBalance;
+        SaveGame();
+        return true;
+    }
+
+    /// <summary>Adjusts the persistent courier rating for temporary developer testing.</summary>
+    /// <param name="delta">Signed rating change. The total remains floored at zero.</param>
+    /// <returns>True when a non-zero adjustment was applied and saved.</returns>
+    public bool DeveloperAdjustCourierRating(int delta) {
+        if (delta == 0) return false;
+
+        long nextRating = (long)Mathf.Max(0, totalReputation) + delta;
+        totalReputation = nextRating <= 0 ? 0 : nextRating > int.MaxValue ? int.MaxValue : (int)nextRating;
+        int rank = CurrentRank;
+        if (rank > highestRankAchieved) highestRankAchieved = rank;
+        SaveGame();
+        return true;
+    }
+
+    /// <summary>Unlocks every registered vehicle for temporary developer testing.</summary>
+    /// <returns>The number of vehicle records that changed.</returns>
+    public int DeveloperUnlockAllVehicles() {
+        if (Content == null || Content.Vehicles == null) return 0;
+        if (vehicleSaveList == null) vehicleSaveList = new List<VehicleSaveData>();
+
+        int changed = 0;
+        foreach (var vehicle in Content.Vehicles) {
+            if (vehicle == null || string.IsNullOrEmpty(vehicle.vehicleId)) continue;
+            VehicleSaveData save = vehicleSaveList.FirstOrDefault(x => x != null && x.vehicleId == vehicle.vehicleId);
+            if (save == null) {
+                vehicleSaveList.Add(new VehicleSaveData(vehicle.vehicleId, true));
+                changed++;
+                continue;
+            }
+
+            if (save.isUnlocked) continue;
+            save.isUnlocked = true;
+            changed++;
+        }
+
+        if (changed > 0) SaveGame();
+        return changed;
+    }
+
+    /// <summary>Unlocks every registered map and its authored difficulty tiers for testing.</summary>
+    /// <returns>The number of map ownership records that changed.</returns>
+    public int DeveloperUnlockAllMapsAndDifficulties() {
+        if (Content == null || Content.Maps == null) return 0;
+        if (ownedMapIds == null) ownedMapIds = new List<string>();
+        if (mapDifficultyProgress == null) mapDifficultyProgress = new List<MapDifficultyProgress>();
+
+        int changedMaps = 0;
+        bool changed = false;
+        foreach (var map in Content.Maps) {
+            if (map == null || string.IsNullOrEmpty(map.mapId)) continue;
+            if (!ownedMapIds.Contains(map.mapId)) {
+                ownedMapIds.Add(map.mapId);
+                changedMaps++;
+                changed = true;
+            }
+
+            if (map.levelData == null || map.levelData.difficultyLevels == null) continue;
+            for (int i = 0; i < map.levelData.difficultyLevels.Count; i++) {
+                MapDifficultyData difficulty = map.levelData.GetDifficultyAt(i);
+                if (difficulty == null || string.IsNullOrEmpty(difficulty.difficultyId)) continue;
+
+                MapDifficultyProgress progress = mapDifficultyProgress.FirstOrDefault(x => x != null &&
+                    x.mapId == map.mapId && x.difficultyId == difficulty.difficultyId);
+                int guaranteedBest = Mathf.Max(0, difficulty.unlockTargetScoreForNext);
+                if (progress == null) {
+                    mapDifficultyProgress.Add(new MapDifficultyProgress(map.mapId, difficulty.difficultyId, guaranteedBest));
+                    changed = true;
+                }
+                else {
+                    int previousBest = progress.bestScore;
+                    progress.bestScore = Mathf.Max(progress.bestScore, guaranteedBest);
+                    changed |= progress.bestScore != previousBest;
+                }
+            }
+        }
+
+        if (changed) SaveGame();
+        return changedMaps;
+    }
+
     // ------------------------------------------------------------------ stats
 
     float CalculateStat(float baseVal, float step, int currentLevel) {

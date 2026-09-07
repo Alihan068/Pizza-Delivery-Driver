@@ -79,6 +79,42 @@ public class SettingsPanel : MonoBehaviour {
     [Tooltip("Route to the main menu, shown from pause and garage.")]
     [SerializeField] Button mainMenuButton;
 
+    [Header("Developer Tools")]
+    [Tooltip("Temporary testing controls. Disable this flag before shipping a player build.")]
+    [SerializeField] bool developerToolsEnabled = true;
+    [Min(1)] [SerializeField] int developerMoneyAmount = 1000;
+    [Min(1)] [SerializeField] int developerRatingAmount = 100;
+    [SerializeField] Vector2 developerToolsPosition = new Vector2(0f, 8f);
+    [SerializeField] Vector2 developerToolsRootSize = new Vector2(340f, 380f);
+    [SerializeField] Vector2 developerToolsButtonSize = new Vector2(300f, 52f);
+    [SerializeField] Vector2 developerToolsDropdownSize = new Vector2(320f, 310f);
+    [SerializeField] Color developerToolsDropdownColor = new Color(0.08f, 0.08f, 0.11f, 0.98f);
+
+    [Header("Developer Tools Localization Keys")]
+    [SerializeField] string developerToolsKey = "settings.developerTools";
+    [SerializeField] string developerAddMoneyKey = "settings.developer.addMoney";
+    [SerializeField] string developerAddRatingKey = "settings.developer.addRating";
+    [SerializeField] string developerRemoveRatingKey = "settings.developer.removeRating";
+    [SerializeField] string developerUnlockVehiclesKey = "settings.developer.unlockVehicles";
+    [SerializeField] string developerUnlockMapsKey = "settings.developer.unlockMaps";
+    [SerializeField] string developerReadyKey = "settings.developer.ready";
+    [SerializeField] string developerUnavailableKey = "settings.developer.unavailable";
+    [SerializeField] string developerMoneyAddedKey = "settings.developer.moneyAdded";
+    [SerializeField] string developerRatingAddedKey = "settings.developer.ratingAdded";
+    [SerializeField] string developerRatingRemovedKey = "settings.developer.ratingRemoved";
+    [SerializeField] string developerVehiclesUnlockedKey = "settings.developer.vehiclesUnlocked";
+    [SerializeField] string developerMapsUnlockedKey = "settings.developer.mapsUnlocked";
+
+    GameObject developerToolsRuntimeRoot;
+    GameObject developerToolsDropdown;
+    TextMeshProUGUI developerToolsToggleText;
+    TextMeshProUGUI developerAddMoneyText;
+    TextMeshProUGUI developerAddRatingText;
+    TextMeshProUGUI developerRemoveRatingText;
+    TextMeshProUGUI developerUnlockVehiclesText;
+    TextMeshProUGUI developerUnlockMapsText;
+    TextMeshProUGUI developerStatusText;
+
 
     /// <summary>Raised when the player closes this panel with the back button.</summary>
     public event System.Action Closed;
@@ -96,6 +132,7 @@ public class SettingsPanel : MonoBehaviour {
     public event System.Action ReturnToMainMenuRequested;
 
     void Awake() {
+        BuildDeveloperToolsUI();
         if (musicSlider != null) {
             musicSlider.minValue = 0f;
             musicSlider.maxValue = 100f;
@@ -123,6 +160,8 @@ public class SettingsPanel : MonoBehaviour {
     }
 
     void OnEnable() {
+        if (developerToolsRuntimeRoot == null) BuildDeveloperToolsUI();
+        LocalizationManager.LanguageChanged += RefreshDeveloperToolsLabels;
         if (musicSlider != null) musicSlider.SetValueWithoutNotify(GameSettings.MusicVolume);
         UpdateMusicLabel(GameSettings.MusicVolume);
         if (masterSlider != null) masterSlider.SetValueWithoutNotify(GameSettings.MasterVolume);
@@ -131,12 +170,19 @@ public class SettingsPanel : MonoBehaviour {
         UpdateVolumeLabel(sfxValueText, GameSettings.SfxVolume);
         RefreshDisplayLabels();
         if (displayOptionsOverlay != null) displayOptionsOverlay.SetActive(false);
+        SetDeveloperToolsDropdownVisible(false);
         SetConfirmVisible(false);
         ApplyContextVisibility();
+        RefreshDeveloperToolsLabels();
     }
 
     void Update() {
         if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame) return;
+
+        if (developerToolsDropdown != null && developerToolsDropdown.activeSelf) {
+            SetDeveloperToolsDropdownVisible(false);
+            return;
+        }
 
         if (displayOptionsOverlay != null && displayOptionsOverlay.activeSelf) {
             OnDisplayOptionsCloseButtonClicked();
@@ -152,7 +198,253 @@ public class SettingsPanel : MonoBehaviour {
     }
 
     void OnDisable() {
+        LocalizationManager.LanguageChanged -= RefreshDeveloperToolsLabels;
         SetConfirmVisible(false);
+    }
+
+    void BuildDeveloperToolsUI() {
+        if (!developerToolsEnabled || developerToolsRuntimeRoot != null || displayOptionsButton == null) return;
+
+        developerToolsRuntimeRoot = new GameObject("DeveloperToolsRuntime", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        developerToolsRuntimeRoot.transform.SetParent(transform, false);
+        developerToolsRuntimeRoot.transform.SetAsLastSibling();
+
+        RectTransform rootRect = developerToolsRuntimeRoot.GetComponent<RectTransform>();
+        rootRect.anchorMin = new Vector2(0.5f, 0f);
+        rootRect.anchorMax = new Vector2(0.5f, 0f);
+        rootRect.pivot = new Vector2(0.5f, 0f);
+        rootRect.anchoredPosition = developerToolsPosition;
+        rootRect.sizeDelta = developerToolsRootSize;
+
+        LayoutElement rootLayout = developerToolsRuntimeRoot.GetComponent<LayoutElement>();
+        rootLayout.ignoreLayout = true;
+
+        Image dropdownBackground = developerToolsRuntimeRoot.GetComponent<Image>();
+        dropdownBackground.color = Color.clear;
+        dropdownBackground.raycastTarget = false;
+
+        Button toggleButton = CreateDeveloperButton(developerToolsRuntimeRoot.transform, "DeveloperToolsToggle");
+        RectTransform toggleRect = toggleButton.transform as RectTransform;
+        toggleRect.anchorMin = new Vector2(0.5f, 0f);
+        toggleRect.anchorMax = new Vector2(0.5f, 0f);
+        toggleRect.pivot = new Vector2(0.5f, 0f);
+        toggleRect.anchoredPosition = Vector2.zero;
+        toggleRect.sizeDelta = developerToolsButtonSize;
+        developerToolsToggleText = toggleButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        toggleButton.onClick.AddListener(OnDeveloperToolsToggleClicked);
+
+        developerToolsDropdown = new GameObject("DeveloperToolsDropdown", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+        developerToolsDropdown.transform.SetParent(developerToolsRuntimeRoot.transform, false);
+        RectTransform dropdownRect = developerToolsDropdown.GetComponent<RectTransform>();
+        dropdownRect.anchorMin = new Vector2(0.5f, 0f);
+        dropdownRect.anchorMax = new Vector2(0.5f, 0f);
+        dropdownRect.pivot = new Vector2(0.5f, 0f);
+        dropdownRect.anchoredPosition = new Vector2(0f, developerToolsButtonSize.y + 8f);
+        dropdownRect.sizeDelta = developerToolsDropdownSize;
+        Image dropdownImage = developerToolsDropdown.GetComponent<Image>();
+        dropdownImage.color = developerToolsDropdownColor;
+
+        VerticalLayoutGroup dropdownLayout = developerToolsDropdown.GetComponent<VerticalLayoutGroup>();
+        dropdownLayout.padding = new RectOffset(8, 8, 8, 8);
+        dropdownLayout.spacing = 4f;
+        dropdownLayout.childAlignment = TextAnchor.UpperCenter;
+        dropdownLayout.childControlWidth = true;
+        dropdownLayout.childControlHeight = true;
+        dropdownLayout.childForceExpandWidth = true;
+        dropdownLayout.childForceExpandHeight = false;
+
+        developerStatusText = CreateDeveloperText(developerToolsDropdown.transform, "DeveloperToolsStatus");
+        SetDeveloperTextLayout(developerStatusText, 30f, 11f);
+
+        Button addMoneyButton = CreateDeveloperButton(developerToolsDropdown.transform, "DeveloperAddMoney");
+        developerAddMoneyText = addMoneyButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        SetDeveloperButtonLayout(addMoneyButton, 44f);
+        addMoneyButton.onClick.AddListener(OnDeveloperAddMoneyClicked);
+
+        Button addRatingButton = CreateDeveloperButton(developerToolsDropdown.transform, "DeveloperAddRating");
+        developerAddRatingText = addRatingButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        SetDeveloperButtonLayout(addRatingButton, 44f);
+        addRatingButton.onClick.AddListener(OnDeveloperAddRatingClicked);
+
+        Button removeRatingButton = CreateDeveloperButton(developerToolsDropdown.transform, "DeveloperRemoveRating");
+        developerRemoveRatingText = removeRatingButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        SetDeveloperButtonLayout(removeRatingButton, 44f);
+        removeRatingButton.onClick.AddListener(OnDeveloperRemoveRatingClicked);
+
+        Button unlockVehiclesButton = CreateDeveloperButton(developerToolsDropdown.transform, "DeveloperUnlockVehicles");
+        developerUnlockVehiclesText = unlockVehiclesButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        SetDeveloperButtonLayout(unlockVehiclesButton, 44f);
+        unlockVehiclesButton.onClick.AddListener(OnDeveloperUnlockVehiclesClicked);
+
+        Button unlockMapsButton = CreateDeveloperButton(developerToolsDropdown.transform, "DeveloperUnlockMaps");
+        developerUnlockMapsText = unlockMapsButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        SetDeveloperButtonLayout(unlockMapsButton, 44f);
+        unlockMapsButton.onClick.AddListener(OnDeveloperUnlockMapsClicked);
+
+        developerToolsDropdown.SetActive(false);
+    }
+
+    Button CreateDeveloperButton(Transform parent, string objectName) {
+        GameObject buttonObject = Instantiate(displayOptionsButton.gameObject, parent, false);
+        buttonObject.name = objectName;
+        buttonObject.SetActive(true);
+
+        Button button = buttonObject.GetComponent<Button>();
+        button.onClick.RemoveAllListeners();
+        foreach (LocalizedText localizedText in buttonObject.GetComponentsInChildren<LocalizedText>(true))
+            localizedText.enabled = false;
+
+        TextMeshProUGUI label = buttonObject.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label != null) {
+            label.raycastTarget = false;
+            label.alignment = TextAlignmentOptions.Center;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 10f;
+            label.fontSizeMax = 16f;
+        }
+
+        return button;
+    }
+
+    TextMeshProUGUI CreateDeveloperText(Transform parent, string objectName) {
+        TextMeshProUGUI template = displayOptionsButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        GameObject textObject = template != null
+            ? Instantiate(template.gameObject, parent, false)
+            : new GameObject(objectName, typeof(RectTransform), typeof(TextMeshProUGUI));
+        textObject.name = objectName;
+        textObject.SetActive(true);
+
+        foreach (LocalizedText localizedText in textObject.GetComponentsInChildren<LocalizedText>(true))
+            localizedText.enabled = false;
+
+        TextMeshProUGUI label = textObject.GetComponent<TextMeshProUGUI>();
+        if (label != null) {
+            label.raycastTarget = false;
+            label.alignment = TextAlignmentOptions.Center;
+            label.enableAutoSizing = true;
+            label.fontSizeMin = 10f;
+            label.fontSizeMax = 14f;
+        }
+        return label;
+    }
+
+    void SetDeveloperButtonLayout(Button button, float height) {
+        if (button == null) return;
+        RectTransform rect = button.transform as RectTransform;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.sizeDelta = new Vector2(0f, height);
+
+        LayoutElement layout = button.GetComponent<LayoutElement>();
+        if (layout == null) layout = button.gameObject.AddComponent<LayoutElement>();
+        layout.minHeight = height;
+        layout.preferredHeight = height;
+        layout.flexibleHeight = 0f;
+        layout.minWidth = 0f;
+        layout.preferredWidth = -1f;
+        layout.flexibleWidth = 1f;
+    }
+
+    void SetDeveloperTextLayout(TextMeshProUGUI text, float height, float fontSize) {
+        if (text == null) return;
+        RectTransform rect = text.transform as RectTransform;
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.sizeDelta = new Vector2(0f, height);
+        text.fontSize = fontSize;
+        text.fontSizeMin = 10f;
+        text.fontSizeMax = fontSize;
+        text.alignment = TextAlignmentOptions.Center;
+
+        LayoutElement layout = text.GetComponent<LayoutElement>();
+        if (layout == null) layout = text.gameObject.AddComponent<LayoutElement>();
+        layout.minHeight = height;
+        layout.preferredHeight = height;
+        layout.flexibleHeight = 0f;
+        layout.minWidth = 0f;
+        layout.preferredWidth = -1f;
+        layout.flexibleWidth = 1f;
+    }
+
+    void RefreshDeveloperToolsLabels() {
+        if (developerToolsToggleText != null) developerToolsToggleText.text = LocalizationManager.Get(developerToolsKey);
+        if (developerAddMoneyText != null) developerAddMoneyText.text = LocalizationManager.Get(developerAddMoneyKey, developerMoneyAmount);
+        if (developerAddRatingText != null) developerAddRatingText.text = LocalizationManager.Get(developerAddRatingKey, developerRatingAmount);
+        if (developerRemoveRatingText != null) developerRemoveRatingText.text = LocalizationManager.Get(developerRemoveRatingKey, developerRatingAmount);
+        if (developerUnlockVehiclesText != null) developerUnlockVehiclesText.text = LocalizationManager.Get(developerUnlockVehiclesKey);
+        if (developerUnlockMapsText != null) developerUnlockMapsText.text = LocalizationManager.Get(developerUnlockMapsKey);
+        if (developerStatusText != null && string.IsNullOrEmpty(developerStatusText.text))
+            developerStatusText.text = LocalizationManager.Get(developerReadyKey);
+    }
+
+    void SetDeveloperToolsDropdownVisible(bool visible) {
+        if (developerToolsDropdown != null) developerToolsDropdown.SetActive(visible);
+    }
+
+    void OnDeveloperToolsToggleClicked() {
+        if (developerToolsDropdown == null) return;
+        SetDeveloperToolsDropdownVisible(!developerToolsDropdown.activeSelf);
+    }
+
+    void OnDeveloperAddMoneyClicked() {
+        GameManager manager = GameManager.Instance;
+        if (manager == null) {
+            SetDeveloperStatus(developerUnavailableKey);
+            return;
+        }
+
+        manager.DeveloperAddMoney(developerMoneyAmount);
+        SetDeveloperStatus(developerMoneyAddedKey, developerMoneyAmount);
+    }
+
+    void OnDeveloperAddRatingClicked() {
+        GameManager manager = GameManager.Instance;
+        if (manager == null) {
+            SetDeveloperStatus(developerUnavailableKey);
+            return;
+        }
+
+        manager.DeveloperAdjustCourierRating(developerRatingAmount);
+        SetDeveloperStatus(developerRatingAddedKey, developerRatingAmount);
+    }
+
+    void OnDeveloperRemoveRatingClicked() {
+        GameManager manager = GameManager.Instance;
+        if (manager == null) {
+            SetDeveloperStatus(developerUnavailableKey);
+            return;
+        }
+
+        manager.DeveloperAdjustCourierRating(-developerRatingAmount);
+        SetDeveloperStatus(developerRatingRemovedKey, developerRatingAmount);
+    }
+
+    void OnDeveloperUnlockVehiclesClicked() {
+        GameManager manager = GameManager.Instance;
+        if (manager == null) {
+            SetDeveloperStatus(developerUnavailableKey);
+            return;
+        }
+
+        int changed = manager.DeveloperUnlockAllVehicles();
+        SetDeveloperStatus(developerVehiclesUnlockedKey, changed);
+    }
+
+    void OnDeveloperUnlockMapsClicked() {
+        GameManager manager = GameManager.Instance;
+        if (manager == null) {
+            SetDeveloperStatus(developerUnavailableKey);
+            return;
+        }
+
+        int changed = manager.DeveloperUnlockAllMapsAndDifficulties();
+        SetDeveloperStatus(developerMapsUnlockedKey, changed);
+    }
+
+    void SetDeveloperStatus(string key, params object[] args) {
+        if (developerStatusText != null) developerStatusText.text = LocalizationManager.Get(key, args);
     }
 
     void OnMusicSliderChanged(float value) {
@@ -341,6 +633,7 @@ public class SettingsPanel : MonoBehaviour {
         SetOptionalActive(garageButton, isPause);
         SetOptionalActive(mainMenuButton, isGarage || isPause);
         SetOptionalActive(displayOptionsButton, true);
+        if (developerToolsRuntimeRoot != null) developerToolsRuntimeRoot.SetActive(developerToolsEnabled);
     }
 
     static void SetOptionalActive(Component component, bool active) {
