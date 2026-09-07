@@ -57,6 +57,8 @@ public class LocalizationValidationWindow : EditorWindow {
         }
         foreach (string guid in AssetDatabase.FindAssets("t:MapData"))
             CollectKeys(AssetDatabase.LoadAssetAtPath<MapData>(AssetDatabase.GUIDToAssetPath(guid)), used);
+        foreach (string guid in AssetDatabase.FindAssets("t:ShiftModifierData"))
+            CollectKeys(AssetDatabase.LoadAssetAtPath<ShiftModifierData>(AssetDatabase.GUIDToAssetPath(guid)), used);
         foreach (string guid in AssetDatabase.FindAssets("t:CareerData")) {
             var career = AssetDatabase.LoadAssetAtPath<CareerData>(AssetDatabase.GUIDToAssetPath(guid));
             if (career == null || career.objectiveTypes == null) continue;

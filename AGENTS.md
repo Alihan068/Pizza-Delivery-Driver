@@ -51,13 +51,15 @@ Bu dosya kişisel, `.gitignore`'da — asla commit/push edilmez. Farklı bir ses
 ## Proje geçmişi — neden diğer 8 projeden farklı
 Kullanıcı bu projede daha önce **MCP'siz, manuel ve "bilinçsiz" biçimde yoğun AI kullandığını** kendi ifadesiyle belirtti. Bu yüzden bu proje diğer 8 Unity projesinin ("Kod İmzası" raporu — bkz. altta) orijinal stil analizine dahil edilmedi. Kod tabanının mevcut hali muhtemelen kullanıcının doğal stilini tutarlı yansıtmıyor — düzeltmek/temizlemek üzerine çalışılıyor olabilir, varsayım yapmadan önce kodu gerçekten oku.
 
-## Üzerinde çalıştığımız plan (sırayla)
-1. ✅ MCP kurulumu (CoplayDev/unity-mcp) — bkz. aşağıdaki "MCP durumu" bölümü.
-2. ⏳ **Unity sürümünü güncellemeden önce**: kodu, asset'leri, sahneleri ("dünyayı"), tüm Unity dosyalarını MCP üzerinden tarayıp projeyi gerçekten öğren. Bu adım Unity sürüm güncellemesinden ÖNCE, mevcut haliyle yapılmalı.
-3. ⏳ Kullanıcı Unity Editor sürümünü günceller (hedef: en son Unity 6.3 LTS — bkz. sürüm araştırması, sebep MCP değil, mevcut 6.0 LTS'in destek süresinin Ekim 2026'da bitmesi).
-4. ⏳ Güncelleme sonrası bir yerde kırılma olursa (API değişikliği, paket uyumsuzluğu, asset reimport sorunu vb.) onu sen düzelteceksin.
+## Güncel uygulama planı ve kaynak önceliği (2026-09-07)
 
-Şu an aşama 2'deyiz: MCP bağlantısı doğrulandı, şimdi tarama/öğrenme yapılacak.
+MCP kurulumu ve proje taraması tamamlandı; eski “Aşama 2'deyiz, tarama yapılacak” metni geçersizdir. Güncel 8 yüksek seviyeli faz, durum ve uygulama sırası `memory-bank/roadmap_1_0.md` içindedir. Ayrıntılı aktif handoff `memory-bank/plan_finalize.md` dosyasının en üstündeki courier rating migration bölümüdür. `memory-bank/activeContext.md` son oturum durumunu, `memory-bank/progress.md` uygulama durumunu, `memory-bank/owner_checklist.md` ise yalnızca sahibinin manuel kontrollerini tutar.
+
+### Güncel courier rating kararı
+
+`GameManager.totalReputation` geçiş döneminde courier rating save alanıdır. Rating vardiya performansına göre artabilir veya azalabilir, ancak 0'ın altına inemez. `CurrentRank` yalnızca görsel kademedir; rank veya `requiredRank` harita, araç, modifier ya da bölge açamaz. Kira ve tamir rating'i değiştiremez. Eski rank-gated bölümler tarihsel kayıttır ve yeni kod için kullanılmaz.
+
+Sonraki kod işi önce **courier rating migration**; ardından D/4.9 map selection ve map ownership akışıdır. Workshop/Map Editor ve server-authoritative leaderboard/anti-cheat 1.0 sonrasıdır. Kullanıcı manuel testleri yalnızca `owner_checklist.md` üzerinden takip edilir; Codex bu maddeleri kendi doğrulaması gibi işaretlemez.
 
 ## MCP durumu (2026-08-25 itibarıyla güncel)
 - `Packages/manifest.json`'a `com.coplaydev.unity-mcp` eklendi. Başlangıçta `v10.0.0`'a sabitlenmişti (main branch'i takip etmiyor, kasıtlı — kararlılık için); kullanıcı temel bağlantının kararlı çalıştığını gördükten sonra **v10.1.2'ye elle güncelledi**. `debug_request_context` ile doğrulandı: server v10.1.2 çalışıyor.
@@ -82,18 +84,13 @@ Diğer 8 projede tespit edilen kişisel stil (bkz. [Kod İmzası raporu](https:/
 - **"Never hardcode anything":** büyük ölçüde uyulmuş — dengeleme sabitleri (hız, sağlık, kapasite seviyeleri vb.) `VehicleData` ScriptableObject'i üzerinden `[SerializeField]`/public alanlarla Inspector'a açılmış, koda gömülü değil.
 - **K&R brace, henüz TUTARSIZ:** 23 dosyanın 17'si K&R (`class X {` aynı satırda), 6'sı Allman (brace alt satırda) kullanıyor — `DriverLights.cs`, `FollowCamera.cs`, `CustomerTarget.cs`, `SpritePool.cs`, `CollisionDetector.cs`, `DestroyOnTime.cs`. Yeni kod K&R ile yazılmalı; bu 6 dosya eski/vibe-code kalıntısı, düzeltme talep gelirse hatırla.
 
-## Sıradaki adım
-Aşama 2 (sahne/asset taraması) **2026-08-26'da tamamlandı**. Tam denetim raporu: [Pizza Delivery Driver Denetimi](https://Codex.ai/code/artifact/fa1bb8f8-172c-4441-8259-b38a26499f14) — 3 kritik, 4 orta, 5 düşük bulgu + doğrulanmış sağlam noktalar ve tarama kapsamı.
+## Güncel sonraki adım
 
-**Sürüm yükseltmesinden ÖNCE kapatılması gereken 2 bulgu** (ikisi de dakikalar sürer, yükseltme sonrası "bunu yükseltme mi kırdı?" belirsizliğini önler):
-1. `ObjectSpawner.cs:1` ve `CustomerTarget.cs:1` içindeki kullanılmayan `using NUnit.Framework;` — `Assets/Scripts` altında asmdef olmadığı için bunlar `Assembly-CSharp`'a giriyor, player build'i `CS0246` ile derlenmiyor.
-2. Build Settings'te yalnızca `GameScene` kayıtlı; `MainMenu` ve `GarageScene` yok — `LoadScene("MainMenu")` runtime'da patlıyor, build doğrudan GameScene'de açılıyor.
-
-Diğer bulguların özeti (detay raporda): oyun döngüsü kapanmıyor (`ScoreHandler.EndLevel()` sadece log yazıyor, garaja dönüş yok); 6 Upgrade butonunun 5'i bağlanmamış; `GameManager.TryUpgradeStat`'ın `switch`'inde `default` yok — eşleşmeyen stat adı parayı sessizce alıp seviye artırmıyor (görünen adlar "Handling/Chassis/Storage/Stabilizer" ile kod anahtarları "Turn/Health/Capacity/Protection" farklı, kalan butonlar bağlanırken tuzak); kayıt sistemi hiç yok; 5 stat kartında ikişer `StatDisplay` komponenti var; `ExtractionZone.cs` ve `CustomerTarget.cs` hiçbir sahne/prefab'a bağlı değil.
-
-Sırada: kullanıcı yukarıdaki 1-2'yi (kendi agent'ına verilecek prompt ile) kapatıp Unity sürümünü yükseltecek. Prefab iç yapıları ve GameScene tilemap/collider düzeni henüz taranmadı.
+MCP kurulumu ve proje taraması tamamlandı; eski tarama raporu ve “kendi agent'ına prompt teslim et” iş akışı tarihsel kayıttır. Önce `memory-bank/plan_finalize.md` içindeki courier rating migration uygulanacak. Ardından rank gate, region cap ve kira kaynaklı rating cezası kaldırılacak; map ownership kararı uygulanıp D/4.9 map selection akışına dönülecek. `owner_checklist.md` yalnızca sahibinin manuel kontrolleridir; Codex bu maddeleri kendi doğrulaması gibi işaretlemez.
 
 ## Hedef ve tasarım kararları (2026-08-26)
+
+> **TARİHSEL TASARIM KAYDI:** Bu bölümün rank/region/unlock ifadeleri 2026-09-07 courier rating kararı öncesine aittir. Yeni kodda kullanılmayacaklar. Güncel karar için `memory-bank/plan_finalize.md` üstündeki courier rating handoff'u kullan.
 **Şu anki hedef: oyunu stable oynanabilir sürüme getirmek.** Kabul kriteri: *garajdan çıkıp bir seansı sonuna kadar oynayıp, kazanılan parayla garaja dönüp yükseltme yapıp tekrar çıkabilmek — üst üste, çökmeden.*
 
 Kullanıcının verdiği ve **artık sabit olan** tasarım kararları:
@@ -292,7 +289,7 @@ Seansı bitirmenin dört yolu ve sonuçları:
 
 **Bu iş akışı 2026-09-01'de kapandı** (bkz. "Rolüm"). Klasör yalnızca **arşiv** — bir işin neden öyle yapıldığını geriye dönük anlamak için. Yeni iş için oradan kopyalama, güncel durum bu dosyada.
 
-Uygulanmamış tek prompt: `prompt-hotfix4-ui.md` (ResultCanvas render mode) ve `prompt-hotfix5-collectpoint.md` (pizza toplama noktaları) — bunlar scratchpad'de kalmıştı, artık doğrudan uygulanacak.
+Arşivdeki promptlar için bekleyen bir uygulama işi yoktur. Yeni işler yalnızca güncel `memory-bank/plan_finalize.md` handoff'u ve ilgili owner-only kontrol listesi üzerinden yürütülür.
 
 ## Proje yapısı — hızlı özet (2026-08-25 taraması)
 - `Assets/Scripts/`: 23 oyun script'i (Driver, Customer, Delivery, GameManager, GarageManager, ScoreHandler, IndicatorManager/SmartIndicator, ObjectSpawner, ExtractionZone, VehicleData/VehicleSaveData vb.) — teslimat/müşteri/araç yükseltme döngüsü kurulu görünüyor.

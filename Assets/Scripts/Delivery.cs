@@ -37,8 +37,8 @@ public class Delivery : MonoBehaviour {
         pizzaObject.SetActive(false);
 
         if (GameManager.Instance != null) {
-            maxCarryPizzaAmount = GameManager.Instance.GetCapacity();
-            protectionChance = GameManager.Instance.GetProtectionChance();
+            maxCarryPizzaAmount = GameManager.Instance.GetShiftCapacity();
+            protectionChance = GameManager.Instance.GetShiftStatValue(VehicleStatId.Protection);
         }
         else {
             maxCarryPizzaAmount = 2;

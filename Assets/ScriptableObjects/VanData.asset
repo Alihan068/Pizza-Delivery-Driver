@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5bf817bec05bf8244b8d635bc77788a7, type: 3}
+  m_Name: VanData
+  m_EditorClassIdentifier: 
+  vehicleId: 6ec618778f854e4dac12bcfaaa45a168
+  vehicleName: Van
+  displayNameKey: vehicle.van.name
+  vehiclePrefab: {fileID: 3110664342997613465, guid: 2da1cf1935179804691ee7134dc8b85f, type: 3}
+  vehicleIcon: {fileID: 517158029, guid: 29401d560dc39a4429f4c46beaa2a549, type: 3}
+  price: 2500
+  requiredRank: 2
+  speedDesc: stat.speed.description
+  turnDesc: stat.turn.description
+  healthDesc: stat.health.description
+  armorDesc: stat.armor.description
+  capacityDesc: stat.capacity.description
+  protectionDesc: stat.protection.description
+  baseSpeed: 3.2
+  speedStep: 0.1
+  maxSpeedLevel: 25
+  speedCostMult: 0.5
+  baseTurn: 145
+  turnStep: 10
+  maxTurnLevel: 12
+  turnCostMult: 0.5
+  baseHealth: 230
+  healthStep: 10
+  maxHealthLevel: 12
+  healthCostMult: 0.9
+  baseArmor: 0.1
+  armorStep: 0.02
+  maxArmorLevel: 12
+  armorCostMult: 1
+  baseCapacity: 4
+  capacityStep: 1
+  maxCapacityLevel: 5
+  capacityCostMult: 3.5
+  baseProtection: 0.05
+  protectionStep: 0.06
+  maxProtectionLevel: 9
+  protectionCostMult: 0.45

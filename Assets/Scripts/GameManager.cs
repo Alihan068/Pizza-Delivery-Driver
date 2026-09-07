@@ -32,9 +32,14 @@ public class GameManager : MonoBehaviour {
     [Tooltip("Maps that ship with the build. Externally supplied maps are added through the content registry, not here.")]
     public MapData[] allMaps;
 
+    /// <summary>Shift modifiers that ship with the build; selection is temporary and is not saved.</summary>
+    [Tooltip("Shift modifiers that ship with the build. Selection is temporary and is not saved to a career.")]
+    public ShiftModifierData[] allModifiers;
+
     [Header("Career State")]
     public VehicleData currentVehicle;
     public MapData currentMap;
+    ShiftModifierData currentModifier;
     public List<VehicleSaveData> vehicleSaveList = new List<VehicleSaveData>();
     public DriverSaveData driverStats = new DriverSaveData();
 
@@ -66,6 +71,9 @@ public class GameManager : MonoBehaviour {
 
     /// <summary>Authored career tuning used by the active profile.</summary>
     public CareerData CareerData => careerData;
+
+    /// <summary>Modifier selected for the next shift, or null for an unmodified shift.</summary>
+    public ShiftModifierData CurrentModifier => currentModifier;
 
     /// <summary>Rank the active career has reached, from <see cref="totalReputation"/>.</summary>
     public int CurrentRank => Career != null ? Career.ComputeRank(totalReputation, out _) : 1;
@@ -360,6 +368,39 @@ public class GameManager : MonoBehaviour {
     /// <returns>A fraction from zero to one.</returns>
     public float GetProtectionChance() => GetStatValue(VehicleStatId.Protection);
 
+    /// <summary>Current stat value including the temporary modifier selected for the next shift.</summary>
+    /// <param name="stat">Stat to read.</param>
+    /// <returns>The effective shift value with valid fraction bounds applied.</returns>
+    public float GetShiftStatValue(VehicleStatId stat) {
+        float value = GetStatValue(stat);
+        if (currentModifier != null) value += currentModifier.GetStatDelta(stat);
+        bool isFraction = stat == VehicleStatId.Armor || stat == VehicleStatId.Protection;
+        return isFraction ? Mathf.Clamp01(value) : Mathf.Max(0f, value);
+    }
+
+    /// <summary>Current pizza capacity including the temporary shift modifier.</summary>
+    /// <returns>The effective whole-pizza capacity, never below one.</returns>
+    public int GetShiftCapacity() {
+        return Mathf.Max(1, Mathf.RoundToInt(GetShiftStatValue(VehicleStatId.Capacity)));
+    }
+
+    /// <summary>Selects a registered modifier for the next shift without changing career progress.</summary>
+    /// <param name="modifier">Modifier to select, or null to play without one.</param>
+    public void SelectModifier(ShiftModifierData modifier) {
+        if (modifier == null) {
+            currentModifier = null;
+            return;
+        }
+
+        if (allModifiers == null) return;
+        foreach (var candidate in allModifiers) {
+            if (candidate == modifier) {
+                currentModifier = modifier;
+                return;
+            }
+        }
+    }
+
     // --------------------------------------------------------------- upgrades
 
     /// <summary>Price of buying the next level of a stat.</summary>
@@ -442,7 +483,7 @@ public class GameManager : MonoBehaviour {
     /// <summary>Selects the map the next session will be played on.</summary>
     /// <param name="map">Map to select. Ignored when null.</param>
     public void SelectMap(MapData map) {
-        if (map == null) return;
+        if (map == null || CurrentRank < map.requiredRank) return;
         currentMap = map;
         SaveGame();
     }

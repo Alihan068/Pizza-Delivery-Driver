@@ -57,8 +57,16 @@ MonoBehaviour:
   allVehicles:
   - {fileID: 11400000, guid: 31b69dec864f54643b7579dbad1d82d6, type: 2}
   - {fileID: 11400000, guid: 43cfd60837c34c74e8e5f1b85f10d31d, type: 2}
+  - {fileID: 11400000, guid: 8011a4f988f3c0042a60ae242729c821, type: 2}
+  - {fileID: 11400000, guid: be4aaf73a6da9a04a9cbd1bb4e8da606, type: 2}
   allMaps:
   - {fileID: 11400000, guid: f9ffa1b2bfe46c84c98b23993ae0bc17, type: 2}
+  - {fileID: 11400000, guid: c08db5ffd4ce35e48acf13e1b0ca142b, type: 2}
+  - {fileID: 11400000, guid: 482b7c169bfe53c4a9639af753acec35, type: 2}
+  allModifiers:
+  - {fileID: 11400000, guid: d69dd2701b7505f469e95ef17b51b0d6, type: 2}
+  - {fileID: 11400000, guid: 034126ed877d7ad43a68ea1a4fbcd57e, type: 2}
+  - {fileID: 11400000, guid: 6b5a8d8e307bd6540ac95884f311b2bf, type: 2}
   currentVehicle: {fileID: 0}
   currentMap: {fileID: 0}
   vehicleSaveList: []

@@ -272,3 +272,47 @@ MonoBehaviour:
     text: '{0}: Complete! Reward: +${1}'
   - key: hud.objective.failed
     text: '{0}: Failed'
+  - key: vehicle.van.name
+    text: Delivery Van
+  - key: vehicle.sport.name
+    text: Sport Coupe
+  - key: map.narrowDistrict.name
+    text: Narrow District
+  - key: map.narrowDistrict.desc
+    text: Tight streets, dense traffic, short routes.
+  - key: map.expressway.name
+    text: Expressway
+  - key: map.expressway.desc
+    text: Fast arteries, heavy danger, bigger pay.
+  - key: modifier.night.name
+    text: Night
+  - key: modifier.night.description
+    text: Reduced visibility and tighter driving control.
+  - key: modifier.rain.name
+    text: Rain
+  - key: modifier.rain.description
+    text: Slippery roads reduce speed and handling.
+  - key: modifier.busyHour.name
+    text: Busy Hour
+  - key: modifier.busyHour.description
+    text: More traffic pressure, but a faster pace.
+  - key: garage.mapSelection.locked
+    text: Requires Rank {0}
+  - key: garage.mapSelection.available
+    text: Available
+  - key: garage.mapSelection.selected
+    text: Selected
+  - key: garage.mapSelection.select
+    text: Select Map
+  - key: garage.modifier.none
+    text: No Modifier
+  - key: garage.modifier.noneDescription
+    text: Play with standard shift rules.
+  - key: garage.mapSelection.title
+    text: Map Selection
+  - key: garage.mapSelection.modifier
+    text: Modifier
+  - key: garage.mapSelection.close
+    text: Close
+  - key: garage.mapSelection.open
+    text: Maps

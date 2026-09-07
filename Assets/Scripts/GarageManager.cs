@@ -58,6 +58,12 @@ public class GarageManager : MonoBehaviour {
     [Header("Navigation")]
     public Button mainMenuButton;
 
+    [Header("Map Selection")]
+    /// <summary>Button that opens the map and modifier picker.</summary>
+    public Button mapSelectionButton;
+    /// <summary>Map and modifier picker shown above the garage.</summary>
+    public MapSelectionPanel mapSelectionPanel;
+
     [Header("Slot Management")]
     [Tooltip("Shared slot picker, reused here in copy-target mode to pick a destination for the active career.")]
     public SaveSlotSelectPanel copySlotPanel;
@@ -78,6 +84,7 @@ public class GarageManager : MonoBehaviour {
 
         if (purchaseButton != null) purchaseButton.onClick.AddListener(OnClickPurchaseVehicle);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
+        if (mapSelectionButton != null && mapSelectionPanel != null) mapSelectionButton.onClick.AddListener(mapSelectionPanel.Open);
         if (copyToSlotButton != null) copyToSlotButton.onClick.AddListener(OnClickCopyToSlot);
 
         UpdateUI();

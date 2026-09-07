@@ -45,7 +45,7 @@ public class ScoreHandler : MonoBehaviour {
         var data = GameManager.Instance.CareerData;
         if (data.objectiveTypes == null || data.objectiveTypes.Length == 0) return;
 
-        int capacity = GameManager.Instance.GetCapacity();
+        int capacity = GameManager.Instance.GetShiftCapacity();
         int rank = GameManager.Instance.CurrentRank;
         int objectiveCount = Mathf.Clamp(data.objectivesPerShift, 0, data.objectiveTypes.Length);
         var available = new List<ShiftObjectiveTuning>(data.objectiveTypes);
@@ -129,7 +129,7 @@ public class ScoreHandler : MonoBehaviour {
         if (!isGameActive || GameManager.Instance == null || GameManager.Instance.CareerData == null) return;
 
         var data = GameManager.Instance.CareerData;
-        int quotaTarget = data.GetObjectiveTarget(ShiftObjectiveType.Quota, GameManager.Instance.GetCapacity(), GameManager.Instance.CurrentRank);
+        int quotaTarget = data.GetObjectiveTarget(ShiftObjectiveType.Quota, GameManager.Instance.GetShiftCapacity(), GameManager.Instance.CurrentRank);
         int requiredDeliveries = Mathf.FloorToInt(quotaTarget * data.fastExtractionQuotaFraction);
         Delivery delivery = FindFirstObjectByType<Delivery>();
         bool hasTime = RemainingTimeSeconds >= data.fastExtractionMinSecondsRemaining;

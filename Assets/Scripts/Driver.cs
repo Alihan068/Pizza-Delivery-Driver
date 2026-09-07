@@ -66,10 +66,10 @@ public class Driver : MonoBehaviour {
 
     void InitializeStats() {
         if (GameManager.Instance != null) {
-            baseMoveSpeed = GameManager.Instance.GetSpeed();
-            baseTurnSpeed = GameManager.Instance.GetTurn();
-            currentHealth = GameManager.Instance.GetHealth();
-            armorPercent = GameManager.Instance.GetArmor();
+            baseMoveSpeed = GameManager.Instance.GetShiftStatValue(VehicleStatId.Speed);
+            baseTurnSpeed = GameManager.Instance.GetShiftStatValue(VehicleStatId.Turn);
+            currentHealth = GameManager.Instance.GetShiftStatValue(VehicleStatId.Health);
+            armorPercent = GameManager.Instance.GetShiftStatValue(VehicleStatId.Armor);
         }
         else {
             baseMoveSpeed = 10f;

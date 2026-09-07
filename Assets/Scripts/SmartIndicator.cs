@@ -23,6 +23,8 @@ public class SmartIndicator : MonoBehaviour {
 
     private Camera mainCamera;
     private RectTransform rectTransform;
+    RectTransform canvasRect;
+    Canvas indicatorCanvas;
     private CanvasGroup canvasGroup;
     private bool isCriticalTriggered = false;
 
@@ -36,6 +38,8 @@ public class SmartIndicator : MonoBehaviour {
         rectTransform = GetComponent<RectTransform>();
         canvasGroup = GetComponent<CanvasGroup>();
         mainCamera = Camera.main;
+        indicatorCanvas = GetComponentInParent<Canvas>();
+        canvasRect = indicatorCanvas != null ? indicatorCanvas.transform as RectTransform : null;
     }
 
     public void Initialize(Customer customer) {
@@ -57,14 +61,21 @@ public class SmartIndicator : MonoBehaviour {
     }
 
     void HandleVisibilityAndPosition() {
-        Vector3 screenPoint = mainCamera.WorldToScreenPoint(targetCustomer.transform.position);
+        if (mainCamera == null || canvasRect == null) return;
 
-        //Check if target is off-screen
-        bool isOffScreen = screenPoint.z < 0 ||
-                           screenPoint.x < edgePadding ||
-                           screenPoint.x > Screen.width - edgePadding ||
-                           screenPoint.y < edgePadding ||
-                           screenPoint.y > Screen.height - edgePadding;
+        Vector3 screenPoint = mainCamera.WorldToScreenPoint(targetCustomer.transform.position);
+        bool isBehindCamera = screenPoint.z < 0f;
+        if (isBehindCamera) screenPoint *= -1f;
+
+        Camera eventCamera = indicatorCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : indicatorCanvas.worldCamera;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPoint, eventCamera, out Vector2 canvasPoint)) return;
+
+        Rect canvasBounds = canvasRect.rect;
+        bool isOffScreen = isBehindCamera ||
+                           canvasPoint.x < canvasBounds.xMin + edgePadding ||
+                           canvasPoint.x > canvasBounds.xMax - edgePadding ||
+                           canvasPoint.y < canvasBounds.yMin + edgePadding ||
+                           canvasPoint.y > canvasBounds.yMax - edgePadding;
 
         // Only write alpha when visibility actually flips. CanvasGroup.alpha can
         // propagate a change notification to every child graphic, so setting it
@@ -76,29 +87,24 @@ public class SmartIndicator : MonoBehaviour {
         }
 
         if (isOffScreen) {
-            UpdatePosition(screenPoint);
+            UpdatePosition(canvasPoint);
             UpdateVisuals();
         }
     }
 
-    void UpdatePosition(Vector3 screenPoint) {
+    void UpdatePosition(Vector2 canvasPoint) {
+        Vector2 canvasCenter = canvasRect.rect.center;
+        Vector2 direction = (canvasPoint - canvasCenter).normalized;
 
-        if (screenPoint.z < 0) screenPoint *= -1;
+        Vector2 canvasBounds = canvasRect.rect.size * 0.5f;
+        canvasBounds -= new Vector2(edgePadding, edgePadding);
 
-        Vector3 screenCenter = new Vector3(Screen.width, Screen.height, 0) * 0.5f;
-        Vector3 direction = (screenPoint - screenCenter).normalized;
+        float divX = (direction.x != 0) ? canvasBounds.x / Mathf.Abs(direction.x) : canvasBounds.x;
+        float divY = (direction.y != 0) ? canvasBounds.y / Mathf.Abs(direction.y) : canvasBounds.y;
 
+        Vector2 clampedPos = canvasCenter + (direction * Mathf.Min(divX, divY));
 
-        Vector2 screenBounds = new Vector2(Screen.width, Screen.height) * 0.5f;
-        screenBounds -= new Vector2(edgePadding, edgePadding);
-
-
-        float divX = (direction.x != 0) ? screenBounds.x / Mathf.Abs(direction.x) : screenBounds.x;
-        float divY = (direction.y != 0) ? screenBounds.y / Mathf.Abs(direction.y) : screenBounds.y;
-
-        Vector3 clampedPos = screenCenter + (direction * Mathf.Min(divX, divY));
-
-        rectTransform.position = Vector3.Lerp(rectTransform.position, clampedPos, Time.deltaTime * smoothSpeed);
+        rectTransform.localPosition = Vector2.Lerp(rectTransform.localPosition, clampedPos, Time.deltaTime * smoothSpeed);
     }
 
     void UpdateVisuals() {

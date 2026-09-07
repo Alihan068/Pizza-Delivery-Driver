@@ -98,7 +98,7 @@ public class CustomerManager : MonoBehaviour {
         // Ceil, not Round: rounding produced flat spots where two or three consecutive capacity
         // levels all yielded the same order ceiling, so those upgrades were paid for and changed
         // nothing. Ceiling keeps the ladder climbing.
-        int capacity = GameManager.Instance != null ? GameManager.Instance.GetCapacity() : 2;
+        int capacity = GameManager.Instance != null ? GameManager.Instance.GetShiftCapacity() : 2;
         int orderMax = Mathf.Max(levelData.orderMin + 1, Mathf.CeilToInt(capacity * levelData.orderScale));
         int totalPizzas = Random.Range(levelData.orderMin, orderMax + 1);
         float baseWaitTime = levelData.waitBase + levelData.waitPerOrderPizza * totalPizzas;

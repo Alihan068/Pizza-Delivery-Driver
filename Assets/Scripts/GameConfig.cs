@@ -46,6 +46,15 @@ public class GameConfig : ScriptableObject {
     [Tooltip("Map selected by default before the player has unlocked anything else.")]
     public MapData startingMap;
 
+    [Header("Gameplay Camera")]
+    /// <summary>Horizontal world-space gameplay width authored for the reference camera framing.</summary>
+    [Tooltip("Horizontal world-space width that should remain visible on the reference aspect ratio.")]
+    [Min(0.1f)] public float cameraReferenceHorizontalWorldSize = 12.7137f;
+
+    /// <summary>Lower bound for the gameplay camera orthographic size on wide displays.</summary>
+    [Tooltip("Smallest orthographic size allowed when preserving the authored horizontal framing on wide displays.")]
+    [Min(0.1f)] public float cameraMinimumOrthographicSize = 3f;
+
     /// <summary>
     /// Builds the file name for a profile slot.
     /// </summary>

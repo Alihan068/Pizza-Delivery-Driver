@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 752ea28d5a54c9343aab00070e936521, type: 3}
+  m_Name: Map_Expressway
+  m_EditorClassIdentifier: 
+  mapId: 8f350d4ea56b4fe4bccd87dd90ba7cc1
+  displayNameKey: map.expressway.name
+  descriptionKey: map.expressway.desc
+  previewImage: {fileID: 0}
+  sceneName: Expressway
+  levelData: {fileID: 11400000, guid: d3adb80f3967a9c48bfe5eb0a29f6ed8, type: 2}
+  requiredRank: 3
+  regionTier: 3
+  unlockPrice: 3000

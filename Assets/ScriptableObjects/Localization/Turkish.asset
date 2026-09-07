@@ -146,7 +146,7 @@ MonoBehaviour:
   - key: hud.timePlaceholder
     text: "S\xFCre:\n--"
   - key: hud.repairCost
-    text: "Tamir: ${0}"
+    text: 'Tamir: ${0}'
   - key: vehicle.scooter.name
     text: Scooter
   - key: vehicle.greensedan.name
@@ -268,3 +268,47 @@ MonoBehaviour:
     text: "{0}: Tamamland\u0131! \xD6d\xFCl: +${1}"
   - key: hud.objective.failed
     text: "{0}: Ba\u015Far\u0131s\u0131z"
+  - key: vehicle.van.name
+    text: "Teslimat Van\u0131"
+  - key: vehicle.sport.name
+    text: Spor Coupe
+  - key: map.narrowDistrict.name
+    text: "Dar B\xF6lge"
+  - key: map.narrowDistrict.desc
+    text: "Dar sokaklar, yo\u011Fun trafik, k\u0131sa rotalar."
+  - key: map.expressway.name
+    text: "H\u0131zl\u0131 Arterler"
+  - key: map.expressway.desc
+    text: "H\u0131zl\u0131 arterler, a\u011F\u0131r tehlike, y\xFCksek kazan\xE7."
+  - key: modifier.night.name
+    text: Gece
+  - key: modifier.night.description
+    text: "G\xF6r\xFC\u015F azal\u0131r, s\xFCr\xFC\u015F kontrol\xFC zorla\u015F\u0131r."
+  - key: modifier.rain.name
+    text: "Ya\u011Fmur"
+  - key: modifier.rain.description
+    text: "Kaygan yollar h\u0131z\u0131 ve kontrol\xFC azalt\u0131r."
+  - key: modifier.busyHour.name
+    text: "Yo\u011Fun Saat"
+  - key: modifier.busyHour.description
+    text: "Daha yo\u011Fun trafik bask\u0131s\u0131, daha h\u0131zl\u0131 tempo."
+  - key: garage.mapSelection.locked
+    text: "R\xFCtbe {0} gerekli"
+  - key: garage.mapSelection.available
+    text: Uygun
+  - key: garage.mapSelection.selected
+    text: "Se\xE7ili"
+  - key: garage.mapSelection.select
+    text: "Haritay\u0131 Se\xE7"
+  - key: garage.modifier.none
+    text: Modifier Yok
+  - key: garage.modifier.noneDescription
+    text: "Standart vardiya kurallar\u0131yla oyna."
+  - key: garage.mapSelection.title
+    text: "Harita Se\xE7imi"
+  - key: garage.mapSelection.modifier
+    text: Modifier
+  - key: garage.mapSelection.close
+    text: Kapat
+  - key: garage.mapSelection.open
+    text: Haritalar
