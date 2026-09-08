@@ -835,6 +835,7 @@ MonoBehaviour:
   driftTrails: []
   driftParticles: {fileID: 0}
   tireMarkMaterial: {fileID: 2100000, guid: 82bc454c4a3451d41bcffc7cd19a8ec3, type: 2}
+  automaticTireMarkCount: 2
   tireMarkTime: 1.4
   tireMarkWidth: 0.12
   tireMarkAlpha: 0.55

@@ -54,22 +54,23 @@ MonoBehaviour:
     accelerationTime: 1.2
     brakeTime: 0.65
     coastTime: 2.5
-    reverseSpeedFraction: 0.35
+    reverseSpeedFraction: 0.29
     reverseEntrySpeed: 0.15
     reverseEntryDelay: 0.25
     steeringGain: 0.55
     steeringResponseTime: 0.15
     steeringHighSpeedScale: 0.6
     normalGrip: 10
-    driftGrip: 2.5
-    gripEnterTime: 0.12
-    gripRecoverTime: 0.35
+    driftGrip: 1.7
+    gripEnterTime: 0.08
+    gripRecoverTime: 0.22
     handbrakeDeceleration: 2
     handlingRecoveryAssist: 0.25
+    driftSteeringMultiplier: 1.35
     driftMinimumSpeedFraction: 0.25
     driftEnterAngle: 12
     driftExitAngle: 8
     driftMaximumAngle: 75
-    driftEnterDwell: 0.15
+    driftEnterDwell: 0
     driftExitDwell: 0.25
     driftRequiresHandbrake: 1

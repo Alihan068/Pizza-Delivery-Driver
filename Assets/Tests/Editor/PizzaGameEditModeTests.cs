@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
@@ -341,6 +342,45 @@ public class PizzaGameEditModeTests {
         VehicleDrivingSettings clone = authored.Clone();
         Assert.AreEqual(authored.linearDamping, clone.linearDamping, 0.0001f);
         Assert.AreEqual(authored.driftRequiresHandbrake, clone.driftRequiresHandbrake);
+    }
+
+    /// <summary>Verifies that zero dwell times do not bypass the handbrake drift gate.</summary>
+    [Test]
+    public void VehicleMovement_ZeroDwellStillRequiresHandbrakeAndSteering() {
+        GameObject vehicle = new GameObject("DriftStateTestVehicle");
+        Rigidbody2D body = vehicle.AddComponent<Rigidbody2D>();
+        VehicleInput input = vehicle.AddComponent<VehicleInput>();
+        VehicleMovement movement = vehicle.AddComponent<VehicleMovement>();
+        var settings = new VehicleDrivingSettings {
+            driftRequiresHandbrake = true,
+            driftMinimumSpeedFraction = 0.25f,
+            driftEnterAngle = 12f,
+            driftExitAngle = 8f,
+            driftMaximumAngle = 75f,
+            driftEnterDwell = 0f,
+            driftExitDwell = 0f
+        };
+
+        try {
+            movement.Initialize(input, body, 10f, 180f, settings);
+            body.linearVelocity = Vector2.up * 5f;
+
+            MethodInfo updateDriftState = typeof(VehicleMovement).GetMethod(
+                "UpdateDriftState", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.IsNotNull(updateDriftState);
+
+            updateDriftState.Invoke(movement, new object[] { 5f, 0f, 10f, 0f, false, 0.02f });
+            Assert.IsFalse(movement.IsDrifting, "Normal steering must not enter drift without handbrake.");
+
+            updateDriftState.Invoke(movement, new object[] { 5f, 0f, 10f, 1f, true, 0.02f });
+            Assert.IsTrue(movement.IsDrifting, "Handbrake plus steering must enter drift immediately.");
+
+            updateDriftState.Invoke(movement, new object[] { 5f, 0f, 10f, 1f, false, 0.02f });
+            Assert.IsFalse(movement.IsDrifting, "Releasing handbrake must exit drift immediately at zero dwell.");
+        }
+        finally {
+            Object.DestroyImmediate(vehicle);
+        }
     }
 
     /// <summary>Verifies that normalized input construction clamps every public command.</summary>

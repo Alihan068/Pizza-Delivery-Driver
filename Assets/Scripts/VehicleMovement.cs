@@ -99,7 +99,7 @@ public class VehicleMovement : MonoBehaviour {
         ApplyLongitudinalForces(command, forward, forwardSpeed, maximumSpeed, maximumReverseSpeed, deltaTime);
         ApplyLateralGrip(command, right, lateralSpeed, deltaTime);
         ApplySteering(command, forwardSpeed, maximumSpeed, deltaTime);
-        UpdateDriftState(forwardSpeed, lateralSpeed, maximumSpeed, command.handbrake, deltaTime);
+        UpdateDriftState(forwardSpeed, lateralSpeed, maximumSpeed, command.steering, command.handbrake, deltaTime);
         ForwardSpeed = forwardSpeed;
         NormalizedSpeed = maximumSpeed > 0.01f ? Mathf.Abs(forwardSpeed) / maximumSpeed : 0f;
     }
@@ -182,14 +182,16 @@ public class VehicleMovement : MonoBehaviour {
 
         float normalizedSpeed = maximumSpeed > 0.01f ? Mathf.Clamp01(absoluteSpeed / maximumSpeed) : 0f;
         float speedScale = VehicleDrivingMath.SteeringSpeedScale(normalizedSpeed, settings.steeringHighSpeedScale);
-        float targetRate = -command.steering * effectiveTurnRate * settings.steeringGain * speedScale;
+        float driftSteeringScale = command.handbrake ? Mathf.Max(1f, settings.driftSteeringMultiplier) : 1f;
+        float targetRate = -command.steering * effectiveTurnRate * settings.steeringGain * speedScale * driftSteeringScale;
         if (forwardSpeed < 0f) targetRate *= -1f;
         float response = effectiveTurnRate * deltaTime / Mathf.Max(0.02f, settings.steeringResponseTime);
         currentAngularRate = Mathf.MoveTowards(currentAngularRate, targetRate, response);
         rb.MoveRotation(rb.rotation + currentAngularRate * deltaTime);
     }
 
-    void UpdateDriftState(float forwardSpeed, float lateralSpeed, float maximumSpeed, bool handbrake, float deltaTime) {
+    void UpdateDriftState(float forwardSpeed, float lateralSpeed, float maximumSpeed, float steering,
+        bool handbrake, float deltaTime) {
         Vector2 velocity = rb.linearVelocity;
         if (velocity.sqrMagnitude <= 0.0001f || forwardSpeed <= 0.01f) {
             SlipAngle = 0f;
@@ -203,15 +205,16 @@ public class VehicleMovement : MonoBehaviour {
         float minimumSpeed = maximumSpeed * Mathf.Clamp01(settings.driftMinimumSpeedFraction);
         bool angleAllowsDrift = SlipAngle >= settings.driftEnterAngle && SlipAngle <= settings.driftMaximumAngle;
         bool handbrakeAllowsDrift = !settings.driftRequiresHandbrake || handbrake;
-        bool shouldEnter = forwardSpeed >= minimumSpeed && angleAllowsDrift && handbrakeAllowsDrift &&
-                           (handbrake || Mathf.Abs(lateralSpeed) > 0.01f);
+        bool handbrakeTurnIntent = handbrake && Mathf.Abs(steering) > 0.01f;
+        bool shouldEnter = forwardSpeed >= minimumSpeed && handbrakeAllowsDrift &&
+                           (handbrakeTurnIntent || (angleAllowsDrift && Mathf.Abs(lateralSpeed) > 0.01f));
         bool shouldExit = !handbrakeAllowsDrift || forwardSpeed < minimumSpeed ||
                           SlipAngle <= settings.driftExitAngle || SlipAngle > settings.driftMaximumAngle;
 
         if (!isDrifting) {
             driftExitTimer = 0f;
             driftEnterTimer = shouldEnter ? driftEnterTimer + deltaTime : 0f;
-            if (driftEnterTimer >= settings.driftEnterDwell) {
+            if (shouldEnter && driftEnterTimer >= settings.driftEnterDwell) {
                 isDrifting = true;
                 driftEnterTimer = 0f;
             }
@@ -219,7 +222,7 @@ public class VehicleMovement : MonoBehaviour {
         else {
             driftEnterTimer = 0f;
             driftExitTimer = shouldExit ? driftExitTimer + deltaTime : 0f;
-            if (driftExitTimer >= settings.driftExitDwell) {
+            if (shouldExit && driftExitTimer >= settings.driftExitDwell) {
                 isDrifting = false;
                 driftExitTimer = 0f;
             }

@@ -36,6 +36,8 @@ public class PauseManager : MonoBehaviour {
         }
 
         if (resumeButton != null) resumeButton.onClick.AddListener(OnClickResume);
+        if (garageButton != null) garageButton.onClick.AddListener(OnClickReturnToGarage);
+        if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
         if (settingsButton != null) settingsButton.onClick.AddListener(OnClickSettings);
         if (settingsPanel != null) {
             settingsPanel.Closed += CloseSettings;
@@ -48,6 +50,10 @@ public class PauseManager : MonoBehaviour {
     }
 
     void OnDestroy() {
+        if (resumeButton != null) resumeButton.onClick.RemoveListener(OnClickResume);
+        if (garageButton != null) garageButton.onClick.RemoveListener(OnClickReturnToGarage);
+        if (mainMenuButton != null) mainMenuButton.onClick.RemoveListener(OnClickMainMenu);
+        if (settingsButton != null) settingsButton.onClick.RemoveListener(OnClickSettings);
         if (settingsPanel != null) {
             settingsPanel.Closed -= CloseSettings;
             settingsPanel.ReturnToGarageRequested -= OnClickReturnToGarage;

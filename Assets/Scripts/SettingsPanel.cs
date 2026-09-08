@@ -173,6 +173,11 @@ public class SettingsPanel : MonoBehaviour {
         RectTransform panelRect = transform as RectTransform;
         if (panelRect == null) return;
 
+        // The panel uses authored normalized anchors. Disable the legacy root layout group so it
+        // cannot move those children back into a single stacked position during a canvas rebuild.
+        LayoutGroup rootLayout = GetComponent<LayoutGroup>();
+        if (rootLayout != null) rootLayout.enabled = false;
+
         SetResponsiveRect(panelRect, panelAnchorMin, panelAnchorMax);
         ConfigureResponsiveChildLayout();
         ConfigureDisplayOptionsLayout();
@@ -184,6 +189,9 @@ public class SettingsPanel : MonoBehaviour {
         SetResponsiveRect(GetRowRect(musicSlider), new Vector2(0.08f, 0.81f), new Vector2(0.92f, 0.88f));
         SetResponsiveRect(GetRowRect(masterSlider), new Vector2(0.08f, 0.72f), new Vector2(0.92f, 0.79f));
         SetResponsiveRect(GetRowRect(sfxSlider), new Vector2(0.08f, 0.63f), new Vector2(0.92f, 0.70f));
+        ConfigureAudioRow(GetRowRect(musicSlider), musicSlider, musicValueText);
+        ConfigureAudioRow(GetRowRect(masterSlider), masterSlider, masterValueText);
+        ConfigureAudioRow(GetRowRect(sfxSlider), sfxSlider, sfxValueText);
         SetResponsiveRect(languageSelector != null ? languageSelector.transform as RectTransform : null,
             new Vector2(0.08f, 0.54f), new Vector2(0.92f, 0.61f));
         SetResponsiveRect(saveChip != null ? saveChip.transform as RectTransform : null,
@@ -228,6 +236,27 @@ public class SettingsPanel : MonoBehaviour {
     RectTransform GetDisplayOptionChild(int index) {
         return index >= 0 && index < displayOptionsBox.childCount
             ? displayOptionsBox.GetChild(index) as RectTransform : null;
+    }
+
+    void ConfigureAudioRow(RectTransform row, Slider slider, TextMeshProUGUI valueText) {
+        if (row == null) return;
+
+        LayoutGroup rowLayout = row.GetComponent<LayoutGroup>();
+        if (rowLayout != null) rowLayout.enabled = false;
+
+        RectTransform valueRect = valueText != null ? valueText.transform as RectTransform : null;
+        for (int i = 0; i < row.childCount; i++) {
+            RectTransform child = row.GetChild(i) as RectTransform;
+            if (child == null) continue;
+
+            if (slider != null && child == slider.transform) {
+                SetResponsiveRect(child, new Vector2(0.32f, 0.18f), new Vector2(0.80f, 0.82f));
+            } else if (child == valueRect) {
+                SetResponsiveRect(child, new Vector2(0.82f, 0f), Vector2.one);
+            } else {
+                SetResponsiveRect(child, Vector2.zero, new Vector2(0.30f, 1f));
+            }
+        }
     }
 
     void SetResponsiveRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax) {

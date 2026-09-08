@@ -19,6 +19,7 @@ public class VehicleDriftFeedback : MonoBehaviour {
 
     [Header("Automatic tire marks")]
     [SerializeField] Material tireMarkMaterial;
+    [Range(1, 2)] [SerializeField] int automaticTireMarkCount = 2;
     [Min(0.05f)] [SerializeField] float tireMarkTime = 1.4f;
     [Min(0.001f)] [SerializeField] float tireMarkWidth = 0.12f;
     [Range(0f, 1f)] [SerializeField] float tireMarkAlpha = 0.55f;
@@ -66,7 +67,13 @@ public class VehicleDriftFeedback : MonoBehaviour {
         }
 
         if (material == null) return;
-        driftTrails = new TrailRenderer[2];
+        int trailCount = Mathf.Clamp(automaticTireMarkCount, 1, 2);
+        driftTrails = new TrailRenderer[trailCount];
+        if (trailCount == 1) {
+            driftTrails[0] = CreateTireMarkTrail(0f, rearPosition, material);
+            return;
+        }
+
         driftTrails[0] = CreateTireMarkTrail(-halfWidth, rearPosition, material);
         driftTrails[1] = CreateTireMarkTrail(halfWidth, rearPosition, material);
     }

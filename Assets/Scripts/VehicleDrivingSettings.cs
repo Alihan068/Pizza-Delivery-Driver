@@ -30,18 +30,20 @@ public class VehicleDrivingSettings {
 
     [Header("Grip and handbrake")]
     [Min(0f)] public float normalGrip = 10f;
-    [Min(0f)] public float driftGrip = 2.5f;
-    [Min(0f)] public float gripEnterTime = 0.12f;
-    [Min(0f)] public float gripRecoverTime = 0.35f;
+    [Min(0f)] public float driftGrip = 1.7f;
+    [Min(0f)] public float gripEnterTime = 0.08f;
+    [Min(0f)] public float gripRecoverTime = 0.22f;
     [Min(0f)] public float handbrakeDeceleration = 2f;
     [Range(0f, 0.5f)] public float handlingRecoveryAssist = 0.25f;
+    /// <summary>Steering multiplier while the handbrake is held during a drift attempt.</summary>
+    [Min(1f)] public float driftSteeringMultiplier = 1.35f;
 
     [Header("Drift detection")]
     [Range(0f, 1f)] public float driftMinimumSpeedFraction = 0.25f;
     [Min(0f)] public float driftEnterAngle = 12f;
     [Min(0f)] public float driftExitAngle = 8f;
     [Range(0f, 180f)] public float driftMaximumAngle = 75f;
-    [Min(0f)] public float driftEnterDwell = 0.15f;
+    [Min(0f)] public float driftEnterDwell = 0f;
     [Min(0f)] public float driftExitDwell = 0.25f;
     /// <summary>Requires the authored handbrake command before normal cornering can enter drift.</summary>
     public bool driftRequiresHandbrake = true;
@@ -66,6 +68,7 @@ public class VehicleDrivingSettings {
             gripRecoverTime = gripRecoverTime,
             handbrakeDeceleration = handbrakeDeceleration,
             handlingRecoveryAssist = handlingRecoveryAssist,
+            driftSteeringMultiplier = driftSteeringMultiplier,
             driftMinimumSpeedFraction = driftMinimumSpeedFraction,
             driftEnterAngle = driftEnterAngle,
             driftExitAngle = driftExitAngle,
