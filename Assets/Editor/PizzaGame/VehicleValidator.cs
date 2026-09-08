@@ -313,6 +313,7 @@ public static class VehicleValidator {
         if (data.baseSpeed <= 0f) issues.Add(VehicleIssue.Error(id + " baseSpeed is zero or negative. The vehicle would not move.", data));
         if (data.baseTurn <= 0f) issues.Add(VehicleIssue.Error(id + " baseTurn is zero or negative. The vehicle would not steer.", data));
         if (data.baseCapacity <= 0) issues.Add(VehicleIssue.Error(id + " baseCapacity is zero or negative. The player could not carry any pizza.", data));
+        ValidateTuningEnvelope(data, issues);
 
         float maxArmor = data.baseArmor + data.armorStep * data.maxArmorLevel;
         if (maxArmor >= 1f) {
@@ -379,6 +380,56 @@ public static class VehicleValidator {
         }
         if (settings.driftMaximumAngle < settings.driftEnterAngle) {
             issues.Add(VehicleIssue.Error(id + " driftMaximumAngle is below driftEnterAngle. No valid slip angle can enter drift.", data));
+        }
+
+        ValidateTuningRange(issues, data, id, "playerDriftGrip", settings.playerDriftGripMin,
+            settings.playerDriftGripMax, settings.driftGrip);
+        ValidateTuningRange(issues, data, id, "playerDriftSteeringMultiplier",
+            settings.playerDriftSteeringMultiplierMin, settings.playerDriftSteeringMultiplierMax,
+            settings.driftSteeringMultiplier);
+        ValidateTuningRange(issues, data, id, "playerGripEnterTime", settings.playerGripEnterTimeMin,
+            settings.playerGripEnterTimeMax, settings.gripEnterTime);
+    }
+
+    static void ValidateTuningEnvelope(VehicleData data, List<VehicleIssue> issues) {
+        string id = Quote(data.name) + " Advanced Tuning";
+        if (float.IsNaN(data.minimumTuningSpeed) || float.IsInfinity(data.minimumTuningSpeed)) {
+            issues.Add(VehicleIssue.Error(id + " minimumTuningSpeed is NaN or infinity.", data));
+        }
+        else if (data.minimumTuningSpeed < 0f) {
+            issues.Add(VehicleIssue.Error(id + " minimumTuningSpeed is negative (" + data.minimumTuningSpeed + ").", data));
+        }
+
+        float finalSpeed = data.baseSpeed + Mathf.Max(0f, data.speedStep) * Mathf.Max(0, data.maxSpeedLevel);
+        if (!float.IsNaN(finalSpeed) && !float.IsInfinity(finalSpeed) && data.minimumTuningSpeed > finalSpeed) {
+            issues.Add(VehicleIssue.Error(id + " minimumTuningSpeed exceeds the fully purchased Speed ceiling (" +
+                finalSpeed.ToString("0.##") + "). The speed slider would have no valid range.", data));
+        }
+        else if (data.minimumTuningSpeed > data.baseSpeed) {
+            issues.Add(VehicleIssue.Warning(id + " minimumTuningSpeed is above the zero-upgrade speed. Advanced Tuning will be unavailable until Speed is upgraded.", data));
+        }
+    }
+
+    static void ValidateTuningRange(List<VehicleIssue> issues, VehicleData data, string id, string name,
+        float minimum, float maximum, float authoredDefault) {
+        if (float.IsNaN(minimum) || float.IsInfinity(minimum) ||
+            float.IsNaN(maximum) || float.IsInfinity(maximum)) {
+            issues.Add(VehicleIssue.Error(id + " " + name + " range contains NaN or infinity.", data));
+            return;
+        }
+        if (minimum > maximum) {
+            issues.Add(VehicleIssue.Error(id + " minimum exceeds maximum (" + minimum + " > " + maximum + ").", data));
+            return;
+        }
+        if (float.IsNaN(authoredDefault) || float.IsInfinity(authoredDefault)) {
+            issues.Add(VehicleIssue.Error(id + " authored " + name + " default is NaN or infinity.", data));
+        }
+        else if (authoredDefault < minimum || authoredDefault > maximum) {
+            issues.Add(VehicleIssue.Error(id + " authored " + name + " default (" + authoredDefault +
+                ") is outside the player range [" + minimum + ", " + maximum + "].", data));
+        }
+        if (Mathf.Approximately(minimum, maximum)) {
+            issues.Add(VehicleIssue.Warning(id + " " + name + " range has no width. The player will see a fixed control.", data));
         }
     }
 

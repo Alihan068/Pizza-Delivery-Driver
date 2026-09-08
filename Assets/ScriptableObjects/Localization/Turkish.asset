@@ -440,3 +440,37 @@ MonoBehaviour:
       al.\nS\xFCre dolmadan m\xFC\u015Fterilere teslim et.\nEngellerden ka\xE7\u0131n:
       \xE7arpmalar can g\xF6t\xFCr\xFCr ve pizza d\xFC\u015F\xFCrebilir.\nVardiyay\u0131
       bitirmek i\xE7in b\xF6lgede extraction tu\u015Funa bas\u0131l\u0131 tut."
+  - key: garage.advancedTuning
+    text: 'Gelişmiş Ayar: {0}'
+  - key: garage.advancedTuning.on
+    text: AÇIK
+  - key: garage.advancedTuning.off
+    text: KAPALI
+  - key: garage.driftTuning
+    text: Drift Ayarları
+  - key: garage.advancedTuning.title
+    text: Gelişmiş Ayarlar
+  - key: garage.advancedTuning.speed
+    text: Hız
+  - key: garage.advancedTuning.speedValue
+    text: 'Taban: {0:0.0} / Seçili: {1:0.0} / Azami: {2:0.0}'
+  - key: garage.advancedTuning.driftGrip
+    text: 'Drift Tutuşu (düşük = daha çok kayma)'
+  - key: garage.advancedTuning.driftGripValue
+    text: '{0:0.00}'
+  - key: garage.advancedTuning.driftSteering
+    text: 'Drift Direksiyonu (yüksek = daha keskin)'
+  - key: garage.advancedTuning.driftSteeringValue
+    text: '{0:0.00}'
+  - key: garage.advancedTuning.gripEntry
+    text: 'Tutuş Geçişi (düşük = daha hızlı)'
+  - key: garage.advancedTuning.gripEntryValue
+    text: '{0:0.00}sn'
+  - key: garage.advancedTuning.reset
+    text: Klasiğe Sıfırla
+  - key: garage.advancedTuning.presetGrip
+    text: Tutuş
+  - key: garage.advancedTuning.presetBalanced
+    text: Dengeli
+  - key: garage.advancedTuning.presetSlide
+    text: Kayma

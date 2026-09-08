@@ -31,7 +31,8 @@ public static class SaveMigration {
         MigrateV2ToV3,
         MigrateV3ToV4,
         MigrateV4ToV5,
-        MigrateV5ToV6
+        MigrateV5ToV6,
+        MigrateV6ToV7
     };
 
     /// <summary>The schema version this build writes.</summary>
@@ -151,5 +152,24 @@ public static class SaveMigration {
         if (data.mapDifficultyProgress == null) data.mapDifficultyProgress = new List<MapDifficultyProgress>();
         data.currentDifficultyId = string.Empty;
         notes.Add("map difficulty progress initialized");
+    }
+
+    // v6 profiles predate Advanced Tuning. New tuning fields use an explicit opt-in flag, so old
+    // profiles safely retain Classic behavior until the player saves a custom snapshot.
+    static void MigrateV6ToV7(GameSaveData data, Func<string, string> resolveVehicleIdFromName, List<string> notes) {
+        if (data.vehicleSaveList == null) {
+            notes.Add("Advanced Tuning save fields initialized");
+            return;
+        }
+
+        foreach (var record in data.vehicleSaveList) {
+            if (record == null) continue;
+            record.hasCustomTuning = false;
+            record.tunedSpeed = 0f;
+            record.tunedDriftGrip = 0f;
+            record.tunedDriftSteeringMultiplier = 0f;
+            record.tunedGripEnterTime = 0f;
+        }
+        notes.Add("Advanced Tuning save fields initialized");
     }
 }

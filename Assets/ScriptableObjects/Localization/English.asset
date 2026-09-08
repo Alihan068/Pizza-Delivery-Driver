@@ -451,3 +451,37 @@ MonoBehaviour:
 
       Hold the extraction key in the zone to end
       a shift.'
+  - key: garage.advancedTuning
+    text: 'Advanced Tuning: {0}'
+  - key: garage.advancedTuning.on
+    text: ON
+  - key: garage.advancedTuning.off
+    text: OFF
+  - key: garage.driftTuning
+    text: Drift Tuning
+  - key: garage.advancedTuning.title
+    text: Advanced Tuning
+  - key: garage.advancedTuning.speed
+    text: Speed
+  - key: garage.advancedTuning.speedValue
+    text: 'Floor: {0:0.0} / Selected: {1:0.0} / Max: {2:0.0}'
+  - key: garage.advancedTuning.driftGrip
+    text: 'Drift Grip (lower = more slide)'
+  - key: garage.advancedTuning.driftGripValue
+    text: '{0:0.00}'
+  - key: garage.advancedTuning.driftSteering
+    text: 'Drift Steering (higher = sharper)'
+  - key: garage.advancedTuning.driftSteeringValue
+    text: '{0:0.00}'
+  - key: garage.advancedTuning.gripEntry
+    text: 'Grip Entry (lower = faster)'
+  - key: garage.advancedTuning.gripEntryValue
+    text: '{0:0.00}s'
+  - key: garage.advancedTuning.reset
+    text: Reset to Classic
+  - key: garage.advancedTuning.presetGrip
+    text: Grip
+  - key: garage.advancedTuning.presetBalanced
+    text: Balanced
+  - key: garage.advancedTuning.presetSlide
+    text: Slide

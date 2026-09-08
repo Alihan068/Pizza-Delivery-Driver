@@ -19,6 +19,7 @@ public class VehicleDataEditor : Editor {
     bool showDescriptions;
     bool showUpgrades = true;
     bool showDriving = true;
+    bool showPlayerTuning = true;
     bool showCostPreview = true;
 
     void OnEnable() {
@@ -39,6 +40,7 @@ public class VehicleDataEditor : Editor {
         DrawIdentityGroup();
         DrawDescriptionsGroup();
         DrawUpgradeGroup();
+        DrawPlayerTuningGroup();
         DrawDrivingGroup();
 
         if (EditorGUI.EndChangeCheck()) {
@@ -122,10 +124,35 @@ public class VehicleDataEditor : Editor {
         EditorGUILayout.EndFoldoutHeaderGroup();
     }
 
+    void DrawPlayerTuningGroup() {
+        showPlayerTuning = EditorGUILayout.BeginFoldoutHeaderGroup(showPlayerTuning, "Player Advanced Tuning envelope");
+        if (showPlayerTuning) {
+            EditorGUILayout.HelpBox("These are the only driving values exposed to players. The speed floor and drift ranges must contain the authored defaults; detection gates, damage and pizza-loss rules stay designer-controlled.", MessageType.None);
+            DrawProperty("minimumTuningSpeed", "Minimum selectable speed", "Lower bound for the optional speed slider.");
+            DrawDrivingRelativeProperty("playerDriftGripMin", "Minimum drift grip", "Lower values create more lateral slide.");
+            DrawDrivingRelativeProperty("playerDriftGripMax", "Maximum drift grip", "Higher values keep more lateral grip.");
+            DrawDrivingRelativeProperty("playerDriftSteeringMultiplierMin", "Minimum drift steering", "Lower bound for handbrake steering response.");
+            DrawDrivingRelativeProperty("playerDriftSteeringMultiplierMax", "Maximum drift steering", "Higher values rotate the vehicle more sharply while drifting.");
+            DrawDrivingRelativeProperty("playerGripEnterTimeMin", "Fastest grip entry", "Lower values transition into drift grip faster.");
+            DrawDrivingRelativeProperty("playerGripEnterTimeMax", "Slowest grip entry", "Higher values make the grip transition gentler.");
+        }
+        EditorGUILayout.EndFoldoutHeaderGroup();
+    }
+
     void DrawProperty(string propertyName, string label, string tooltip = null) {
         SerializedProperty property = serializedObject.FindProperty(propertyName);
         if (property == null) {
             EditorGUILayout.HelpBox("Missing VehicleData field: " + propertyName, MessageType.Error);
+            return;
+        }
+        EditorGUILayout.PropertyField(property, new GUIContent(label, tooltip), true);
+    }
+
+    void DrawDrivingRelativeProperty(string propertyName, string label, string tooltip) {
+        SerializedProperty driving = serializedObject.FindProperty("drivingSettings");
+        SerializedProperty property = driving != null ? driving.FindPropertyRelative(propertyName) : null;
+        if (property == null) {
+            EditorGUILayout.HelpBox("Missing VehicleDrivingSettings field: " + propertyName, MessageType.Error);
             return;
         }
         EditorGUILayout.PropertyField(property, new GUIContent(label, tooltip), true);

@@ -606,6 +606,100 @@ public class GameManager : MonoBehaviour {
     /// <returns>A fraction from zero to one.</returns>
     public float GetProtectionChance() => GetStatValue(VehicleStatId.Protection);
 
+    /// <summary>Maximum base speed unlocked by the active vehicle's purchased Speed levels.</summary>
+    /// <returns>The purchased speed ceiling before optional tuning and shift modifiers.</returns>
+    public float GetUnlockedMaxSpeed() {
+        if (currentVehicle == null) return 0f;
+        return VehicleTuningRules.GetUnlockedMaxSpeed(currentVehicle.baseSpeed, currentVehicle.speedStep,
+            GetLevel(VehicleStatId.Speed), currentVehicle.maxSpeedLevel);
+    }
+
+    /// <summary>Speed selected for the active vehicle before a temporary shift modifier is applied.</summary>
+    /// <returns>The authored maximum in Classic mode, or the saved clamped selection in Advanced mode.</returns>
+    public float GetSelectedBaseSpeed() {
+        if (currentVehicle == null) return 0f;
+        VehicleSaveData save = GetCurrentVehicleSave();
+        return VehicleTuningRules.ResolveSpeed(GameSettings.AdvancedTuningEnabled,
+            save != null && save.hasCustomTuning, save != null ? save.tunedSpeed : 0f,
+            currentVehicle.minimumTuningSpeed, GetUnlockedMaxSpeed());
+    }
+
+    /// <summary>Effective speed passed to the next spawned vehicle after the selected shift modifier.</summary>
+    /// <returns>The non-negative speed limit used by the movement motor.</returns>
+    public float GetEffectiveShiftSpeed() {
+        float speed = GetSelectedBaseSpeed();
+        if (currentModifier != null) speed += currentModifier.GetStatDelta(VehicleStatId.Speed);
+        return Mathf.Max(0f, speed);
+    }
+
+    /// <summary>
+    /// Creates the detached driving settings snapshot for the next spawned vehicle.
+    /// </summary>
+    /// <returns>A copy of the authored settings with valid custom drift values when Advanced Tuning is active.</returns>
+    public VehicleDrivingSettings GetEffectiveShiftDrivingSettings() {
+        if (currentVehicle == null) return null;
+
+        VehicleDrivingSettings authored = currentVehicle.drivingSettings;
+        VehicleDrivingSettings snapshot = authored != null ? authored.Clone() : new VehicleDrivingSettings();
+        VehicleSaveData save = GetCurrentVehicleSave();
+        if (!GameSettings.AdvancedTuningEnabled || save == null || !save.hasCustomTuning) return snapshot;
+
+        snapshot.driftGrip = VehicleTuningRules.ResolvePlayerValue(true, true, save.tunedDriftGrip,
+            snapshot.driftGrip, snapshot.playerDriftGripMin, snapshot.playerDriftGripMax);
+        snapshot.driftSteeringMultiplier = VehicleTuningRules.ResolvePlayerValue(true, true,
+            save.tunedDriftSteeringMultiplier, snapshot.driftSteeringMultiplier,
+            snapshot.playerDriftSteeringMultiplierMin, snapshot.playerDriftSteeringMultiplierMax);
+        snapshot.gripEnterTime = VehicleTuningRules.ResolvePlayerValue(true, true, save.tunedGripEnterTime,
+            snapshot.gripEnterTime, snapshot.playerGripEnterTimeMin, snapshot.playerGripEnterTimeMax);
+        return snapshot;
+    }
+
+    /// <summary>
+    /// Saves the optional tuning snapshot for the currently selected vehicle after clamping every
+    /// value to that vehicle's authored envelope.
+    /// </summary>
+    /// <param name="selectedSpeed">Base speed selected for future shifts.</param>
+    /// <param name="driftGrip">Lateral grip used while handbraking.</param>
+    /// <param name="driftSteeringMultiplier">Steering multiplier used while handbraking.</param>
+    /// <param name="gripEnterTime">Time used to transition into drift grip.</param>
+    /// <returns>True when a current vehicle record received and saved the snapshot.</returns>
+    public bool SaveCurrentVehicleTuning(float selectedSpeed, float driftGrip,
+        float driftSteeringMultiplier, float gripEnterTime) {
+        if (currentVehicle == null) return false;
+        VehicleSaveData save = GetCurrentVehicleSave();
+        if (save == null) return false;
+
+        VehicleDrivingSettings settings = currentVehicle.drivingSettings != null
+            ? currentVehicle.drivingSettings
+            : new VehicleDrivingSettings();
+        save.tunedSpeed = VehicleTuningRules.ClampSpeed(currentVehicle.minimumTuningSpeed,
+            GetUnlockedMaxSpeed(), selectedSpeed);
+        save.tunedDriftGrip = VehicleTuningRules.ClampPlayerValue(driftGrip,
+            settings.playerDriftGripMin, settings.playerDriftGripMax);
+        save.tunedDriftSteeringMultiplier = VehicleTuningRules.ClampPlayerValue(
+            driftSteeringMultiplier, settings.playerDriftSteeringMultiplierMin,
+            settings.playerDriftSteeringMultiplierMax);
+        save.tunedGripEnterTime = VehicleTuningRules.ClampPlayerValue(gripEnterTime,
+            settings.playerGripEnterTimeMin, settings.playerGripEnterTimeMax);
+        save.hasCustomTuning = true;
+        SaveGame();
+        return true;
+    }
+
+    /// <summary>Clears the current vehicle's custom tuning so future shifts use authored defaults.</summary>
+    /// <returns>True when a current vehicle record was reset and saved.</returns>
+    public bool ResetCurrentVehicleTuning() {
+        VehicleSaveData save = GetCurrentVehicleSave();
+        if (save == null) return false;
+        save.hasCustomTuning = false;
+        save.tunedSpeed = 0f;
+        save.tunedDriftGrip = 0f;
+        save.tunedDriftSteeringMultiplier = 0f;
+        save.tunedGripEnterTime = 0f;
+        SaveGame();
+        return true;
+    }
+
     /// <summary>Current stat value including the temporary modifier selected for the next shift.</summary>
     /// <param name="stat">Stat to read.</param>
     /// <returns>The effective shift value with valid fraction bounds applied.</returns>

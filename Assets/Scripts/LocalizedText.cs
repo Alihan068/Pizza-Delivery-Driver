@@ -11,4 +11,11 @@ public class LocalizedText : MonoBehaviour {
     void OnEnable() { LocalizationManager.LanguageChanged += Refresh; Refresh(); }
     void OnDisable() { LocalizationManager.LanguageChanged -= Refresh; }
     void Refresh() { if (target != null) target.text = LocalizationManager.Get(localizationKey); }
+
+    /// <summary>Assigns a localization key to a runtime-generated label and refreshes it immediately.</summary>
+    /// <param name="key">Stable key from the active localization catalog.</param>
+    public void SetKey(string key) {
+        localizationKey = key ?? string.Empty;
+        Refresh();
+    }
 }

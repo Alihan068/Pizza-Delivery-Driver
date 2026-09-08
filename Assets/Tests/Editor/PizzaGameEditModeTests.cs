@@ -111,10 +111,66 @@ public class PizzaGameEditModeTests {
         try {
             Assert.AreEqual(0.1f, vehicle.speedStep, 0.0001f);
             Assert.AreEqual(25, vehicle.maxSpeedLevel);
+            Assert.Greater(vehicle.minimumTuningSpeed, 0f);
         }
         finally {
             Object.DestroyImmediate(vehicle);
         }
+    }
+
+    /// <summary>Verifies that the Advanced Tuning speed ceiling follows purchased Speed levels.</summary>
+    [Test]
+    public void VehicleTuningRules_SpeedCeilingUsesPurchasedLevel() {
+        Assert.AreEqual(4.9f, VehicleTuningRules.GetUnlockedMaxSpeed(4.4f, 0.1f, 5, 25), 0.0001f);
+        Assert.AreEqual(6.9f, VehicleTuningRules.GetUnlockedMaxSpeed(4.4f, 0.1f, 999, 25), 0.0001f);
+    }
+
+    /// <summary>Verifies that custom speed cannot cross the authored floor or purchased ceiling.</summary>
+    [Test]
+    public void VehicleTuningRules_SpeedSelectionIsClamped() {
+        Assert.AreEqual(2.5f, VehicleTuningRules.ClampSpeed(2.5f, 4.9f, -10f), 0.0001f);
+        Assert.AreEqual(4.9f, VehicleTuningRules.ClampSpeed(2.5f, 4.9f, 99f), 0.0001f);
+        Assert.AreEqual(4.9f, VehicleTuningRules.ResolveSpeed(true, false, 2.5f, 2.5f, 4.9f), 0.0001f);
+    }
+
+    /// <summary>Verifies that resolving a tuning value never mutates authored vehicle data.</summary>
+    [Test]
+    public void VehicleTuningRules_ResolveDoesNotMutateAuthoredVehicle() {
+        var vehicle = ScriptableObject.CreateInstance<VehicleData>();
+        try {
+            float originalSpeed = vehicle.baseSpeed;
+            float originalGrip = vehicle.drivingSettings.driftGrip;
+
+            VehicleTuningRules.ResolveSpeed(true, true, 0f, vehicle.minimumTuningSpeed, vehicle.baseSpeed);
+            VehicleTuningRules.ResolvePlayerValue(true, true, 99f, vehicle.drivingSettings.driftGrip,
+                vehicle.drivingSettings.playerDriftGripMin, vehicle.drivingSettings.playerDriftGripMax);
+
+            Assert.AreEqual(originalSpeed, vehicle.baseSpeed, 0.0001f);
+            Assert.AreEqual(originalGrip, vehicle.drivingSettings.driftGrip, 0.0001f);
+        }
+        finally {
+            Object.DestroyImmediate(vehicle);
+        }
+    }
+
+    /// <summary>Verifies that invalid speed inputs resolve to safe finite values.</summary>
+    [Test]
+    public void VehicleTuningRules_InvalidSpeedInputsRemainFinite() {
+        Assert.AreEqual(0f, VehicleTuningRules.GetUnlockedMaxSpeed(float.NaN, float.PositiveInfinity, 1, 1), 0.0001f);
+        Assert.AreEqual(0f, VehicleTuningRules.ResolveSpeed(true, true, float.NaN, float.NaN,
+            float.PositiveInfinity), 0.0001f);
+    }
+
+    /// <summary>Verifies that optional drift values preserve Classic fallback and clamp custom values.</summary>
+    [Test]
+    public void VehicleTuningRules_DriftValuesPreserveFallbackAndBounds() {
+        Assert.AreEqual(1.7f, VehicleTuningRules.ResolvePlayerValue(false, true, 0.8f, 1.7f, 0.8f, 3f), 0.0001f);
+        Assert.AreEqual(3f, VehicleTuningRules.ResolvePlayerValue(true, true, 9f, 1.7f, 0.8f, 3f), 0.0001f);
+        Assert.AreEqual(0f, VehicleTuningRules.ResolvePlayerValue(true, true, -2f, 0.08f, 0f, 0.5f), 0.0001f);
+        Assert.AreEqual(0.8f, VehicleTuningRules.ClampPlayerValue(float.NaN, 0.8f, 3f), 0.0001f);
+        Assert.AreEqual(3f, VehicleTuningRules.ClampPlayerValue(float.PositiveInfinity, 0.8f, 3f), 0.0001f);
+        Assert.AreEqual(0.8f, VehicleTuningRules.ClampPlayerValue(float.NegativeInfinity, 0.8f, 3f), 0.0001f);
+        Assert.AreEqual(2f, VehicleTuningRules.ClampPlayerValue(1f, 3f, 2f), 0.0001f);
     }
 
     /// <summary>Verifies that authored difficulty order ranges are inclusive at both ends.</summary>
@@ -184,6 +240,31 @@ public class PizzaGameEditModeTests {
         Assert.IsNotNull(data.mapDifficultyProgress);
         Assert.IsEmpty(data.mapDifficultyProgress);
         Assert.IsEmpty(data.currentDifficultyId);
+    }
+
+    /// <summary>Verifies that old saves opt out of custom tuning during schema migration.</summary>
+    [Test]
+    public void SaveMigration_V6InitializesAdvancedTuningFields() {
+        var record = new VehicleSaveData("vehicle.test", true) {
+            hasCustomTuning = true,
+            tunedSpeed = 99f,
+            tunedDriftGrip = 99f,
+            tunedDriftSteeringMultiplier = 99f,
+            tunedGripEnterTime = 99f
+        };
+        var data = new GameSaveData {
+            saveVersion = 6,
+            vehicleSaveList = new List<VehicleSaveData> { record }
+        };
+
+        SaveMigration.Migrate(data, name => name);
+
+        Assert.AreEqual(SaveMigration.CurrentVersion, data.saveVersion);
+        Assert.IsFalse(record.hasCustomTuning);
+        Assert.AreEqual(0f, record.tunedSpeed);
+        Assert.AreEqual(0f, record.tunedDriftGrip);
+        Assert.AreEqual(0f, record.tunedDriftSteeringMultiplier);
+        Assert.AreEqual(0f, record.tunedGripEnterTime);
     }
 
     /// <summary>Verifies that time-up and extraction keep all non-negative earnings.</summary>
@@ -425,6 +506,26 @@ public class PizzaGameEditModeTests {
             string prefix = Path.GetFileName(path) + ".corrupt_";
             if (!Directory.Exists(directory)) continue;
             foreach (string corrupt in Directory.GetFiles(directory, prefix + "*.json")) File.Delete(corrupt);
+        }
+    }
+
+    /// <summary>Verifies that a temporary speed debuff multiplies the resolved speed ceiling.</summary>
+    [Test]
+    public void VehicleMovement_TemporarySpeedMultiplierPreservesResolvedCeiling() {
+        GameObject vehicle = new GameObject("SpeedMultiplierTestVehicle");
+        Rigidbody2D body = vehicle.AddComponent<Rigidbody2D>();
+        VehicleInput input = vehicle.AddComponent<VehicleInput>();
+        VehicleMovement movement = vehicle.AddComponent<VehicleMovement>();
+
+        try {
+            movement.Initialize(input, body, 4.9f, 210f, new VehicleDrivingSettings());
+            movement.SetSpeedMultiplier(0.6f);
+            Assert.AreEqual(2.94f, movement.GetEffectiveMaximumSpeed(), 0.0001f);
+            movement.SetSpeedMultiplier(1.5f);
+            Assert.AreEqual(4.9f, movement.GetEffectiveMaximumSpeed(), 0.0001f);
+        }
+        finally {
+            Object.DestroyImmediate(vehicle);
         }
     }
 }

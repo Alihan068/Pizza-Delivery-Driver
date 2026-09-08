@@ -30,6 +30,7 @@ public static class GameSettings {
     const string MasterVolumeKey = "settings.masterVolume";
     const string MusicVolumeKey = "settings.musicVolume";
     const string SfxVolumeKey = "settings.sfxVolume";
+    const string AdvancedTuningKey = "settings.advancedTuningEnabled";
 
     /// <summary>Audio volume used when the player has never changed it, on a 0-100 scale.</summary>
     public const int DefaultMasterVolume = 100;
@@ -40,9 +41,13 @@ public static class GameSettings {
     /// <summary>Sound-effect volume used when the player has never changed it, on a 0-100 scale.</summary>
     public const int DefaultSfxVolume = 100;
 
+    /// <summary>Whether Advanced Tuning is enabled for a player who has never changed the setting.</summary>
+    public const bool DefaultAdvancedTuningEnabled = false;
+
     static int masterVolume;
     static int musicVolume;
     static int sfxVolume;
+    static bool advancedTuningEnabled;
     static bool loaded;
 
     /// <summary>
@@ -113,6 +118,25 @@ public static class GameSettings {
         }
     }
 
+    /// <summary>
+    /// Enables or disables the optional Advanced Tuning controls. This preference is global and is
+    /// intentionally separate from career save data.
+    /// </summary>
+    public static bool AdvancedTuningEnabled {
+        get {
+            Load();
+            return advancedTuningEnabled;
+        }
+        set {
+            Load();
+            if (value == advancedTuningEnabled) return;
+            advancedTuningEnabled = value;
+            PlayerPrefs.SetInt(AdvancedTuningKey, value ? 1 : 0);
+            PlayerPrefs.Save();
+            Changed?.Invoke();
+        }
+    }
+
     /// <summary>Music volume as a 0-1 multiplier, ready to be applied to an AudioSource.</summary>
     public static float MusicVolumeNormalized => MusicVolume / 100f;
 
@@ -128,5 +152,6 @@ public static class GameSettings {
         masterVolume = Mathf.Clamp(PlayerPrefs.GetInt(MasterVolumeKey, DefaultMasterVolume), 0, 100);
         musicVolume = Mathf.Clamp(PlayerPrefs.GetInt(MusicVolumeKey, DefaultMusicVolume), 0, 100);
         sfxVolume = Mathf.Clamp(PlayerPrefs.GetInt(SfxVolumeKey, DefaultSfxVolume), 0, 100);
+        advancedTuningEnabled = PlayerPrefs.GetInt(AdvancedTuningKey, DefaultAdvancedTuningEnabled ? 1 : 0) != 0;
     }
 }

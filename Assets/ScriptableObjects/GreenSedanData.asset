@@ -28,6 +28,7 @@ MonoBehaviour:
   baseSpeed: 3.7
   speedStep: 0.1
   maxSpeedLevel: 25
+  minimumTuningSpeed: 2.2
   speedCostMult: 0.5
   baseTurn: 160
   turnStep: 10
@@ -67,6 +68,12 @@ MonoBehaviour:
     handbrakeDeceleration: 2
     handlingRecoveryAssist: 0.25
     driftSteeringMultiplier: 1.35
+    playerDriftGripMin: 0.8
+    playerDriftGripMax: 3
+    playerDriftSteeringMultiplierMin: 1
+    playerDriftSteeringMultiplierMax: 2
+    playerGripEnterTimeMin: 0
+    playerGripEnterTimeMax: 0.5
     driftMinimumSpeedFraction: 0.25
     driftEnterAngle: 12
     driftExitAngle: 8

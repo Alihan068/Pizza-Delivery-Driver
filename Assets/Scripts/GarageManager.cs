@@ -80,9 +80,14 @@ public class GarageManager : MonoBehaviour {
     public SaveSlotSelectPanel copySlotPanel;
     public Button copyToSlotButton;
 
+    [Header("Advanced Tuning")]
+    [Tooltip("Optional Garage entry and panel. A fallback is created under the existing Garage UI when this is empty.")]
+    [SerializeField] GarageTuningUI advancedTuningUI;
+
     void Start() {
         Time.timeScale = 1f;
         ConfigureSettingsEntryPoint();
+        ConfigureAdvancedTuningEntryPoint();
 
         // Bound in code rather than through Inspector events: a persistent UnityEvent left behind
         // on one of these buttons once made a single click buy two levels (BF-016).
@@ -131,6 +136,34 @@ public class GarageManager : MonoBehaviour {
         settingsButton.transform.SetAsLastSibling();
     }
 
+    void ConfigureAdvancedTuningEntryPoint() {
+        Transform parent = transform.parent;
+        if (parent == null) {
+            Debug.LogWarning("Garage Advanced Tuning has no UI parent for its fallback controls.");
+            return;
+        }
+
+        Sprite sprite = null;
+        if (settingsButton != null) {
+            Image image = settingsButton.GetComponent<Image>();
+            if (image != null) sprite = image.sprite;
+        }
+        TMP_FontAsset font = null;
+        TMP_Text sourceText = startButton != null ? startButton.GetComponentInChildren<TMP_Text>(true) : null;
+        if (sourceText == null && currentVehicleNameText != null) sourceText = currentVehicleNameText;
+        if (sourceText != null) font = sourceText.font;
+
+        if (advancedTuningUI != null) {
+            advancedTuningUI.InitializeFallback(parent, sprite, font);
+            return;
+        }
+
+        GameObject host = new GameObject("GarageTuningUI", typeof(RectTransform));
+        host.transform.SetParent(parent, false);
+        advancedTuningUI = host.AddComponent<GarageTuningUI>();
+        advancedTuningUI.InitializeFallback(parent, sprite, font);
+    }
+
     void OnDestroy() {
         if (settingsPanel != null) settingsPanel.Closed -= CloseSettings;
     }
@@ -175,6 +208,7 @@ public class GarageManager : MonoBehaviour {
         if (statsPanel != null) statsPanel.SetActive(unlocked);
         if (lockedPanel != null) lockedPanel.SetActive(!unlocked);
         if (startButton != null) startButton.interactable = unlocked;
+        if (advancedTuningUI != null) advancedTuningUI.Refresh();
 
         if (!unlocked) {
             LocalizationManager.SetText(purchasePriceText, buyKey, currentVehicle.price);

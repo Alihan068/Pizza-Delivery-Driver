@@ -30,6 +30,7 @@ public class VehicleCreatorWindow : EditorWindow {
     Vector2 scroll;
     bool showBalance = true;
     bool showCostPreview = true;
+    bool showTuningPreview = true;
 
     /// <summary>Opens the vehicle creation wizard.</summary>
     [MenuItem("Tools/PizzaGame/Vehicle Creator", false, 10)]
@@ -106,6 +107,8 @@ public class VehicleCreatorWindow : EditorWindow {
         DrawBalanceSection();
         EditorGUILayout.Space();
         DrawCostPreviewSection();
+        EditorGUILayout.Space();
+        DrawTuningPreviewSection();
         EditorGUILayout.Space();
         DrawTargetSection();
         EditorGUILayout.Space();
@@ -237,8 +240,35 @@ public class VehicleCreatorWindow : EditorWindow {
             (draft.price > 0 ? "  (+ " + draft.price + " vehicle price)" : string.Empty), EditorStyles.miniBoldLabel);
     }
 
+    void DrawTuningPreviewSection() {
+        showTuningPreview = EditorGUILayout.Foldout(showTuningPreview, "6. Player tuning preview", true, EditorStyles.foldoutHeader);
+        if (!showTuningPreview) return;
+        if (draft == null) return;
+
+        VehicleDrivingSettings settings = draft.drivingSettings;
+        if (settings == null) {
+            EditorGUILayout.HelpBox("The draft has no driving settings. Creation will be blocked by validation.", MessageType.Error);
+            return;
+        }
+
+        float finalSpeed = draft.baseSpeed + Mathf.Max(0f, draft.speedStep) * Mathf.Max(0, draft.maxSpeedLevel);
+        EditorGUILayout.HelpBox("These are the controls exposed by Advanced Tuning. The generated vehicle keeps the same bounded envelope and the same authored default drift feel as the selected template.", MessageType.None);
+        EditorGUILayout.LabelField("Speed", "Floor " + draft.minimumTuningSpeed.ToString("0.##") +
+            "   initial max " + draft.baseSpeed.ToString("0.##") +
+            "   final max " + finalSpeed.ToString("0.##"));
+        EditorGUILayout.LabelField("Drift Grip", settings.playerDriftGripMin.ToString("0.##") +
+            " - " + settings.playerDriftGripMax.ToString("0.##") +
+            "   default " + settings.driftGrip.ToString("0.##"));
+        EditorGUILayout.LabelField("Drift Steering", settings.playerDriftSteeringMultiplierMin.ToString("0.##") +
+            " - " + settings.playerDriftSteeringMultiplierMax.ToString("0.##") +
+            "   default " + settings.driftSteeringMultiplier.ToString("0.##"));
+        EditorGUILayout.LabelField("Grip Entry", settings.playerGripEnterTimeMin.ToString("0.##") +
+            " - " + settings.playerGripEnterTimeMax.ToString("0.##") +
+            " seconds   default " + settings.gripEnterTime.ToString("0.##"));
+    }
+
     void DrawTargetSection() {
-        EditorGUILayout.LabelField("5. Target files", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("7. Target files", EditorStyles.boldLabel);
         string name = draft != null ? VehicleCreationService.SanitizeName(draft.vehicleName) : string.Empty;
         if (string.IsNullOrEmpty(name)) {
             EditorGUILayout.HelpBox("Enter a vehicle name and the target paths will appear here.", MessageType.None);
@@ -263,7 +293,7 @@ public class VehicleCreatorWindow : EditorWindow {
 
     void DrawValidationSection() {
         using (new EditorGUILayout.HorizontalScope()) {
-            EditorGUILayout.LabelField("6. Validation", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("8. Validation", EditorStyles.boldLabel);
             if (GUILayout.Button("Re-check", GUILayout.Width(140))) RefreshValidation();
         }
         VehicleIssueListDrawer.Draw(cachedIssues, "No blocking issues.");

@@ -90,16 +90,16 @@ public class Driver : MonoBehaviour {
         if (spriteRenderer != null) baseColor = spriteRenderer.color;
 
         InitializeStats();
-        VehicleDrivingSettings settings = null;
-        if (GameManager.Instance != null && GameManager.Instance.currentVehicle != null)
-            settings = GameManager.Instance.currentVehicle.drivingSettings;
+        VehicleDrivingSettings settings = GameManager.Instance != null
+            ? GameManager.Instance.GetEffectiveShiftDrivingSettings()
+            : null;
         vehicleMovement.Initialize(vehicleInput, rb, baseMoveSpeed, baseTurnSpeed, settings);
         UpdateUIMethod();
     }
 
     void InitializeStats() {
         if (GameManager.Instance != null) {
-            baseMoveSpeed = GameManager.Instance.GetShiftStatValue(VehicleStatId.Speed);
+            baseMoveSpeed = GameManager.Instance.GetEffectiveShiftSpeed();
             baseTurnSpeed = GameManager.Instance.GetShiftStatValue(VehicleStatId.Turn);
             currentHealth = GameManager.Instance.GetShiftStatValue(VehicleStatId.Health);
             armorPercent = GameManager.Instance.GetShiftStatValue(VehicleStatId.Armor);

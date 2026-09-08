@@ -37,6 +37,21 @@ public class VehicleSaveData {
     /// <summary>Total money spent on this vehicle. Feeds the repair cost through vehicle value.</summary>
     public int moneySpent;
 
+    /// <summary>Whether this vehicle has a saved Advanced Tuning snapshot.</summary>
+    public bool hasCustomTuning;
+
+    /// <summary>Saved base speed selected through Advanced Tuning.</summary>
+    public float tunedSpeed;
+
+    /// <summary>Saved drift grip selected through Advanced Tuning.</summary>
+    public float tunedDriftGrip;
+
+    /// <summary>Saved drift steering multiplier selected through Advanced Tuning.</summary>
+    public float tunedDriftSteeringMultiplier;
+
+    /// <summary>Saved grip-entry response time selected through Advanced Tuning.</summary>
+    public float tunedGripEnterTime;
+
     /// <summary>Legacy version 0 field: the display name this record was keyed by. Migration input only.</summary>
     public string vehicleName;
 
@@ -53,6 +68,11 @@ public class VehicleSaveData {
         capacityLevel = 0;
         protectionLevel = 0;
         moneySpent = 0;
+        hasCustomTuning = false;
+        tunedSpeed = 0f;
+        tunedDriftGrip = 0f;
+        tunedDriftSteeringMultiplier = 0f;
+        tunedGripEnterTime = 0f;
     }
 
     /// <summary>Reads the purchased level of one vehicle-bound stat.</summary>

@@ -38,6 +38,25 @@ public class VehicleDrivingSettings {
     /// <summary>Steering multiplier while the handbrake is held during a drift attempt.</summary>
     [Min(1f)] public float driftSteeringMultiplier = 1.35f;
 
+    [Header("Player Tuning Bounds")]
+    /// <summary>Lowest drift grip value available to the player in Advanced Tuning.</summary>
+    [Min(0f)] public float playerDriftGripMin = 0.8f;
+
+    /// <summary>Highest drift grip value available to the player in Advanced Tuning.</summary>
+    [Min(0f)] public float playerDriftGripMax = 3f;
+
+    /// <summary>Lowest drift steering multiplier available to the player in Advanced Tuning.</summary>
+    [Min(1f)] public float playerDriftSteeringMultiplierMin = 1f;
+
+    /// <summary>Highest drift steering multiplier available to the player in Advanced Tuning.</summary>
+    [Min(1f)] public float playerDriftSteeringMultiplierMax = 2f;
+
+    /// <summary>Fastest grip-entry response time available to the player in Advanced Tuning.</summary>
+    [Min(0f)] public float playerGripEnterTimeMin = 0f;
+
+    /// <summary>Slowest grip-entry response time available to the player in Advanced Tuning.</summary>
+    [Min(0f)] public float playerGripEnterTimeMax = 0.5f;
+
     [Header("Drift detection")]
     [Range(0f, 1f)] public float driftMinimumSpeedFraction = 0.25f;
     [Min(0f)] public float driftEnterAngle = 12f;
@@ -69,6 +88,12 @@ public class VehicleDrivingSettings {
             handbrakeDeceleration = handbrakeDeceleration,
             handlingRecoveryAssist = handlingRecoveryAssist,
             driftSteeringMultiplier = driftSteeringMultiplier,
+            playerDriftGripMin = playerDriftGripMin,
+            playerDriftGripMax = playerDriftGripMax,
+            playerDriftSteeringMultiplierMin = playerDriftSteeringMultiplierMin,
+            playerDriftSteeringMultiplierMax = playerDriftSteeringMultiplierMax,
+            playerGripEnterTimeMin = playerGripEnterTimeMin,
+            playerGripEnterTimeMax = playerGripEnterTimeMax,
             driftMinimumSpeedFraction = driftMinimumSpeedFraction,
             driftEnterAngle = driftEnterAngle,
             driftExitAngle = driftExitAngle,
