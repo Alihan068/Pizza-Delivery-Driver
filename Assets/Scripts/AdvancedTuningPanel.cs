@@ -228,16 +228,44 @@ public class AdvancedTuningPanel : MonoBehaviour {
     }
 
     void BindListeners() {
-        if (listenersBound) return;
-        if (closeButton != null) closeButton.onClick.AddListener(Close);
-        if (resetButton != null) resetButton.onClick.AddListener(ResetToClassic);
-        if (gripPresetButton != null) gripPresetButton.onClick.AddListener(ApplyGripPreset);
-        if (balancedPresetButton != null) balancedPresetButton.onClick.AddListener(ApplyBalancedPreset);
-        if (slidePresetButton != null) slidePresetButton.onClick.AddListener(ApplySlidePreset);
-        if (speedSlider != null) speedSlider.onValueChanged.AddListener(OnSliderChanged);
-        if (driftGripSlider != null) driftGripSlider.onValueChanged.AddListener(OnSliderChanged);
-        if (driftSteeringSlider != null) driftSteeringSlider.onValueChanged.AddListener(OnSliderChanged);
-        if (gripEntrySlider != null) gripEntrySlider.onValueChanged.AddListener(OnSliderChanged);
+        // Controls may be created after Awake when an older scene uses the runtime fallback path.
+        // Remove-before-add keeps this method safe for both authored and generated controls.
+        if (closeButton != null) {
+            closeButton.onClick.RemoveListener(Close);
+            closeButton.onClick.AddListener(Close);
+        }
+        if (resetButton != null) {
+            resetButton.onClick.RemoveListener(ResetToClassic);
+            resetButton.onClick.AddListener(ResetToClassic);
+        }
+        if (gripPresetButton != null) {
+            gripPresetButton.onClick.RemoveListener(ApplyGripPreset);
+            gripPresetButton.onClick.AddListener(ApplyGripPreset);
+        }
+        if (balancedPresetButton != null) {
+            balancedPresetButton.onClick.RemoveListener(ApplyBalancedPreset);
+            balancedPresetButton.onClick.AddListener(ApplyBalancedPreset);
+        }
+        if (slidePresetButton != null) {
+            slidePresetButton.onClick.RemoveListener(ApplySlidePreset);
+            slidePresetButton.onClick.AddListener(ApplySlidePreset);
+        }
+        if (speedSlider != null) {
+            speedSlider.onValueChanged.RemoveListener(OnSliderChanged);
+            speedSlider.onValueChanged.AddListener(OnSliderChanged);
+        }
+        if (driftGripSlider != null) {
+            driftGripSlider.onValueChanged.RemoveListener(OnSliderChanged);
+            driftGripSlider.onValueChanged.AddListener(OnSliderChanged);
+        }
+        if (driftSteeringSlider != null) {
+            driftSteeringSlider.onValueChanged.RemoveListener(OnSliderChanged);
+            driftSteeringSlider.onValueChanged.AddListener(OnSliderChanged);
+        }
+        if (gripEntrySlider != null) {
+            gripEntrySlider.onValueChanged.RemoveListener(OnSliderChanged);
+            gripEntrySlider.onValueChanged.AddListener(OnSliderChanged);
+        }
         listenersBound = true;
     }
 

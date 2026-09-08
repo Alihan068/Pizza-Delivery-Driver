@@ -308,6 +308,9 @@ public class GarageManager : MonoBehaviour {
 
     /// <summary>Opens the shared garage settings panel.</summary>
     public void OnClickSettings() {
+        // Settings is a modal overlay. Close the optional tuning overlay first so both panels
+        // cannot remain visible or compete for pointer input on the Garage canvas.
+        if (advancedTuningUI != null) advancedTuningUI.ClosePanel();
         if (settingsPanel != null) settingsPanel.gameObject.SetActive(true);
     }
 

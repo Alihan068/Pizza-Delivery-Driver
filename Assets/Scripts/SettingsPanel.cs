@@ -26,8 +26,15 @@ public class SettingsPanel : MonoBehaviour {
     [SerializeField] Vector2 panelAnchorMax = new Vector2(0.82f, 0.96f);
     [SerializeField] TextMeshProUGUI titleText;
     [SerializeField] RectTransform displayOptionsBox;
-    [SerializeField] Vector2 developerToolsAnchorMin = new Vector2(0.28f, 0.02f);
-    [SerializeField] Vector2 developerToolsAnchorMax = new Vector2(0.72f, 0.15f);
+    [Tooltip("Garage row used by the temporary Developer Tools toggle. The Garage navigation row is hidden in this context.")]
+    [SerializeField] Vector2 developerToolsAnchorMin = new Vector2(0.08f, 0.27f);
+    [SerializeField] Vector2 developerToolsAnchorMax = new Vector2(0.92f, 0.34f);
+    [Tooltip("Pause row used by the temporary Developer Tools toggle. The copy-to-slot row is hidden in this context.")]
+    [SerializeField] Vector2 developerToolsPauseAnchorMin = new Vector2(0.08f, 0.36f);
+    [SerializeField] Vector2 developerToolsPauseAnchorMax = new Vector2(0.92f, 0.43f);
+    [Tooltip("Main Menu row used by the temporary Developer Tools toggle. Context navigation rows are hidden there.")]
+    [SerializeField] Vector2 developerToolsMainMenuAnchorMin = new Vector2(0.08f, 0.36f);
+    [SerializeField] Vector2 developerToolsMainMenuAnchorMax = new Vector2(0.92f, 0.43f);
 
     [Header("Music")]
     [SerializeField] Slider musicSlider;
@@ -325,8 +332,9 @@ public class SettingsPanel : MonoBehaviour {
         developerToolsRuntimeRoot.transform.SetAsLastSibling();
 
         RectTransform rootRect = developerToolsRuntimeRoot.GetComponent<RectTransform>();
-        rootRect.anchorMin = developerToolsAnchorMin;
-        rootRect.anchorMax = developerToolsAnchorMax;
+        GetDeveloperToolsAnchors(out Vector2 anchorMin, out Vector2 anchorMax);
+        rootRect.anchorMin = anchorMin;
+        rootRect.anchorMax = anchorMax;
         rootRect.pivot = new Vector2(0.5f, 0f);
         rootRect.offsetMin = Vector2.zero;
         rootRect.offsetMax = Vector2.zero;
@@ -397,6 +405,20 @@ public class SettingsPanel : MonoBehaviour {
         unlockMapsButton.onClick.AddListener(OnDeveloperUnlockMapsClicked);
 
         developerToolsDropdown.SetActive(false);
+    }
+
+    void GetDeveloperToolsAnchors(out Vector2 anchorMin, out Vector2 anchorMax) {
+        anchorMin = developerToolsAnchorMin;
+        anchorMax = developerToolsAnchorMax;
+
+        if (context == SettingsContext.Pause) {
+            anchorMin = developerToolsPauseAnchorMin;
+            anchorMax = developerToolsPauseAnchorMax;
+        }
+        else if (context == SettingsContext.MainMenu) {
+            anchorMin = developerToolsMainMenuAnchorMin;
+            anchorMax = developerToolsMainMenuAnchorMax;
+        }
     }
 
     Button CreateDeveloperButton(Transform parent, string objectName) {
