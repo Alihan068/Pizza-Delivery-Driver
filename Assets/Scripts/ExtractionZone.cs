@@ -22,7 +22,9 @@ public class ExtractionZone : MonoBehaviour {
     private void Update() {
         if (!playerInRange) return;
 
-        bool isHeld = Keyboard.current != null && Keyboard.current[interactKey].isPressed;
+        bool keyboardHeld = Keyboard.current != null && Keyboard.current[interactKey].isPressed;
+        bool gamepadHeld = Gamepad.current != null && Gamepad.current.buttonNorth.isPressed;
+        bool isHeld = keyboardHeld || gamepadHeld;
 
         if (isHeld) {
             holdTimer += Time.deltaTime;

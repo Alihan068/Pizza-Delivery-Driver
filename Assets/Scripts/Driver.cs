@@ -1,8 +1,17 @@
-﻿using System.Collections;
+using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Owns vehicle health, collision consequences and session death state.
+/// </summary>
+/// <remarks>
+/// Rigidbody2D movement belongs to <see cref="VehicleMovement"/>. Keeping damage and delivery
+/// consequences here preserves the existing gameplay contract while preventing two components from
+/// writing velocity or rotation in the same physics step.
+/// </remarks>
+[RequireComponent(typeof(Rigidbody2D))]
 public class Driver : MonoBehaviour {
 
     [Header("Stats (From GameManager)")]
@@ -12,8 +21,8 @@ public class Driver : MonoBehaviour {
     [SerializeField] float turnSpeed;
     [SerializeField] float armorPercent;
 
-    private float baseMoveSpeed;
-    private float baseTurnSpeed;
+    float baseMoveSpeed;
+    float baseTurnSpeed;
 
     [Header("Damage")]
     [SerializeField] float damageBase = 3f;
@@ -35,32 +44,56 @@ public class Driver : MonoBehaviour {
     SpriteRenderer spriteRenderer;
     CinemachineImpulseSource impulseSource;
 
-    // State
     bool isDisabled;
-    Vector2 movementInput;
 
-    // References
     Rigidbody2D rb;
     Delivery delivery;
     GameUIManager gameUIManager;
     ScoreHandler scoreHandler;
     AudioSource audioSource;
+    VehicleInput vehicleInput;
+    VehicleMovement vehicleMovement;
+    VehicleDriftFeedback driftFeedback;
 
     [Header("Audio & Effects")]
     [SerializeField] AudioClip[] crashSound;
     [SerializeField] GameObject wastedPizza;
 
-    private void Start() {
+    /// <summary>Whether this driver has been permanently disabled by session end.</summary>
+    public bool IsDisabled => isDisabled;
+
+    /// <summary>The resolved base movement speed before a temporary obstacle debuff.</summary>
+    public float BaseMoveSpeed => baseMoveSpeed;
+
+    /// <summary>The resolved base turn rate supplied to the movement motor.</summary>
+    public float BaseTurnSpeed => baseTurnSpeed;
+
+    void Awake() {
+        rb = GetComponent<Rigidbody2D>();
+        vehicleInput = GetComponent<VehicleInput>();
+        if (vehicleInput == null) vehicleInput = gameObject.AddComponent<VehicleInput>();
+
+        vehicleMovement = GetComponent<VehicleMovement>();
+        if (vehicleMovement == null) vehicleMovement = gameObject.AddComponent<VehicleMovement>();
+
+        driftFeedback = GetComponent<VehicleDriftFeedback>();
+        if (driftFeedback == null) driftFeedback = gameObject.AddComponent<VehicleDriftFeedback>();
+    }
+
+    void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        rb = GetComponent<Rigidbody2D>();
         delivery = GetComponent<Delivery>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
         audioSource = GetComponent<AudioSource>();
         impulseSource = GetComponent<CinemachineImpulseSource>();
-        baseColor = spriteRenderer.color;
+        if (spriteRenderer != null) baseColor = spriteRenderer.color;
 
         InitializeStats();
+        VehicleDrivingSettings settings = null;
+        if (GameManager.Instance != null && GameManager.Instance.currentVehicle != null)
+            settings = GameManager.Instance.currentVehicle.drivingSettings;
+        vehicleMovement.Initialize(vehicleInput, rb, baseMoveSpeed, baseTurnSpeed, settings);
         UpdateUIMethod();
     }
 
@@ -72,7 +105,7 @@ public class Driver : MonoBehaviour {
             armorPercent = GameManager.Instance.GetShiftStatValue(VehicleStatId.Armor);
         }
         else {
-            baseMoveSpeed = 10f;
+            baseMoveSpeed = 4f;
             baseTurnSpeed = 150f;
             currentHealth = 100f;
             armorPercent = 0f;
@@ -83,29 +116,8 @@ public class Driver : MonoBehaviour {
         turnSpeed = baseTurnSpeed;
     }
 
-    void FixedUpdate() {
-        if (!gameObject.activeInHierarchy) return;
-
-        if (isDisabled) {
-            rb.linearVelocity = Vector2.zero;
-            return;
-        }
-
-        float steerAmount = movementInput.x;
-        float moveAmount = movementInput.y;
-
-        rb.MoveRotation(rb.rotation - steerAmount * turnSpeed * Time.fixedDeltaTime);
-        rb.linearVelocity = (Vector2)transform.up * (moveAmount * moveSpeed);
-    }
-
-    void OnMove(InputValue value) {
-        movementInput = value.Get<Vector2>();
-    }
-
-    private void OnTriggerEnter2D(Collider2D other) {
-        if (other.CompareTag("Debuff")) {
-            HandleObstacleHit();
-        }
+    void OnTriggerEnter2D(Collider2D other) {
+        if (other.CompareTag("Debuff")) HandleObstacleHit();
     }
 
     void HandleObstacleHit() {
@@ -136,36 +148,50 @@ public class Driver : MonoBehaviour {
     }
 
     IEnumerator SpeedDebuffRoutine() {
-        moveSpeed = baseMoveSpeed * obstacleSlowMult;
+        float safeMultiplier = Mathf.Clamp(obstacleSlowMult, 0f, 1f);
+        moveSpeed = baseMoveSpeed * safeMultiplier;
+        vehicleMovement.SetSpeedMultiplier(safeMultiplier);
         UpdateUIMethod();
         yield return new WaitForSeconds(obstacleSlowDuration);
         moveSpeed = baseMoveSpeed;
+        vehicleMovement.SetSpeedMultiplier(1f);
         UpdateUIMethod();
         slowCoroutine = null;
     }
 
-    private void NormalizeColor() {
-        spriteRenderer.color = baseColor;
+    void NormalizeColor() {
+        if (spriteRenderer != null) spriteRenderer.color = baseColor;
     }
 
-    private void OnCollisionEnter2D(Collision2D other) {
+    void OnCollisionEnter2D(Collision2D other) {
         if (isDisabled) return;
         if (other.gameObject.CompareTag("Border")) return;
         if (Time.time - lastDamageTime < invulnerabilityWindow) return;
         lastDamageTime = Time.time;
         if (scoreHandler != null) scoreHandler.RegisterCollisionDamageEvent();
 
-        ApplyCollisionDamage();
+        Vector2 relativeVelocity = other.relativeVelocity;
+        float impactSpeed = 0f;
+        if (other.contactCount > 0) {
+            for (int i = 0; i < other.contactCount; i++) {
+                ContactPoint2D contact = other.GetContact(i);
+                impactSpeed = Mathf.Max(impactSpeed,
+                    VehicleDrivingMath.CalculateClosingSpeed(relativeVelocity, contact.normal));
+            }
+        }
+        else {
+            impactSpeed = relativeVelocity.magnitude;
+        }
+
+        ApplyCollisionDamage(impactSpeed);
     }
 
-    void ApplyCollisionDamage() {
-        float impactSpeed = rb.linearVelocity.magnitude;
+    void ApplyCollisionDamage(float impactSpeed) {
         float rawDamage = damageBase + damageFactor * Mathf.Pow(impactSpeed, damageExponent);
         float finalDamage = rawDamage * (1f - armorPercent);
-        float severity = Mathf.Clamp01(impactSpeed / baseMoveSpeed);
+        float severity = baseMoveSpeed > 0.01f ? Mathf.Clamp01(impactSpeed / baseMoveSpeed) : 0f;
 
         currentHealth -= finalDamage;
-
         TryPlayAudioClipFromArray(crashSound, Mathf.Lerp(0.5f, 1f, severity));
 
         if (currentHealth <= 0) {
@@ -173,17 +199,10 @@ public class Driver : MonoBehaviour {
             return;
         }
 
-        if (delivery != null) {
-            delivery.AttemptDropPizza(transform.position);
-        }
+        if (delivery != null) delivery.AttemptDropPizza(transform.position);
 
-        if (slowCoroutine != null) {
-            StopCoroutine(slowCoroutine);
-            slowCoroutine = null;
-        }
-        moveSpeed = baseMoveSpeed;
-        turnSpeed = baseTurnSpeed;
-
+        // A normal wall collision must not cancel an active obstacle debuff. The temporary effect
+        // belongs to the obstacle hit and is restored by its own scaled timer.
         PlayCrashFlash();
         if (impulseSource != null) impulseSource.GenerateImpulseWithForce(severity);
         if (gameUIManager != null) gameUIManager.FlashHealthBar();
@@ -191,20 +210,25 @@ public class Driver : MonoBehaviour {
     }
 
     void PlayCrashFlash() {
+        if (spriteRenderer == null) return;
         spriteRenderer.color = crashColor;
+        CancelInvoke(nameof(NormalizeColor));
         Invoke(nameof(NormalizeColor), 0.5f);
     }
 
+    /// <summary>Shows the protection feedback when a damaging event loses no pizza.</summary>
     public void PlayProtectionFlash() {
+        if (spriteRenderer == null) return;
         spriteRenderer.color = protectionColor;
+        CancelInvoke(nameof(NormalizeColor));
         Invoke(nameof(NormalizeColor), 0.3f);
     }
 
     void HandleDeath() {
         currentHealth = 0;
         isDisabled = true;
-        movementInput = Vector2.zero;
-        rb.linearVelocity = Vector2.zero;
+        if (vehicleMovement != null) vehicleMovement.StopMovement();
+        if (driftFeedback != null) driftFeedback.StopFeedback();
 
         if (slowCoroutine != null) {
             StopCoroutine(slowCoroutine);
@@ -224,14 +248,17 @@ public class Driver : MonoBehaviour {
             gameUIManager.UpdateStatPanel(currentHealth, maxHealth, moveSpeed, turnSpeed);
     }
 
+    /// <summary>Plays a randomly selected clip from an authored impact array.</summary>
+    /// <param name="clips">Candidate audio clips.</param>
+    /// <param name="volume">One-shot volume multiplier.</param>
     public void TryPlayAudioClipFromArray(AudioClip[] clips, float volume = 1f) {
-        if (clips != null && clips.Length > 0 && audioSource != null) {
+        if (clips != null && clips.Length > 0 && audioSource != null)
             audioSource.PlayOneShot(clips[Random.Range(0, clips.Length)], volume);
-        }
     }
+
+    /// <summary>Plays one authored audio clip when both the clip and source are available.</summary>
+    /// <param name="clip">Clip to play.</param>
     public void TryPlayAudioClip(AudioClip clip) {
-        if (clip != null && audioSource != null) {
-            audioSource.PlayOneShot(clip);
-        }
+        if (clip != null && audioSource != null) audioSource.PlayOneShot(clip);
     }
 }

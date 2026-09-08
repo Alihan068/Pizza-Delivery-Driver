@@ -65,6 +65,9 @@ GameObject:
   - component: {fileID: 2416485012769039193}
   - component: {fileID: 3638120141536981817}
   - component: {fileID: 6288092899068495671}
+  - component: {fileID: 700000005}
+  - component: {fileID: 700000006}
+  - component: {fileID: 700000011}
   m_Layer: 0
   m_Name: Sport
   m_TagString: Player
@@ -157,7 +160,7 @@ Rigidbody2D:
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
-  m_LinearDamping: 2.5
+  m_LinearDamping: 0.15
   m_AngularDamping: 0.05
   m_GravityScale: 0
   m_Material: {fileID: 0}
@@ -253,6 +256,7 @@ MonoBehaviour:
   maxCarryPizzaAmount: 2
   pizzaObject: {fileID: 5806105840205092847}
   wastedPizzaPrefab: {fileID: 1333578237394975446, guid: b6a2f74dceae41f41beb1aed5acfe032, type: 3}
+  legacyScorePenaltyPerPizzaLost: 50
   pizzaDeliverClip: {fileID: 8300000, guid: 52320e590bf774734a288886eba557ba, type: 3}
   pizzaDelivered: 0
 --- !u!82 &2416485012769039193
@@ -456,6 +460,60 @@ MonoBehaviour:
     DissipationDistance: 100
     PropagationSpeed: 343
   DefaultVelocity: {x: 0, y: -1, z: 0}
+--- !u!114 &700000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125705618513459624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b4d2e1f9a6c4385b0e17d3f2a8c9e61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  deadzone: 0.08
+--- !u!114 &700000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125705618513459624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e6b2c4a1d8f4370b5c7e3a9f2d6b184, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &700000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125705618513459624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a4d8f2b1c7e4390b5d2a6f8c3e1b704, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  driftColor: {r: 1, g: 0.78, b: 0.2, a: 1}
+  minimumFeedbackSpeed: 0.2
+  driftTrails: []
+  driftParticles: {fileID: 0}
+  tireMarkMaterial: {fileID: 2100000, guid: 82bc454c4a3451d41bcffc7cd19a8ec3, type: 2}
+  tireMarkTime: 1.4
+  tireMarkWidth: 0.12
+  tireMarkAlpha: 0.55
+  tireMarkMinVertexDistance: 0.04
+  tireMarkRearOffset: 0.55
+  tireMarkSideOffset: 0.68
+  tireMarkSortingOffset: -1
+  driftAudioSource: {fileID: 0}
+  driftLoopClip: {fileID: 0}
+  minimumDriftAudioVolume: 0.15
+  slipAngleForMaxAudio: 45
+  driftAudioVolume: 0.35
 --- !u!1 &4988506575916496587
 GameObject:
   m_ObjectHideFlags: 0

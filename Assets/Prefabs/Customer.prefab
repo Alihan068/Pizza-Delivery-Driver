@@ -125,7 +125,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: -0.036663413}
+  m_Offset: {x: 0, y: -0.02}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -135,7 +135,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 0.5625, y: 0.9266732}
+  m_Size: {x: 0.75, y: 1.15}
   m_EdgeRadius: 0
 --- !u!114 &548716853142461611
 MonoBehaviour:
@@ -149,6 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10f2d06eaddddc14085b321585f7fa27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  thanksKey: customer.thanks
   pizzaInHand: {fileID: 604698338013662406}
   CustomerBodyVariety:
   - {fileID: 1065336754, guid: 1971420a835aa5b46b074e0f5f4cb333, type: 3}

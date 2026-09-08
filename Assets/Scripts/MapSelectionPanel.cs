@@ -78,11 +78,10 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] TextMeshProUGUI difficultyStatusText;
     [SerializeField] TextMeshProUGUI difficultySummaryText;
     [SerializeField] TextMeshProUGUI difficultyStarsText;
+    [SerializeField] DifficultyStarGraphic difficultyStarsGraphic;
     [SerializeField] Button previousDifficultyButton;
     [SerializeField] Button nextDifficultyButton;
     [Min(1)] [SerializeField] int difficultyStarCount = 6;
-    [SerializeField] string filledStarSymbol = "★";
-    [SerializeField] string emptyStarSymbol = "☆";
     [SerializeField] Color filledStarColor = new Color(1f, 0.78f, 0.08f, 1f);
     [SerializeField] Color emptyStarColor = Color.black;
 
@@ -432,10 +431,8 @@ public class MapSelectionPanel : MonoBehaviour {
         difficultySummaryText = ConfigureRuntimeText(difficultySummaryText, detailBox, mapDescriptionText,
             new Vector2(0.05f, 0.30f), new Vector2(0.95f, 0.40f), "DifficultySummary");
         SetRuntimeTextStyle(difficultySummaryText, difficultySummaryFontSize, FontStyles.Normal);
-        difficultyStarsText = ConfigureRuntimeText(difficultyStarsText, detailBox, mapNameText,
-            new Vector2(0.35f, 0.24f), new Vector2(0.65f, 0.29f), "DifficultyStars");
-        SetRuntimeTextStyle(difficultyStarsText, difficultyStarsFontSize, FontStyles.Normal);
-        difficultyStarsText.richText = true;
+        difficultyStarsGraphic = ConfigureRuntimeStars(difficultyStarsGraphic, difficultyStarsText, detailBox,
+            new Vector2(0.35f, 0.24f), new Vector2(0.65f, 0.29f));
         previousDifficultyButton = ConfigureRuntimeButton(previousDifficultyButton, detailBox, previousMapButton,
             new Vector2(0.06f, 0.22f), new Vector2(0.22f, 0.31f), "<");
         nextDifficultyButton = ConfigureRuntimeButton(nextDifficultyButton, detailBox, nextMapButton,
@@ -460,6 +457,33 @@ public class MapSelectionPanel : MonoBehaviour {
         if (existing == null) existing = CreateRuntimeText(parent, template, anchorMin, anchorMax);
         else SetResponsiveText(existing, anchorMin, anchorMax);
         if (existing != null) existing.gameObject.name = objectName;
+        return existing;
+    }
+
+    DifficultyStarGraphic ConfigureRuntimeStars(DifficultyStarGraphic existing, TextMeshProUGUI legacyText,
+        RectTransform parent, Vector2 anchorMin, Vector2 anchorMax) {
+        if (existing == null && legacyText != null)
+            existing = legacyText.transform.parent != null
+                ? legacyText.transform.parent.GetComponentInChildren<DifficultyStarGraphic>(true)
+                : null;
+
+        if (existing == null && legacyText != null) {
+            legacyText.text = string.Empty;
+            legacyText.enabled = false;
+        }
+
+        if (existing == null) {
+            GameObject starObject = new GameObject("DifficultyStars", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(DifficultyStarGraphic));
+            starObject.transform.SetParent(parent, false);
+            existing = starObject.GetComponent<DifficultyStarGraphic>();
+        }
+
+        SetResponsiveRect(existing.transform as RectTransform, anchorMin, anchorMax);
+        existing.SetStars(difficultyStarCount, Mathf.Clamp(difficultyIndex + 1, 0, difficultyStarCount));
+        existing.SetColors(filledStarColor, emptyStarColor);
+        existing.SetLayout(Mathf.Max(1f, difficultyStarsFontSize), 8f);
+        existing.raycastTarget = false;
         return existing;
     }
 
@@ -723,29 +747,14 @@ public class MapSelectionPanel : MonoBehaviour {
                 difficultySummaryText.text = string.Join("\n", orders, loss, reward, best, target);
             }
         }
-        if (difficultyStarsText != null) difficultyStarsText.text = hasDifficulty ? BuildDifficultyStars() : string.Empty;
+        if (difficultyStarsGraphic != null)
+            difficultyStarsGraphic.SetStars(difficultyStarCount,
+                hasDifficulty ? Mathf.Clamp(difficultyIndex + 1, 0, difficultyStarCount) : 0);
+        else if (difficultyStarsText != null)
+            difficultyStarsText.text = string.Empty;
         bool canCycle = map != null && map.levelData != null && map.levelData.difficultyLevels != null && map.levelData.difficultyLevels.Count > 1;
         if (previousDifficultyButton != null) previousDifficultyButton.interactable = canCycle;
         if (nextDifficultyButton != null) nextDifficultyButton.interactable = canCycle;
-    }
-
-    string BuildDifficultyStars() {
-        int starCount = Mathf.Max(1, difficultyStarCount);
-        int filledCount = Mathf.Clamp(difficultyIndex + 1, 0, starCount);
-        string filledColor = ColorUtility.ToHtmlStringRGB(filledStarColor);
-        string emptyColor = ColorUtility.ToHtmlStringRGB(emptyStarColor);
-        string filledSymbol = string.IsNullOrEmpty(filledStarSymbol) ? "★" : filledStarSymbol;
-        string emptySymbol = string.IsNullOrEmpty(emptyStarSymbol) ? "☆" : emptyStarSymbol;
-        System.Text.StringBuilder stars = new System.Text.StringBuilder(starCount * 18);
-        for (int i = 0; i < starCount; i++) {
-            bool filled = i < filledCount;
-            stars.Append("<color=#");
-            stars.Append(filled ? filledColor : emptyColor);
-            stars.Append(">");
-            stars.Append(filled ? filledSymbol : emptySymbol);
-            stars.Append("</color>");
-        }
-        return stars.ToString();
     }
 
     int FindMapIndex(IReadOnlyList<MapData> maps, MapData selected) {

@@ -18,6 +18,7 @@ public class Delivery : MonoBehaviour {
     LevelData levelData;
     MapDifficultyData difficultyData;
     AudioSource audioSource;
+    PizzaDeliveryEffect deliveryEffect;
     ScoreHandler scoreHandler;
     Driver driver;
 
@@ -36,6 +37,9 @@ public class Delivery : MonoBehaviour {
             difficultyData = GameManager.Instance.CurrentDifficulty;
         driverTarget = GetComponentInChildren<DriverTarget>();
         audioSource = GetComponent<AudioSource>();
+        deliveryEffect = GetComponent<PizzaDeliveryEffect>();
+        if (deliveryEffect == null) deliveryEffect = gameObject.AddComponent<PizzaDeliveryEffect>();
+        if (pizzaObject != null) deliveryEffect.Configure(pizzaObject.GetComponent<SpriteRenderer>());
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
         driver = GetComponent<Driver>();
@@ -55,12 +59,24 @@ public class Delivery : MonoBehaviour {
         UpdateCarryUI();
     }
 
+    /// <summary>
+    /// Adds one pizza to the carried inventory when the driver has room and can pay for it.
+    /// </summary>
+    /// <param name="point">The collect point that supplied the pizza.</param>
+    /// <remarks>
+    /// A zero bank balance is an intentional free-access fallback so a player can always continue
+    /// a shift. A positive balance must cover the full authored pizza cost; partial payment is not
+    /// accepted because that would make the inventory cost ambiguous.
+    /// </remarks>
     public void CollectPizza(PizzaCollectPoint point) {
         if (IsFull) return;
 
         int cost = levelData != null ? levelData.pizzaCost : 0;
-        if (cost > 0 && GameManager.Instance != null)
-            GameManager.Instance.TrySpendMoney(cost);
+        GameManager gameManager = GameManager.Instance;
+        if (cost > 0 && gameManager != null && gameManager.totalMoney > 0) {
+            if (gameManager.totalMoney < cost) return;
+            gameManager.TrySpendMoney(cost);
+        }
 
         carryPizzaAmount += 1;
         UpdateCarryUI();
@@ -138,6 +154,7 @@ public class Delivery : MonoBehaviour {
 
         if (gameUIManager != null) gameUIManager.UpdatePizzaText(pizzaDelivered);
         TryPlayAudioClip(pizzaDeliverClip);
+        if (deliveryEffect != null) deliveryEffect.Play(transform.position, customer.transform.position, accepted);
 
         if (carryPizzaAmount <= 0) {
             carryPizzaAmount = 0;

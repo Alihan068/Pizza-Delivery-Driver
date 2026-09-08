@@ -51,6 +51,9 @@ public static class VehicleValidator {
         }
 
         RequireComponent<Rigidbody2D>(root, issues, "movement physics");
+        RequireComponent<VehicleInput>(root, issues, "cached driving input");
+        RequireComponent<VehicleMovement>(root, issues, "force-based vehicle motor");
+        RequireComponent<VehicleDriftFeedback>(root, issues, "drift feedback");
         RequireComponent<Driver>(root, issues, "driving, damage and death");
         RequireComponent<Delivery>(root, issues, "pizza carrying and delivery");
         RequireComponent<PlayerInput>(root, issues, "keyboard input");
@@ -178,7 +181,24 @@ public static class VehicleValidator {
         }
         if (input.notificationBehavior != PlayerNotifications.SendMessages) {
             issues.Add(VehicleIssue.Error(Quote(root.name) + " PlayerInput Behavior is not SendMessages (found " +
-                input.notificationBehavior + "). Driver.OnMove would never be called and the vehicle would not move.", root));
+                input.notificationBehavior + "). VehicleInput callbacks would not be called and the vehicle would not move.", root));
+        }
+
+        InputActionMap playerMap = input.actions.FindActionMap("Player");
+        if (playerMap == null) {
+            issues.Add(VehicleIssue.Error(Quote(root.name) + " has no Player action map. VehicleInput cannot receive driving commands.", root));
+            return;
+        }
+        RequireAction(playerMap, "Move", root, issues);
+        RequireAction(playerMap, "Throttle", root, issues);
+        RequireAction(playerMap, "Brake", root, issues);
+        RequireAction(playerMap, "Handbrake", root, issues);
+    }
+
+    static void RequireAction(InputActionMap map, string actionName, GameObject root, List<VehicleIssue> issues) {
+        if (map.FindAction(actionName) == null) {
+            issues.Add(VehicleIssue.Error(Quote(root.name) + " Player action map has no " + actionName +
+                " action. The vehicle creator must use a template with the current driving input contract.", root));
         }
     }
 
@@ -287,6 +307,8 @@ public static class VehicleValidator {
         CheckStat(issues, data, "Capacity", data.capacityStep, data.maxCapacityLevel, data.capacityCostMult);
         CheckStat(issues, data, "Protection", data.protectionStep, data.maxProtectionLevel, data.protectionCostMult);
 
+        ValidateDrivingSettings(data, issues);
+
         if (data.baseHealth <= 0f) issues.Add(VehicleIssue.Error(id + " baseHealth is zero or negative. The vehicle would die on the first frame.", data));
         if (data.baseSpeed <= 0f) issues.Add(VehicleIssue.Error(id + " baseSpeed is zero or negative. The vehicle would not move.", data));
         if (data.baseTurn <= 0f) issues.Add(VehicleIssue.Error(id + " baseTurn is zero or negative. The vehicle would not steer.", data));
@@ -324,6 +346,48 @@ public static class VehicleValidator {
         }
         if (costMult <= 0f) {
             issues.Add(VehicleIssue.Warning(id + " has a zero or negative costMult (" + costMult + "). Upgrades would be free.", data));
+        }
+    }
+
+    static void ValidateDrivingSettings(VehicleData data, List<VehicleIssue> issues) {
+        string id = Quote(data.name) + " Driving";
+        VehicleDrivingSettings settings = data.drivingSettings;
+        if (settings == null) {
+            issues.Add(VehicleIssue.Error(id + " settings are missing. A vehicle cannot be created without explicit driving tuning.", data));
+            return;
+        }
+
+        CheckFiniteNonNegative(issues, data, id, "accelerationTime", settings.accelerationTime);
+        CheckFiniteNonNegative(issues, data, id, "linearDamping", settings.linearDamping);
+        CheckFiniteNonNegative(issues, data, id, "brakeTime", settings.brakeTime);
+        CheckFiniteNonNegative(issues, data, id, "coastTime", settings.coastTime);
+        CheckFiniteNonNegative(issues, data, id, "steeringResponseTime", settings.steeringResponseTime);
+        CheckFiniteNonNegative(issues, data, id, "normalGrip", settings.normalGrip);
+        CheckFiniteNonNegative(issues, data, id, "driftGrip", settings.driftGrip);
+        CheckFiniteNonNegative(issues, data, id, "driftEnterDwell", settings.driftEnterDwell);
+        CheckFiniteNonNegative(issues, data, id, "driftExitDwell", settings.driftExitDwell);
+
+        if (settings.linearDamping > 1f) {
+            issues.Add(VehicleIssue.Warning(id + " linearDamping is high for the custom force/grip motor (" +
+                settings.linearDamping.ToString("0.##") + "). It can suppress the authored top speed and should be tuned deliberately.", data));
+        }
+        if (settings.normalGrip < settings.driftGrip) {
+            issues.Add(VehicleIssue.Warning(id + " normalGrip is below driftGrip. Holding the handbrake would increase grip and make drift harder to sustain.", data));
+        }
+        if (settings.driftExitAngle > settings.driftEnterAngle) {
+            issues.Add(VehicleIssue.Warning(id + " driftExitAngle is above driftEnterAngle. The detector has no hysteresis gap and may flicker at the threshold.", data));
+        }
+        if (settings.driftMaximumAngle < settings.driftEnterAngle) {
+            issues.Add(VehicleIssue.Error(id + " driftMaximumAngle is below driftEnterAngle. No valid slip angle can enter drift.", data));
+        }
+    }
+
+    static void CheckFiniteNonNegative(List<VehicleIssue> issues, VehicleData data, string id, string field, float value) {
+        if (float.IsNaN(value) || float.IsInfinity(value)) {
+            issues.Add(VehicleIssue.Error(id + " " + field + " is NaN or infinity.", data));
+        }
+        else if (value < 0f) {
+            issues.Add(VehicleIssue.Error(id + " " + field + " is negative (" + value + ").", data));
         }
     }
 

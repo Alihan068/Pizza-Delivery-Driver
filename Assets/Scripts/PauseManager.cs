@@ -57,7 +57,9 @@ public class PauseManager : MonoBehaviour {
 
     void Update() {
         if (scoreHandler != null && !scoreHandler.IsGameActive) return;
-        if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame) return;
+        bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+        bool gamepadPausePressed = Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame;
+        if (!escapePressed && !gamepadPausePressed) return;
 
         // While the settings screen is open, Escape steps back to the pause menu instead of
         // unpausing, so the player never resumes the game straight out of a submenu.

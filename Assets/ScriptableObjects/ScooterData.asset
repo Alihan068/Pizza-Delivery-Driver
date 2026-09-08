@@ -18,6 +18,7 @@ MonoBehaviour:
   vehiclePrefab: {fileID: 3882002878805238368, guid: e7058982c990a614ba59327358d5bbf8, type: 3}
   vehicleIcon: {fileID: 0}
   price: 0
+  requiredRank: 0
   speedDesc: stat.speed.description
   turnDesc: stat.turn.description
   healthDesc: stat.health.description
@@ -48,3 +49,27 @@ MonoBehaviour:
   protectionStep: 0.06
   maxProtectionLevel: 9
   protectionCostMult: 0.45
+  drivingSettings:
+    linearDamping: 0.15
+    accelerationTime: 1.2
+    brakeTime: 0.65
+    coastTime: 2.5
+    reverseSpeedFraction: 0.35
+    reverseEntrySpeed: 0.15
+    reverseEntryDelay: 0.25
+    steeringGain: 0.55
+    steeringResponseTime: 0.15
+    steeringHighSpeedScale: 0.6
+    normalGrip: 10
+    driftGrip: 2.5
+    gripEnterTime: 0.12
+    gripRecoverTime: 0.35
+    handbrakeDeceleration: 2
+    handlingRecoveryAssist: 0.25
+    driftMinimumSpeedFraction: 0.25
+    driftEnterAngle: 12
+    driftExitAngle: 8
+    driftMaximumAngle: 75
+    driftEnterDwell: 0.15
+    driftExitDwell: 0.25
+    driftRequiresHandbrake: 1

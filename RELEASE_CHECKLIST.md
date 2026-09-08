@@ -1,5 +1,16 @@
 # Pizza Delivery Driver Release Checklist
 
+## Driving-system change gate — planned, not implemented (2026-09-08)
+
+The drift-driving revision requires fresh validation before release. Previous build and test results below describe the pre-change version and cannot close these gates.
+
+- [ ] Revalidate keyboard/gamepad driving, pause/resume, device/focus loss, and UI input isolation.
+- [ ] Validate all registered vehicle prefabs and test new vehicle creation without changing templates or existing vehicle IDs.
+- [ ] Run collision, cargo loss, collection, customer lifecycle, settlement and save compatibility regressions.
+- [ ] Verify steering, braking and controlled drift in all three gameplay maps with initial and upgraded vehicles.
+- [ ] Measure frame-time spikes, steady-state allocations and feedback lifetime across five consecutive shifts.
+- [x] Produce a fresh Windows Development build and record test artifacts and outstanding manual checks; retry the release backend after its toolchain requirements are satisfied. Windows Mono Development job `build-4eac2bcc57` succeeded on 2026-09-08 at `139.77 MB`, with `0` errors and `3` known Unity/URP/third-party warnings.
+
 ## Before a distributable build
 
 - Confirm the six enabled scenes in Build Settings are ordered as `MainMenu`, `GarageScene`, `MapSelectionScene`, `GameScene`, `NarrowDistrict`, `Expressway`.
@@ -21,9 +32,9 @@
 
 Do not remove `com.unity.modules.ai` without also removing or replacing the Wingman editor helper that uses `NavMeshAgent` and `NavMeshObstacle`. Do not remove `com.unity.modules.physics` or `com.unity.modules.terrain` while MCP/URP still declare them as dependencies.
 
-## Current verification
+## Pre-driving-change verification (historical)
 
-- Windows Mono Development build: passed on 2026-09-07 with 0 errors and 3 known Unity/URP/third-party warnings.
-- EditMode suite: passed on 2026-09-07 with 15/15 tests passed.
+- Windows Mono Development build: passed on 2026-09-08 with `139.77 MB`, 0 errors and 3 known Unity/URP/third-party warnings (`build-4eac2bcc57`).
+- EditMode suite: passed on 2026-09-08 with `24/24` tests passed (`3f6e9e0c6a3340ef8793f3f58d470fb2`).
 - Windows IL2CPP release build: blocked by the local toolchain; install Windows SDK 10.0.19041+ and the Visual Studio C++ workload before retrying.
 - Manual gameplay and visual checks remain owner-only and are tracked in `memory-bank/owner_checklist.md`.

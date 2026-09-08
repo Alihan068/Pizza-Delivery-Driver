@@ -135,6 +135,10 @@ public class VehicleData : ScriptableObject {
     /// <summary>Base cost multiplier for protection upgrades.</summary>
     public float protectionCostMult = 0.45f;
 
+    [Header("Driving")]
+    /// <summary>Driving and drift tuning authored for this vehicle.</summary>
+    public VehicleDrivingSettings drivingSettings = new VehicleDrivingSettings();
+
     // The four accessors below exist so that callers never have to know which field belongs to
     // which stat. Before this, the same six-way switch was repeated in GameManager and
     // GarageManager against magic strings, and a mistyped key silently charged the player without

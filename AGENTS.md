@@ -1,5 +1,13 @@
 # Rol, Kod Stili & Proje Durumu — Pizza-Delivery-Driver
 
+## Güncel görev ve belge önceliği — 2026-09-08
+
+**Aktif iş: drift sürüşü + mevcut araç editörünü genişletme planı.** D1–D6 kaynak uygulaması, D7.1 ve D7.2'nin import/sahne/prefab/spawn/collision/obstacle/delivery/customer alt kanıtları tamamlandı; D7.2'nin gerçek cihaz ve tam settlement matrisi, D7.3 beş vardiya örneklemesi ve D7.4 profiler ölçümü açıktır. Claude Code/GPT-5.6 Luna dahil devralan uygulayıcı önce [dokümantasyon dizinini](memory-bank/README.md), [ana planı](memory-bank/drift_driving_plan.md), [handoff'u](memory-bank/drift_handoff.md) ve [doğrulama defterini](memory-bank/drift_verification.md) okur. Plan D1–D7 / 39 alt adımdır; devam noktası **D7.2 kalan matrisi**dir.
+
+Aşağıdaki tarihli tarama/faz/ekonomi/MCP kayıtları geçmiş bağlamdır. Eski “şu an aşama 2”, “prompt yaz”, “iki araç”, “asmdef yok”, “sonraki iş finalize” cümleleri bugünkü iş sırasını belirlemez. Kalıcı commit, İngilizce kod/yorum, serialization ve guidelines kuralları geçerlidir. En yeni kullanıcı kararı ve aktif plan geçmiş tasarım kararlarının önündedir; kaldırılmış boost/turbo veya kapasiteye bağlı sipariş sistemi yeniden eklenmez.
+
+Uygulama yetkisi geldiğinde her alt adım sonunda plan + handoff + progress/activeContext + test kaydı birlikte güncellenir. Owner checklist yalnız kullanıcının doğrulamasıdır; ajan onu kendi testleriyle tamamlayamaz. Çalıştırılmayan doğrulama Not Run/Not Measured olarak kalır. Kaynak uygulaması tamamlanmış maddeler canlı Unity kanıtı yoksa `[~]` kalır; bu, kodun yarım olduğu değil canlı kanıtın açık olduğu anlamına gelir.
+
 Bu dosya kişisel, `.gitignore`'da — asla commit/push edilmez. Farklı bir session'dan bu projeye girersen, aşağıdakiler seninle konuşulmuş gibi geçerli — baştan sorma.
 
 > ## ⚠️ ÖNCE BUNU OKU — `UNITY_AI_GUIDELINES.md`
@@ -86,7 +94,7 @@ Diğer 8 projede tespit edilen kişisel stil (bkz. [Kod İmzası raporu](https:/
 
 ## Güncel sonraki adım
 
-MCP kurulumu ve proje taraması tamamlandı; eski tarama raporu ve “kendi agent'ına prompt teslim et” iş akışı tarihsel kayıttır. Önce `memory-bank/plan_finalize.md` içindeki courier rating migration uygulanacak. Ardından rank gate, region cap ve kira kaynaklı rating cezası kaldırılacak; map ownership kararı uygulanıp D/4.9 map selection akışına dönülecek. `owner_checklist.md` yalnızca sahibinin manuel kontrolleridir; Codex bu maddeleri kendi doğrulaması gibi işaretlemez.
+MCP kurulumu ve proje taraması tamamlandı; eski tarama raporu ve “kendi agent'ına prompt teslim et” iş akışı tarihsel kayıttır. Drift kaynak uygulaması ve kaynak kalite turu tamamlandı. Unity MCP instance bağlandığında `memory-bank/drift_handoff.md` içindeki D7.2 canlı import/Play Mode doğrulamasından devam edilir; ardından D7.3–D7.6 kanıtları kapatılır. `owner_checklist.md` yalnızca sahibinin manuel kontrolleridir; Codex bu maddeleri kendi doğrulaması gibi işaretlemez.
 
 ## Hedef ve tasarım kararları (2026-08-26)
 

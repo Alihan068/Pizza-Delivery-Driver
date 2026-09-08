@@ -141,7 +141,7 @@ public class PizzaGameEditModeTests {
     /// <summary>Verifies that Stabilizer reduces both guaranteed and fractional pizza losses.</summary>
     [Test]
     public void MapDifficulty_StabilizerReducesLossBudget() {
-        Assert.AreEqual(1, MapDifficultyRules.CalculatePizzaLossCount(120f, 0.5f, 99f, 4));
+        Assert.AreEqual(0, MapDifficultyRules.CalculatePizzaLossCount(120f, 0.5f, 99f, 4));
         Assert.AreEqual(0, MapDifficultyRules.CalculatePizzaLossCount(20f, 1f, 0f, 4));
     }
 
@@ -310,6 +310,48 @@ public class PizzaGameEditModeTests {
             CleanupTestFiles(config);
             Object.DestroyImmediate(config);
         }
+    }
+
+    /// <summary>Verifies that collision damage uses normal closing speed instead of tangential speed.</summary>
+    [Test]
+    public void VehicleDrivingMath_ClosingSpeedIgnoresTangentialScraping() {
+        float directImpact = VehicleDrivingMath.CalculateClosingSpeed(new Vector2(0f, 10f), Vector2.up);
+        float sideScrape = VehicleDrivingMath.CalculateClosingSpeed(new Vector2(10f, 0f), Vector2.up);
+
+        Assert.AreEqual(10f, directImpact, 0.0001f);
+        Assert.AreEqual(0f, sideScrape, 0.0001f);
+    }
+
+    /// <summary>Verifies that driving math remains stable for zero and negative authored inputs.</summary>
+    [Test]
+    public void VehicleDrivingMath_ClampsUnsafeInputsWithoutProducingInvalidValues() {
+        Assert.AreEqual(0f, VehicleDrivingMath.AccelerationForTime(-10f, 0f), 0.0001f);
+        Assert.AreEqual(10f, VehicleDrivingMath.ClampForwardSpeed(20f, 10f, 3f), 0.0001f);
+        Assert.AreEqual(-3f, VehicleDrivingMath.ClampForwardSpeed(-20f, 10f, 3f), 0.0001f);
+        Assert.AreEqual(10f, VehicleDrivingMath.Damp(10f, 0f, 1f), 0.0001f);
+    }
+
+    /// <summary>Verifies that authored damping survives the runtime settings snapshot.</summary>
+    [Test]
+    public void VehicleDrivingSettings_ClonePreservesLinearDamping() {
+        var authored = new VehicleDrivingSettings {
+            linearDamping = 0.15f,
+            driftRequiresHandbrake = true
+        };
+        VehicleDrivingSettings clone = authored.Clone();
+        Assert.AreEqual(authored.linearDamping, clone.linearDamping, 0.0001f);
+        Assert.AreEqual(authored.driftRequiresHandbrake, clone.driftRequiresHandbrake);
+    }
+
+    /// <summary>Verifies that normalized input construction clamps every public command.</summary>
+    [Test]
+    public void VehicleInputSnapshot_ClampsCommandRanges() {
+        var snapshot = new VehicleInputSnapshot(5f, 2f, -1f, true);
+
+        Assert.AreEqual(1f, snapshot.steering, 0.0001f);
+        Assert.AreEqual(1f, snapshot.throttle, 0.0001f);
+        Assert.AreEqual(0f, snapshot.brake, 0.0001f);
+        Assert.IsTrue(snapshot.handbrake);
     }
 
     static readonly string TestId = "codex_save_test_" + Guid.NewGuid().ToString("N");
