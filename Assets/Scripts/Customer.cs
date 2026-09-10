@@ -24,6 +24,10 @@ public class Customer : MonoBehaviour {
     [SerializeField] Color32 cannotFulfillColor = new Color32(220, 90, 90, 255);
 
     public CustomerOrder currentOrder { get; private set; }
+
+    /// <summary>Transform used as the arrival point for the delivered pizza visual.</summary>
+    public Transform PizzaDeliveryTarget => pizzaInHand != null ? pizzaInHand.transform : transform;
+
     LevelData levelData;
     MapDifficultyData difficultyData;
 
@@ -156,8 +160,6 @@ public class Customer : MonoBehaviour {
         currentOrder.RegisterDelivery(accepted);
         if (customerManager != null) customerManager.RegisterDelivery(accepted);
 
-        if (pizzaInHand != null) pizzaInHand.SetActive(true);
-
         if (scoreHandler != null) {
             int pizzaBaseReward = levelData != null ? Mathf.Max(0, levelData.pizzaBaseReward) : 0;
             int baseReward = difficultyData != null
@@ -175,6 +177,13 @@ public class Customer : MonoBehaviour {
         }
 
         return accepted;
+    }
+
+    /// <summary>
+    /// Shows the delivered pizza after the delivery presentation reaches this customer.
+    /// </summary>
+    public void ShowDeliveredPizza() {
+        if (pizzaInHand != null) pizzaInHand.SetActive(true);
     }
 
     void ExtendWaitForPartialDelivery() {

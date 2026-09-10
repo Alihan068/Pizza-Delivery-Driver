@@ -2,6 +2,7 @@
   "dependencies": {
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
     "com.unity.2d.psdimporter": "9.1.1",
+    "com.unity.2d.tilemap.extras": "4.1.0",
     "com.unity.cinemachine": "3.1.5",
     "com.unity.collab-proxy": "2.10.2",
     "com.unity.feature.2d": "2.0.1",

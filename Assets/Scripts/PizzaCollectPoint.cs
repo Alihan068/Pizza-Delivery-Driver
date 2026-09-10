@@ -1,7 +1,22 @@
 using UnityEngine;
 
+/// <summary>
+/// Provides an invisible trigger that supplies pizzas to a nearby delivery vehicle.
+/// </summary>
+/// <remarks>
+/// The point owns only the interaction cadence and audio feedback. Inventory, payment and
+/// navigation remain the responsibility of <see cref="Delivery"/>, so the same prefab can be
+/// placed at a shop, roadside depot or any future map-authored pickup location.
+/// </remarks>
 [RequireComponent(typeof(AudioSource))]
 public class PizzaCollectPoint : MonoBehaviour {
+    /// <summary>
+    /// Authored service role used by editor map builders. Custom points keep their
+    /// manually authored placement and are not moved by built-in service placement.
+    /// </summary>
+    [Header("Map Authoring")]
+    public PizzaCollectionPointRole role = PizzaCollectionPointRole.Custom;
+
     [Header("Collect")]
     [SerializeField] float collectInterval = 0.3f;
 
@@ -42,7 +57,9 @@ public class PizzaCollectPoint : MonoBehaviour {
         if (timer < collectInterval) return;
         timer -= collectInterval;
 
-        delivery.CollectPizza(this);
+        if (!delivery.CollectPizza(this)) return;
+
+        delivery.PlayPizzaCollectionEffect(transform.position);
         TryPlayAudioClip(collectClip);
     }
 

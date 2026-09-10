@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1645686c372b45f46816151103b9ed14, type: 3}
+  m_Name: CityDay
+  m_EditorClassIdentifier: 
+  themeId: CityDay
+  displayNameKey: City Day
+  groundTile: {fileID: 11400000, guid: 9e7a16e135c03d5409c2f87dfd02cb07, type: 2}
+  groundAccentTile: {fileID: 11400000, guid: 564916e522ca0a442ae30b1033477b6d, type: 2}
+  groundSoftTile: {fileID: 11400000, guid: e40d3f0f177c58b4f86922066b3120aa, type: 2}
+  groundDarkTile: {fileID: 11400000, guid: 8a23d0815c8328248964a740884a115a, type: 2}
+  roadTile: {fileID: 11400000, guid: a090aee6b1c41964682b671d1e0bca74, type: 2}
+  roadEdgeTile: {fileID: 11400000, guid: c060e26529ebc624ea2201e7f9c49546, type: 2}
+  roadMarkingTile: {fileID: 11400000, guid: 07d1e86fafa887e40a7d654c7e17ceb4, type: 2}
+  roadDoubleMarkingTile: {fileID: 11400000, guid: 022b46051df66ff4e8f375c02afe87ab, type: 2}
+  diagonalRoadMarkingTile: {fileID: 11400000, guid: a4ee5c6ef2f001b42920e6760cbc1ce4, type: 2}
+  terrainTile: {fileID: 11400000, guid: 96c0407779726e54495ea56973ff17e4, type: 2}
+  secondaryTerrainTile: {fileID: 11400000, guid: 460237ccb47f8214899cf6e1d3be14b2, type: 2}
+  globalLightColor: {r: 1, g: 1, b: 1, a: 1}
+  globalLightIntensity: 1

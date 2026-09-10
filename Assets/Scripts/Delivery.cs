@@ -60,27 +60,43 @@ public class Delivery : MonoBehaviour {
     }
 
     /// <summary>
-    /// Adds one pizza to the carried inventory when the driver has room and can pay for it.
+    /// Attempts to add one pizza to the carried inventory when the driver has room.
     /// </summary>
     /// <param name="point">The collect point that supplied the pizza.</param>
     /// <remarks>
-    /// A zero bank balance is an intentional free-access fallback so a player can always continue
-    /// a shift. A positive balance must cover the full authored pizza cost; partial payment is not
-    /// accepted because that would make the inventory cost ambiguous.
+    /// When the bank can cover the authored pizza cost, that cost is removed. A zero or insufficient
+    /// bank balance grants the pizza for free so the shift cannot become stuck at a pickup point.
     /// </remarks>
-    public void CollectPizza(PizzaCollectPoint point) {
-        if (IsFull) return;
+    /// <returns><see langword="true"/> when one pizza was added; otherwise <see langword="false"/>.</returns>
+    public bool CollectPizza(PizzaCollectPoint point) {
+        if (IsFull) return false;
 
         int cost = levelData != null ? levelData.pizzaCost : 0;
         GameManager gameManager = GameManager.Instance;
-        if (cost > 0 && gameManager != null && gameManager.totalMoney > 0) {
-            if (gameManager.totalMoney < cost) return;
+        if (cost > 0 && gameManager != null && gameManager.totalMoney >= cost) {
             gameManager.TrySpendMoney(cost);
         }
 
         carryPizzaAmount += 1;
         UpdateCarryUI();
         havePizzaStatus(true);
+        return true;
+    }
+
+    /// <summary>
+    /// Shows one pizza travelling from a collection point into this vehicle.
+    /// </summary>
+    /// <param name="sourcePosition">World position where the collection point supplied the pizza.</param>
+    /// <remarks>
+    /// The carried-pizza transform is used as a moving target so the visual remains attached to
+    /// the vehicle while it drives away. Inventory state is already updated by <see cref="CollectPizza"/>
+    /// before this method is called.
+    /// </remarks>
+    public void PlayPizzaCollectionEffect(Vector3 sourcePosition) {
+        if (deliveryEffect == null) return;
+
+        Transform target = pizzaObject != null ? pizzaObject.transform : transform;
+        deliveryEffect.Play(sourcePosition, target, 1, null);
     }
 
     /// <summary>
@@ -139,9 +155,11 @@ public class Delivery : MonoBehaviour {
     // tick here just hands over whatever's left to give.
     private void OnTriggerStay2D(Collider2D collision) {
         if (carryPizzaAmount <= 0) return;
-        if (!collision.gameObject.CompareTag("Customer")) return;
 
-        Customer customer = collision.gameObject.GetComponent<Customer>();
+        CustomerDeliveryZone deliveryZone = collision.GetComponent<CustomerDeliveryZone>();
+        if (deliveryZone == null) return;
+
+        Customer customer = deliveryZone.Owner;
         if (customer == null) return;
 
         int accepted = customer.ReceivePizza(carryPizzaAmount);
@@ -154,7 +172,11 @@ public class Delivery : MonoBehaviour {
 
         if (gameUIManager != null) gameUIManager.UpdatePizzaText(pizzaDelivered);
         TryPlayAudioClip(pizzaDeliverClip);
-        if (deliveryEffect != null) deliveryEffect.Play(transform.position, customer.transform.position, accepted);
+        if (deliveryEffect != null)
+            deliveryEffect.Play(transform.position, customer.PizzaDeliveryTarget.position, accepted,
+                customer.ShowDeliveredPizza);
+        else
+            customer.ShowDeliveredPizza();
 
         if (carryPizzaAmount <= 0) {
             carryPizzaAmount = 0;

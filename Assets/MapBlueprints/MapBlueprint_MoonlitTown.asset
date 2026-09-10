@@ -1,0 +1,428 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04b3245b0c5d0f641aa43dcb8b828380, type: 3}
+  m_Name: MapBlueprint_MoonlitTown
+  m_EditorClassIdentifier: 
+  blueprintId: MoonlitTown
+  sceneName: NarrowDistrict
+  theme: {fileID: 11400000, guid: 3dfdf2e33c0fa074aaaee558af3b979f, type: 2}
+  mapSize: {x: 128, y: 88}
+  cameraReferenceHorizontalWorldSize: 24
+  roadStrokes:
+  - points:
+    - {x: 8, y: 8}
+    - {x: 120, y: 8}
+    - {x: 120, y: 80}
+    - {x: 8, y: 80}
+    - {x: 8, y: 8}
+    width: 2
+  - points:
+    - {x: 64, y: 5}
+    - {x: 64, y: 83}
+    width: 7
+  - points:
+    - {x: 5, y: 44}
+    - {x: 123, y: 44}
+    width: 7
+  - points:
+    - {x: 16, y: 18}
+    - {x: 50, y: 18}
+    - {x: 54, y: 24}
+    - {x: 54, y: 37}
+    - {x: 16, y: 37}
+    - {x: 16, y: 18}
+    width: 2
+  - points:
+    - {x: 76, y: 18}
+    - {x: 112, y: 18}
+    - {x: 112, y: 37}
+    - {x: 76, y: 37}
+    - {x: 76, y: 18}
+    width: 2
+  - points:
+    - {x: 16, y: 52}
+    - {x: 50, y: 52}
+    - {x: 54, y: 58}
+    - {x: 54, y: 72}
+    - {x: 16, y: 72}
+    - {x: 16, y: 52}
+    width: 2
+  - points:
+    - {x: 76, y: 52}
+    - {x: 112, y: 52}
+    - {x: 112, y: 72}
+    - {x: 76, y: 72}
+    - {x: 76, y: 52}
+    width: 2
+  - points:
+    - {x: 54, y: 24}
+    - {x: 64, y: 34}
+    width: 2
+  - points:
+    - {x: 54, y: 58}
+    - {x: 64, y: 50}
+    width: 2
+  - points:
+    - {x: 76, y: 37}
+    - {x: 84, y: 44}
+    width: 2
+  - points:
+    - {x: 54, y: 52}
+    - {x: 64, y: 44}
+    width: 2
+  - points:
+    - {x: 16, y: 18}
+    - {x: 10, y: 12}
+    width: 2
+  - points:
+    - {x: 112, y: 72}
+    - {x: 118, y: 78}
+    width: 2
+  terrainZones:
+  - area:
+      x: 17
+      y: 20
+      width: 35
+      height: 16
+    style: 3
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 77
+      y: 20
+      width: 34
+      height: 16
+    style: 3
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 17
+      y: 54
+      width: 35
+      height: 16
+    style: 3
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 77
+      y: 54
+      width: 34
+      height: 16
+    style: 3
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 28
+      y: 23
+      width: 22
+      height: 11
+    style: 2
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 1
+  - area:
+      x: 78
+      y: 23
+      width: 28
+      height: 11
+    style: 2
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 1
+  - area:
+      x: 28
+      y: 57
+      width: 22
+      height: 11
+    style: 2
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 1
+  - area:
+      x: 78
+      y: 57
+      width: 28
+      height: 11
+    style: 2
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 1
+  - area:
+      x: 10
+      y: 11
+      width: 11
+      height: 22
+    style: 4
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 107
+      y: 11
+      width: 11
+      height: 22
+    style: 4
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 10
+      y: 55
+      width: 11
+      height: 21
+    style: 4
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 107
+      y: 55
+      width: 11
+      height: 21
+    style: 4
+    softenEdge: 1
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 42
+      y: 10
+      width: 16
+      height: 7
+    style: 6
+    softenEdge: 0
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 70
+      y: 71
+      width: 18
+      height: 7
+    style: 6
+    softenEdge: 0
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  decorations:
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 21, y: 23}
+    rotationDegrees: 0
+    scaleMultiplier: 1
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 34, y: 23}
+    rotationDegrees: 0
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 21, y: 31}
+    rotationDegrees: 180
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 34, y: 31}
+    rotationDegrees: 180
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 80, y: 23}
+    rotationDegrees: 0
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 94, y: 23}
+    rotationDegrees: 0
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 80, y: 31}
+    rotationDegrees: 180
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 94, y: 31}
+    rotationDegrees: 180
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 21, y: 57}
+    rotationDegrees: 0
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 34, y: 57}
+    rotationDegrees: 0
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 21, y: 65}
+    rotationDegrees: 180
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 34, y: 65}
+    rotationDegrees: 180
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 80, y: 57}
+    rotationDegrees: 0
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 94, y: 57}
+    rotationDegrees: 0
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 80, y: 65}
+    rotationDegrees: 180
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 94, y: 65}
+    rotationDegrees: 180
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 8457208689133102301, guid: dbaa7058c9a31be4f8b5c4d550a1fb94, type: 3}
+    cell: {x: 45, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 8457208689133102301, guid: dbaa7058c9a31be4f8b5c4d550a1fb94, type: 3}
+    cell: {x: 107, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 8457208689133102301, guid: dbaa7058c9a31be4f8b5c4d550a1fb94, type: 3}
+    cell: {x: 45, y: 61}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 8457208689133102301, guid: dbaa7058c9a31be4f8b5c4d550a1fb94, type: 3}
+    cell: {x: 107, y: 61}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 1262508321263672229, guid: aa9f92ea4b96ccf4b8525deab2d93a9f, type: 3}
+    cell: {x: 45, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.35
+  - prefab: {fileID: 1262508321263672229, guid: aa9f92ea4b96ccf4b8525deab2d93a9f, type: 3}
+    cell: {x: 107, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.35
+  - prefab: {fileID: 1262508321263672229, guid: aa9f92ea4b96ccf4b8525deab2d93a9f, type: 3}
+    cell: {x: 45, y: 61}
+    rotationDegrees: 0
+    scaleMultiplier: 0.35
+  - prefab: {fileID: 1262508321263672229, guid: aa9f92ea4b96ccf4b8525deab2d93a9f, type: 3}
+    cell: {x: 107, y: 61}
+    rotationDegrees: 0
+    scaleMultiplier: 0.35
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 12, y: 20}
+    rotationDegrees: 0
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 11, y: 39}
+    rotationDegrees: 0
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 11, y: 77}
+    rotationDegrees: 0
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 116, y: 14}
+    rotationDegrees: 0
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 116, y: 39}
+    rotationDegrees: 0
+    scaleMultiplier: 0.95
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 116, y: 68}
+    rotationDegrees: 0
+    scaleMultiplier: 0.85
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 28, y: 15}
+    rotationDegrees: 0
+    scaleMultiplier: 0.75
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 43, y: 15}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 82, y: 15}
+    rotationDegrees: 0
+    scaleMultiplier: 0.75
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 100, y: 15}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 7556141073449700301, guid: 63ac825e862aee145be0421d5cdaa766, type: 3}
+    cell: {x: 13, y: 39}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 7556141073449700301, guid: 63ac825e862aee145be0421d5cdaa766, type: 3}
+    cell: {x: 116, y: 34}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 3624539105863369506, guid: 6f84f16d26a42a54a8e1469ef1e4cae5, type: 3}
+    cell: {x: 29, y: 39}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 3624539105863369506, guid: 6f84f16d26a42a54a8e1469ef1e4cae5, type: 3}
+    cell: {x: 92, y: 39}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 3624539105863369506, guid: 6f84f16d26a42a54a8e1469ef1e4cae5, type: 3}
+    cell: {x: 29, y: 68}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 3624539105863369506, guid: 6f84f16d26a42a54a8e1469ef1e4cae5, type: 3}
+    cell: {x: 92, y: 68}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 5440769399858656047, guid: 37acd9d86bb40ee4a91ceae823656b22, type: 3}
+    cell: {x: 40, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 5440769399858656047, guid: 37acd9d86bb40ee4a91ceae823656b22, type: 3}
+    cell: {x: 102, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 5440769399858656047, guid: 37acd9d86bb40ee4a91ceae823656b22, type: 3}
+    cell: {x: 40, y: 61}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 5440769399858656047, guid: 37acd9d86bb40ee4a91ceae823656b22, type: 3}
+    cell: {x: 102, y: 61}
+    rotationDegrees: 0
+    scaleMultiplier: 0.7
+  - prefab: {fileID: 6783131689336005955, guid: 9327f6daa907a284cb228a06092d1d77, type: 3}
+    cell: {x: 107, y: 14}
+    rotationDegrees: 0
+    scaleMultiplier: 0.5
+  - prefab: {fileID: 6783131689336005955, guid: 9327f6daa907a284cb228a06092d1d77, type: 3}
+    cell: {x: 115, y: 34}
+    rotationDegrees: 0
+    scaleMultiplier: 0.5
+  - prefab: {fileID: 6783131689336005955, guid: 9327f6daa907a284cb228a06092d1d77, type: 3}
+    cell: {x: 107, y: 49}
+    rotationDegrees: 0
+    scaleMultiplier: 0.5
+  - prefab: {fileID: 6783131689336005955, guid: 9327f6daa907a284cb228a06092d1d77, type: 3}
+    cell: {x: 116, y: 70}
+    rotationDegrees: 0
+    scaleMultiplier: 0.5
+  customerPositions:
+  - {x: 20, y: 27}
+  - {x: 34, y: 27}
+  - {x: 45, y: 33}
+  - {x: 80, y: 27}
+  - {x: 94, y: 27}
+  - {x: 107, y: 33}
+  - {x: 20, y: 61}
+  - {x: 34, y: 61}
+  - {x: 45, y: 67}
+  - {x: 80, y: 61}
+  - {x: 94, y: 61}
+  - {x: 107, y: 67}
+  shopPosition: {x: 22, y: 27}
+  shopRotationDegrees: 0
+  roadsidePosition: {x: 116, y: 76}
+  roadsideRotationDegrees: 90
+  spawnPosition: {x: 8, y: 44}
+  extractionPosition: {x: 120, y: 44}

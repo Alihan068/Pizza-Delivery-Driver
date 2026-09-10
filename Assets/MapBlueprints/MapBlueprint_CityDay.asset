@@ -1,0 +1,177 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04b3245b0c5d0f641aa43dcb8b828380, type: 3}
+  m_Name: MapBlueprint_CityDay
+  m_EditorClassIdentifier: 
+  blueprintId: CityDay
+  sceneName: GameScene
+  theme: {fileID: 11400000, guid: 45090b9e47787604889e1756edb0505a, type: 2}
+  mapSize: {x: 60, y: 40}
+  cameraReferenceHorizontalWorldSize: 24
+  roadStrokes:
+  - points:
+    - {x: 3, y: 20}
+    - {x: 56, y: 20}
+    width: 2
+  - points:
+    - {x: 30, y: 2}
+    - {x: 30, y: 38}
+    width: 2
+  - points:
+    - {x: 10, y: 8}
+    - {x: 10, y: 32}
+    width: 2
+  - points:
+    - {x: 50, y: 8}
+    - {x: 50, y: 32}
+    width: 2
+  - points:
+    - {x: 10, y: 31}
+    - {x: 50, y: 31}
+    width: 2
+  - points:
+    - {x: 10, y: 9}
+    - {x: 50, y: 9}
+    width: 2
+  - points:
+    - {x: 20, y: 9}
+    - {x: 20, y: 20}
+    - {x: 30, y: 20}
+    width: 2
+  - points:
+    - {x: 40, y: 20}
+    - {x: 40, y: 31}
+    width: 2
+  terrainZones:
+  - area:
+      x: 0
+      y: 0
+      width: 8
+      height: 7
+    style: 1
+    softenEdge: 0
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 52
+      y: 0
+      width: 8
+      height: 7
+    style: 1
+    softenEdge: 0
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 0
+      y: 33
+      width: 8
+      height: 7
+    style: 1
+    softenEdge: 0
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  - area:
+      x: 52
+      y: 33
+      width: 8
+      height: 7
+    style: 1
+    softenEdge: 0
+    useTerrainTile: 0
+    useGroundAccentTile: 0
+  decorations:
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 4, y: 4}
+    rotationDegrees: 0
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 14, y: 4}
+    rotationDegrees: 90
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 24, y: 4}
+    rotationDegrees: 0
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 36, y: 4}
+    rotationDegrees: 90
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 46, y: 4}
+    rotationDegrees: 0
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 55, y: 4}
+    rotationDegrees: 90
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 4, y: 35}
+    rotationDegrees: 180
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 5359725364710884729, guid: a967aec8036d5364b9923952aea7e857, type: 3}
+    cell: {x: 16, y: 35}
+    rotationDegrees: 270
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 8702209132186305185, guid: fd8bae21e7c5f694e9e4c8ef41cfccae, type: 3}
+    cell: {x: 36, y: 35}
+    rotationDegrees: 180
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 7270952117376147759, guid: bb1e7dc02c8f8d940a38f883aedc6d96, type: 3}
+    cell: {x: 48, y: 35}
+    rotationDegrees: 270
+    scaleMultiplier: 0.9
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 2, y: 12}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 6, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 7923999277698606239, guid: ac86264133616b84f959a4c339a60925, type: 3}
+    cell: {x: 54, y: 13}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 4965531067354775781, guid: f582c86c05820c649a5fdc188040e578, type: 3}
+    cell: {x: 57, y: 27}
+    rotationDegrees: 0
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 1262508321263672229, guid: aa9f92ea4b96ccf4b8525deab2d93a9f, type: 3}
+    cell: {x: 15, y: 17}
+    rotationDegrees: 0
+    scaleMultiplier: 0.75
+  - prefab: {fileID: 5440769399858656047, guid: 37acd9d86bb40ee4a91ceae823656b22, type: 3}
+    cell: {x: 24, y: 23}
+    rotationDegrees: 90
+    scaleMultiplier: 0.8
+  - prefab: {fileID: 6783131689336005955, guid: 9327f6daa907a284cb228a06092d1d77, type: 3}
+    cell: {x: 45, y: 17}
+    rotationDegrees: 270
+    scaleMultiplier: 0.8
+  customerPositions:
+  - {x: 10, y: 9}
+  - {x: 20, y: 9}
+  - {x: 30, y: 9}
+  - {x: 40, y: 9}
+  - {x: 50, y: 9}
+  - {x: 10, y: 20}
+  - {x: 30, y: 20}
+  - {x: 50, y: 20}
+  - {x: 10, y: 31}
+  - {x: 30, y: 31}
+  - {x: 50, y: 31}
+  shopPosition: {x: 5, y: 7}
+  shopRotationDegrees: 0
+  roadsidePosition: {x: 52, y: 9}
+  roadsideRotationDegrees: 0
+  spawnPosition: {x: 3, y: 20}
+  extractionPosition: {x: 56, y: 31}
