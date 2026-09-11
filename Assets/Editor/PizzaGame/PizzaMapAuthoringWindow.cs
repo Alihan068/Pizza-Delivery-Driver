@@ -20,11 +20,9 @@ public class PizzaMapAuthoringWindow : EditorWindow {
     const string TileRoot = KitRoot + "/Tiles";
     const string ThemeRoot = KitRoot + "/Themes";
     const string BlueprintRoot = "Assets/MapBlueprints";
-    const string PalettePath = KitRoot + "/PizzaMapTilePalette.prefab";
     const string ProtectedPrimarySceneName = "GameScene";
 
     bool rebuildScenes = true;
-    bool createPalette = true;
     bool rebuildPrimaryScene;
 
     /// <summary>Opens the map authoring window from the PizzaGame menu.</summary>
@@ -36,16 +34,15 @@ public class PizzaMapAuthoringWindow : EditorWindow {
     /// <summary>Runs the complete tile kit and built-in map generation workflow.</summary>
     [MenuItem("PizzaGame/Map Authoring/Generate Tile Kit and Built-in Maps")]
     public static void GenerateBuiltInMaps() {
-        Generate(true, true, false);
+        Generate(true, false);
     }
 
     void OnGUI() {
         EditorGUILayout.LabelField("Pizza Map Authoring", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Creates compatible tile groups, a road RuleTile, a reusable Tile Palette, editable blueprints, and built-in map scenes.",
+            "Creates compatible tile groups, editable blueprints, and built-in secondary map scenes.",
             MessageType.Info);
         rebuildScenes = EditorGUILayout.ToggleLeft("Rebuild built-in scenes", rebuildScenes);
-        createPalette = EditorGUILayout.ToggleLeft("Rebuild Tile Palette prefab", createPalette);
         rebuildPrimaryScene = EditorGUILayout.ToggleLeft(
             "Rebuild primary GameScene (destructive)", rebuildPrimaryScene);
         EditorGUILayout.HelpBox(
@@ -53,7 +50,7 @@ public class PizzaMapAuthoringWindow : EditorWindow {
             MessageType.Warning);
 
         if (GUILayout.Button("Create Tile Kit")) {
-            Generate(rebuildScenes, createPalette, rebuildPrimaryScene);
+            Generate(rebuildScenes, rebuildPrimaryScene);
         }
 
         if (GUILayout.Button("Rebuild Scenes From Existing Blueprints")) {
@@ -61,7 +58,7 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         }
     }
 
-    static void Generate(bool shouldRebuildScenes, bool shouldCreatePalette, bool includePrimaryScene) {
+    static void Generate(bool shouldRebuildScenes, bool includePrimaryScene) {
         try {
             EnsureFolders();
             EnsureDetailTextures();
@@ -73,10 +70,6 @@ public class PizzaMapAuthoringWindow : EditorWindow {
             PizzaMapTheme nightTheme;
             PizzaMapTheme villageTheme;
             Dictionary<string, TileBase> tiles = CreateTiles(out cityTheme, out nightTheme, out villageTheme);
-
-            if (shouldCreatePalette) {
-                CreateTilePalette(tiles);
-            }
 
             List<PizzaMapBlueprint> blueprints = CreateBuiltInBlueprints(nightTheme, villageTheme);
 
@@ -398,12 +391,6 @@ public class PizzaMapAuthoringWindow : EditorWindow {
 
         for (int i = 0; i < prefixes.Length; i++) {
             string prefix = prefixes[i];
-            Sprite single = LoadSprite(prefix + "_Road_Single_Rich");
-            Sprite straight = LoadSprite(prefix + "_Road_Straight_Rich");
-            Sprite corner = LoadSprite(prefix + "_Road_Corner_Rich");
-            Sprite tee = LoadSprite(prefix + "_Road_Tee_Rich");
-            Sprite cross = LoadSprite(prefix + "_Road_Cross_Rich");
-            Sprite end = LoadSprite(prefix + "_Road_End_Rich");
 
             tiles[prefix + "_Ground"] = CreateBasicTile(prefix + "_Ground", LoadSprite(prefix + "_Ground_Rich"));
             tiles[prefix + "_GroundAccent"] = CreateBasicTile(
@@ -422,19 +409,20 @@ public class PizzaMapAuthoringWindow : EditorWindow {
                 prefix + "_RoadDoubleMarking", LoadSprite(prefix + "_RoadMark_Double"));
             tiles[prefix + "_DiagonalRoadMarking"] = CreateBasicTile(
                 prefix + "_DiagonalRoadMarking", LoadSprite(prefix + "_RoadMark_Diagonal"));
-            tiles[prefix + "_Road"] = CreateRoadRuleTile(prefix + "_Road", single, straight, corner, tee, cross, end);
+            tiles[prefix + "_Road"] = CreateBasicTile(
+                prefix + "_Road", LoadSprite(prefix + "_Road_Straight_Rich"));
         }
 
         cityTheme = CreateTheme(
             "CityDay", "City Day", tiles["City_Ground"], tiles["City_GroundAccent"],
-            tiles["City_GroundSoft"], tiles["City_GroundDark"], tiles["City_Road"] as PizzaRoadRuleTile,
+            tiles["City_GroundSoft"], tiles["City_GroundDark"], tiles["City_Road"],
             tiles["City_RoadEdge"], tiles["City_RoadMarking"], tiles["City_RoadDoubleMarking"],
             tiles["City_DiagonalRoadMarking"],
             tiles["City_Water"], tiles["City_Dirt"], Color.white, 1f);
 
         nightTheme = CreateTheme(
             "MoonlitTown", "Moonlit Town", tiles["Night_Ground"], tiles["Night_GroundAccent"],
-            tiles["Night_GroundSoft"], tiles["Night_GroundDark"], tiles["Night_Road"] as PizzaRoadRuleTile,
+            tiles["Night_GroundSoft"], tiles["Night_GroundDark"], tiles["Night_Road"],
             tiles["Night_RoadEdge"], tiles["Night_RoadMarking"], tiles["Night_RoadDoubleMarking"],
             tiles["Night_DiagonalRoadMarking"],
             tiles["Night_Water"], tiles["Night_Dirt"], new Color(0.45f, 0.58f, 0.9f, 1f), 0.85f);
@@ -442,7 +430,7 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         villageTheme = CreateTheme(
             "MeadowVillage", "Meadow Village", tiles["Village_Ground"], tiles["Village_GroundAccent"],
             tiles["Village_GroundSoft"], tiles["Village_GroundDark"],
-            tiles["Village_Road"] as PizzaRoadRuleTile, tiles["Village_RoadEdge"],
+            tiles["Village_Road"], tiles["Village_RoadEdge"],
             tiles["Village_RoadMarking"], tiles["Village_RoadDoubleMarking"],
             tiles["Village_DiagonalRoadMarking"],
             tiles["Village_Water"], tiles["Village_Dirt"], new Color(1f, 0.94f, 0.78f, 1f), 1.05f);
@@ -474,62 +462,9 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         return tile;
     }
 
-    static PizzaRoadRuleTile CreateRoadRuleTile(
-        string name, Sprite single, Sprite straight, Sprite corner, Sprite tee, Sprite cross, Sprite end) {
-
-        string path = TileRoot + "/" + name + ".asset";
-        PizzaRoadRuleTile road = AssetDatabase.LoadAssetAtPath<PizzaRoadRuleTile>(path);
-        if (road == null) {
-            road = ScriptableObject.CreateInstance<PizzaRoadRuleTile>();
-            AssetDatabase.CreateAsset(road, path);
-        }
-
-        road.m_DefaultSprite = single;
-        road.m_DefaultColliderType = Tile.ColliderType.None;
-        road.m_TilingRules.Clear();
-
-        List<Vector3Int> positions = new List<Vector3Int> {
-            new Vector3Int(0, 1, 0),
-            new Vector3Int(1, 0, 0),
-            new Vector3Int(0, -1, 0),
-            new Vector3Int(-1, 0, 0)
-        };
-
-        AddRoadRule(road, 0, cross, new[] { 1, 1, 1, 1 },
-            UnityEngine.RuleTile.TilingRuleOutput.Transform.Fixed, positions);
-        AddRoadRule(road, 1, tee, new[] { 1, 1, 2, 1 },
-            UnityEngine.RuleTile.TilingRuleOutput.Transform.Rotated, positions);
-        AddRoadRule(road, 2, straight, new[] { 1, 2, 1, 2 },
-            UnityEngine.RuleTile.TilingRuleOutput.Transform.Rotated, positions);
-        AddRoadRule(road, 3, corner, new[] { 1, 1, 2, 2 },
-            UnityEngine.RuleTile.TilingRuleOutput.Transform.Rotated, positions);
-        AddRoadRule(road, 4, end, new[] { 1, 2, 2, 2 },
-            UnityEngine.RuleTile.TilingRuleOutput.Transform.Rotated, positions);
-        AddRoadRule(road, 5, single, new[] { 2, 2, 2, 2 },
-            UnityEngine.RuleTile.TilingRuleOutput.Transform.Fixed, positions);
-
-        road.UpdateNeighborPositions();
-        EditorUtility.SetDirty(road);
-        return road;
-    }
-
-    static void AddRoadRule(
-        PizzaRoadRuleTile road, int id, Sprite sprite, int[] neighbors,
-        UnityEngine.RuleTile.TilingRuleOutput.Transform transform, List<Vector3Int> positions) {
-
-        UnityEngine.RuleTile.TilingRule rule = new UnityEngine.RuleTile.TilingRule();
-        rule.m_Id = id;
-        rule.m_Sprites = new[] { sprite };
-        rule.m_NeighborPositions = new List<Vector3Int>(positions);
-        rule.m_Neighbors = new List<int>(neighbors);
-        rule.m_RuleTransform = transform;
-        rule.m_ColliderType = Tile.ColliderType.None;
-        road.m_TilingRules.Add(rule);
-    }
-
     static PizzaMapTheme CreateTheme(
         string id, string label, TileBase ground, TileBase groundAccent, TileBase groundSoft,
-        TileBase groundDark, PizzaRoadRuleTile road, TileBase roadEdge, TileBase roadMarking,
+        TileBase groundDark, TileBase road, TileBase roadEdge, TileBase roadMarking,
         TileBase roadDoubleMarking, TileBase diagonalRoadMarking, TileBase terrain, TileBase secondary,
         Color lightColor, float lightIntensity) {
 
@@ -559,74 +494,6 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         return theme;
     }
 
-    static void CreateTilePalette(Dictionary<string, TileBase> tiles) {
-        if (AssetDatabase.LoadAssetAtPath<GameObject>(PalettePath) != null) {
-            AssetDatabase.DeleteAsset(PalettePath);
-        }
-
-        GameObject palette = new GameObject("PizzaMapTilePalette");
-        Grid grid = palette.AddComponent<Grid>();
-        grid.cellSize = Vector3.one;
-
-        Tilemap ground = CreatePaletteLayer(palette.transform, "01 Ground Materials");
-        Tilemap roads = CreatePaletteLayer(palette.transform, "02 Road Rule Materials");
-        Tilemap details = CreatePaletteLayer(palette.transform, "03 Road Details");
-        Tilemap terrain = CreatePaletteLayer(palette.transform, "04 Terrain Materials");
-
-        ground.SetTile(new Vector3Int(0, 0, 0), tiles["City_Ground"]);
-        ground.SetTile(new Vector3Int(1, 0, 0), tiles["City_GroundAccent"]);
-        ground.SetTile(new Vector3Int(2, 0, 0), tiles["City_GroundSoft"]);
-        ground.SetTile(new Vector3Int(3, 0, 0), tiles["City_GroundDark"]);
-        ground.SetTile(new Vector3Int(4, 0, 0), tiles["Night_Ground"]);
-        ground.SetTile(new Vector3Int(5, 0, 0), tiles["Night_GroundAccent"]);
-        ground.SetTile(new Vector3Int(6, 0, 0), tiles["Night_GroundSoft"]);
-        ground.SetTile(new Vector3Int(7, 0, 0), tiles["Night_GroundDark"]);
-        ground.SetTile(new Vector3Int(8, 0, 0), tiles["Village_Ground"]);
-        ground.SetTile(new Vector3Int(9, 0, 0), tiles["Village_GroundAccent"]);
-        ground.SetTile(new Vector3Int(10, 0, 0), tiles["Village_GroundSoft"]);
-        ground.SetTile(new Vector3Int(11, 0, 0), tiles["Village_GroundDark"]);
-
-        roads.SetTile(new Vector3Int(0, 0, 0), tiles["City_Road"]);
-        roads.SetTile(new Vector3Int(2, 0, 0), tiles["City_Road"]);
-        roads.SetTile(new Vector3Int(4, 0, 0), tiles["City_Road"]);
-        roads.SetTile(new Vector3Int(0, 2, 0), tiles["Night_Road"]);
-        roads.SetTile(new Vector3Int(2, 2, 0), tiles["Night_Road"]);
-        roads.SetTile(new Vector3Int(4, 2, 0), tiles["Night_Road"]);
-        roads.SetTile(new Vector3Int(0, 4, 0), tiles["Village_Road"]);
-        roads.SetTile(new Vector3Int(2, 4, 0), tiles["Village_Road"]);
-        roads.SetTile(new Vector3Int(4, 4, 0), tiles["Village_Road"]);
-
-        details.SetTile(new Vector3Int(0, 0, 0), tiles["City_RoadEdge"]);
-        details.SetTile(new Vector3Int(2, 0, 0), tiles["City_RoadMarking"]);
-        details.SetTile(new Vector3Int(4, 0, 0), tiles["City_RoadDoubleMarking"]);
-        details.SetTile(new Vector3Int(6, 0, 0), tiles["City_DiagonalRoadMarking"]);
-        details.SetTile(new Vector3Int(0, 2, 0), tiles["Night_RoadEdge"]);
-        details.SetTile(new Vector3Int(2, 2, 0), tiles["Night_RoadMarking"]);
-        details.SetTile(new Vector3Int(4, 2, 0), tiles["Night_RoadDoubleMarking"]);
-        details.SetTile(new Vector3Int(6, 2, 0), tiles["Night_DiagonalRoadMarking"]);
-        details.SetTile(new Vector3Int(0, 4, 0), tiles["Village_RoadEdge"]);
-        details.SetTile(new Vector3Int(2, 4, 0), tiles["Village_RoadMarking"]);
-        details.SetTile(new Vector3Int(4, 4, 0), tiles["Village_RoadDoubleMarking"]);
-        details.SetTile(new Vector3Int(6, 4, 0), tiles["Village_DiagonalRoadMarking"]);
-
-        terrain.SetTile(new Vector3Int(0, 0, 0), tiles["City_Water"]);
-        terrain.SetTile(new Vector3Int(2, 0, 0), tiles["City_Dirt"]);
-        terrain.SetTile(new Vector3Int(4, 0, 0), tiles["Night_Water"]);
-        terrain.SetTile(new Vector3Int(6, 0, 0), tiles["Night_Dirt"]);
-        terrain.SetTile(new Vector3Int(8, 0, 0), tiles["Village_Water"]);
-        terrain.SetTile(new Vector3Int(10, 0, 0), tiles["Village_Dirt"]);
-
-        PrefabUtility.SaveAsPrefabAsset(palette, PalettePath);
-        DestroyImmediate(palette);
-    }
-
-    static Tilemap CreatePaletteLayer(Transform parent, string name) {
-        GameObject layer = new GameObject(name, typeof(Tilemap), typeof(TilemapRenderer));
-        layer.transform.SetParent(parent, false);
-        layer.GetComponent<TilemapRenderer>().sortingOrder = 0;
-        return layer.GetComponent<Tilemap>();
-    }
-
     static List<PizzaMapBlueprint> CreateBuiltInBlueprints(
         PizzaMapTheme nightTheme, PizzaMapTheme villageTheme) {
 
@@ -642,12 +509,34 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         GameObject bench = PizzaMapDecorationFactory.Load("MapBench");
         GameObject lamp = PizzaMapDecorationFactory.Load("MapLamp");
         GameObject park = PizzaMapDecorationFactory.Load("MapPark");
+        GameObject cityTree1 = PizzaMapDecorationFactory.Load("MapKenneyCityTreeA");
+        GameObject cityTree2 = PizzaMapDecorationFactory.Load("MapKenneyCityTreeB");
+        GameObject cityTree3 = PizzaMapDecorationFactory.Load("MapKenneyCityTreeC");
+        GameObject cityLamp = PizzaMapDecorationFactory.Load("MapKenneyCityLamp");
+        GameObject cityCar1 = PizzaMapDecorationFactory.Load("MapKenneyCityCarA");
+        GameObject cityCar2 = PizzaMapDecorationFactory.Load("MapKenneyCityCarB");
+        GameObject urbanTree1 = PizzaMapDecorationFactory.Load("MapKenneyUrbanTreeA");
+        GameObject urbanTree2 = PizzaMapDecorationFactory.Load("MapKenneyUrbanTreeB");
+        GameObject urbanTree3 = PizzaMapDecorationFactory.Load("MapKenneyUrbanTreeC");
+        GameObject urbanLamp = PizzaMapDecorationFactory.Load("MapKenneyUrbanLamp");
+        GameObject urbanCar1 = PizzaMapDecorationFactory.Load("MapKenneyUrbanCarA");
+        GameObject urbanCar2 = PizzaMapDecorationFactory.Load("MapKenneyUrbanCarB");
+        GameObject apartmentBlock = PizzaMapDecorationFactory.Load("MapApartmentBlock");
+        GameObject marketBlock = PizzaMapDecorationFactory.Load("MapMarketBlock");
+        GameObject civicHall = PizzaMapDecorationFactory.Load("MapCivicHall");
+        GameObject workshop = PizzaMapDecorationFactory.Load("MapWorkshop");
+        GameObject cafe = PizzaMapDecorationFactory.Load("MapCafe");
+        GameObject residentialLot = PizzaMapDecorationFactory.Load("MapResidentialLot");
+        GameObject urbanLot = PizzaMapDecorationFactory.Load("MapUrbanLot");
+        GameObject nightPark = PizzaMapDecorationFactory.Load("MapNightPark");
 
         return new List<PizzaMapBlueprint> {
-            CreateNightTownBlueprint(nightTheme, house1, house2, house3, tree1, tree2, tree3, tree4,
-                fountain, bench, lamp, park),
-            CreateVillageBlueprint(villageTheme, house1, house2, house3, tree1, tree2, tree3, tree4,
-                fountain, bench, lamp, park)
+            CreateNightTownBlueprint(nightTheme, house1, house2, house3, urbanTree1, urbanTree2, urbanTree3,
+                tree4, fountain, bench, urbanLamp, park, urbanCar1, urbanCar2, apartmentBlock, marketBlock,
+                civicHall, workshop, cafe, residentialLot, urbanLot, nightPark),
+            CreateVillageBlueprint(villageTheme, house1, house2, house3, cityTree1, cityTree2, cityTree3,
+                tree4, fountain, bench, cityLamp, park, cityCar1, cityCar2, apartmentBlock, marketBlock,
+                civicHall, workshop, cafe, residentialLot)
         };
     }
 
@@ -716,171 +605,536 @@ public class PizzaMapAuthoringWindow : EditorWindow {
     static PizzaMapBlueprint CreateNightTownBlueprint(
         PizzaMapTheme theme, GameObject house1, GameObject house2, GameObject house3,
         GameObject tree1, GameObject tree2, GameObject tree3, GameObject tree4,
-        GameObject fountain, GameObject bench, GameObject lamp, GameObject park) {
+        GameObject fountain, GameObject bench, GameObject lamp, GameObject park,
+        GameObject parkedCar1, GameObject parkedCar2,
+        GameObject apartmentBlock, GameObject marketBlock,
+        GameObject civicHall, GameObject workshop, GameObject cafe, GameObject residentialLot,
+        GameObject urbanLot, GameObject nightPark) {
 
-        PizzaMapBlueprint blueprint = CreateBlueprint("MoonlitTown", "NarrowDistrict", theme, new Vector2Int(128, 88));
-        blueprint.cameraReferenceHorizontalWorldSize = 24f;
+        PizzaMapBlueprint blueprint = CreateBlueprint(
+            "MoonlitTown", "NarrowDistrict", theme, new Vector2Int(168, 112));
+        blueprint.cameraReferenceHorizontalWorldSize = 32f;
 
-        AddRoad(blueprint, 2, new Vector2Int(8, 8), new Vector2Int(120, 8), new Vector2Int(120, 80),
-            new Vector2Int(8, 80), new Vector2Int(8, 8));
-        AddRoad(blueprint, 7, new Vector2Int(64, 5), new Vector2Int(64, 83));
-        AddRoad(blueprint, 7, new Vector2Int(5, 44), new Vector2Int(123, 44));
-        AddRoad(blueprint, 2, new Vector2Int(16, 18), new Vector2Int(50, 18), new Vector2Int(54, 24),
-            new Vector2Int(54, 37), new Vector2Int(16, 37), new Vector2Int(16, 18));
-        AddRoad(blueprint, 2, new Vector2Int(76, 18), new Vector2Int(112, 18), new Vector2Int(112, 37),
-            new Vector2Int(76, 37), new Vector2Int(76, 18));
-        AddRoad(blueprint, 2, new Vector2Int(16, 52), new Vector2Int(50, 52), new Vector2Int(54, 58),
-            new Vector2Int(54, 72), new Vector2Int(16, 72), new Vector2Int(16, 52));
-        AddRoad(blueprint, 2, new Vector2Int(76, 52), new Vector2Int(112, 52), new Vector2Int(112, 72),
-            new Vector2Int(76, 72), new Vector2Int(76, 52));
-        AddRoad(blueprint, 2, new Vector2Int(54, 24), new Vector2Int(64, 34));
-        AddRoad(blueprint, 2, new Vector2Int(54, 58), new Vector2Int(64, 50));
-        AddRoad(blueprint, 2, new Vector2Int(76, 37), new Vector2Int(84, 44));
-        AddRoad(blueprint, 2, new Vector2Int(54, 52), new Vector2Int(64, 44));
-        AddRoad(blueprint, 2, new Vector2Int(16, 18), new Vector2Int(10, 12));
-        AddRoad(blueprint, 2, new Vector2Int(112, 72), new Vector2Int(118, 78));
+        AddRoad(blueprint, 7, new Vector2Int(6, 56), new Vector2Int(162, 56));
+        AddRoad(blueprint, 7, new Vector2Int(84, 6), new Vector2Int(84, 106));
+        AddRoad(blueprint, 3, new Vector2Int(14, 14), new Vector2Int(154, 14),
+            new Vector2Int(154, 98), new Vector2Int(14, 98), new Vector2Int(14, 14));
+        AddRoad(blueprint, 3, new Vector2Int(14, 28), new Vector2Int(154, 28));
+        AddRoad(blueprint, 3, new Vector2Int(14, 84), new Vector2Int(154, 84));
+        AddRoad(blueprint, 3, new Vector2Int(36, 14), new Vector2Int(36, 98));
+        AddRoad(blueprint, 3, new Vector2Int(132, 14), new Vector2Int(132, 98));
+        AddRoad(blueprint, 2, new Vector2Int(58, 40), new Vector2Int(110, 40),
+            new Vector2Int(110, 72), new Vector2Int(58, 72), new Vector2Int(58, 40));
+        AddRoad(blueprint, 2, new Vector2Int(18, 36), new Vector2Int(30, 36),
+            new Vector2Int(30, 48), new Vector2Int(18, 48), new Vector2Int(18, 36));
+        AddRoad(blueprint, 2, new Vector2Int(30, 36), new Vector2Int(36, 36));
+        AddRoad(blueprint, 2, new Vector2Int(138, 36), new Vector2Int(150, 36),
+            new Vector2Int(150, 48), new Vector2Int(138, 48), new Vector2Int(138, 36));
+        AddRoad(blueprint, 2, new Vector2Int(138, 36), new Vector2Int(132, 36));
+        AddRoad(blueprint, 2, new Vector2Int(18, 64), new Vector2Int(30, 64),
+            new Vector2Int(30, 76), new Vector2Int(18, 76), new Vector2Int(18, 64));
+        AddRoad(blueprint, 2, new Vector2Int(30, 76), new Vector2Int(36, 76));
+        AddRoad(blueprint, 2, new Vector2Int(138, 64), new Vector2Int(150, 64),
+            new Vector2Int(150, 76), new Vector2Int(138, 76), new Vector2Int(138, 64));
+        AddRoad(blueprint, 2, new Vector2Int(138, 76), new Vector2Int(132, 76));
 
-        AddStyledZone(blueprint, new RectInt(17, 20, 35, 16), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(77, 20, 34, 16), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(17, 54, 35, 16), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(77, 54, 34, 16), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(28, 23, 22, 11), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(78, 23, 28, 11), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(28, 57, 22, 11), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(78, 57, 28, 11), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(10, 11, 11, 22), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(107, 11, 11, 22), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(10, 55, 11, 21), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(107, 55, 11, 21), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(42, 10, 16, 7), PizzaMapBlueprint.TerrainTileStyle.Dirt);
-        AddStyledZone(blueprint, new RectInt(70, 71, 18, 7), PizzaMapBlueprint.TerrainTileStyle.Dirt);
+        AddStyledZone(blueprint, new RectInt(18, 18, 48, 32),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(102, 18, 48, 32),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(18, 62, 48, 30),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(102, 62, 48, 30),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(44, 32, 22, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(102, 32, 22, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(44, 66, 22, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(102, 66, 22, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(18, 18, 10, 30),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(140, 18, 10, 30),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(18, 64, 10, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(140, 64, 10, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(42, 18, 20, 7),
+            PizzaMapBlueprint.TerrainTileStyle.Dirt);
+        AddStyledZone(blueprint, new RectInt(106, 87, 20, 7),
+            PizzaMapBlueprint.TerrainTileStyle.Dirt);
 
-        blueprint.shopPosition = new Vector2Int(22, 27);
+        blueprint.shopPosition = new Vector2Int(48, 20);
         blueprint.shopRotationDegrees = 0f;
-        blueprint.roadsidePosition = new Vector2Int(116, 76);
+        blueprint.roadsidePosition = new Vector2Int(144, 92);
         blueprint.roadsideRotationDegrees = 90f;
-        blueprint.spawnPosition = new Vector2Int(8, 44);
-        blueprint.extractionPosition = new Vector2Int(120, 44);
+        blueprint.spawnPosition = new Vector2Int(6, 56);
+        blueprint.extractionPosition = new Vector2Int(162, 56);
         AddCustomers(blueprint, new[] {
-            new Vector2Int(20, 27), new Vector2Int(34, 27), new Vector2Int(45, 33),
-            new Vector2Int(80, 27), new Vector2Int(94, 27), new Vector2Int(107, 33),
-            new Vector2Int(20, 61), new Vector2Int(34, 61), new Vector2Int(45, 67),
-            new Vector2Int(80, 61), new Vector2Int(94, 61), new Vector2Int(107, 67)
+            new Vector2Int(24, 34), new Vector2Int(48, 34), new Vector2Int(54, 44),
+            new Vector2Int(24, 52), new Vector2Int(48, 52), new Vector2Int(112, 34),
+            new Vector2Int(144, 34), new Vector2Int(120, 44), new Vector2Int(112, 52),
+            new Vector2Int(144, 52), new Vector2Int(24, 62), new Vector2Int(48, 62),
+            new Vector2Int(54, 70), new Vector2Int(24, 80), new Vector2Int(48, 80),
+            new Vector2Int(112, 62), new Vector2Int(144, 62), new Vector2Int(120, 70),
+            new Vector2Int(112, 80), new Vector2Int(144, 80), new Vector2Int(54, 90),
+            new Vector2Int(120, 90), new Vector2Int(70, 22), new Vector2Int(98, 90)
         });
         AddStamps(blueprint, new[] {
-            Stamp(house1, 21, 23, 0f, 1f), Stamp(house2, 34, 23, 0f, 0.9f),
-            Stamp(house3, 21, 31, 180f, 0.85f), Stamp(house1, 34, 31, 180f, 0.9f),
-            Stamp(house2, 80, 23, 0f, 0.9f), Stamp(house3, 94, 23, 0f, 0.85f),
-            Stamp(house1, 80, 31, 180f, 0.95f), Stamp(house2, 94, 31, 180f, 0.9f),
-            Stamp(house3, 21, 57, 0f, 0.85f), Stamp(house1, 34, 57, 0f, 0.95f),
-            Stamp(house2, 21, 65, 180f, 0.9f), Stamp(house3, 34, 65, 180f, 0.85f),
-            Stamp(house1, 80, 57, 0f, 0.95f), Stamp(house2, 94, 57, 0f, 0.9f),
-            Stamp(house3, 80, 65, 180f, 0.85f), Stamp(house1, 94, 65, 180f, 0.95f),
-            Stamp(park, 45, 27, 0f, 0.7f), Stamp(park, 107, 27, 0f, 0.7f),
-            Stamp(park, 45, 61, 0f, 0.7f), Stamp(park, 107, 61, 0f, 0.7f),
-            Stamp(fountain, 45, 27, 0f, 0.35f), Stamp(fountain, 107, 27, 0f, 0.35f),
-            Stamp(fountain, 45, 61, 0f, 0.35f), Stamp(fountain, 107, 61, 0f, 0.35f),
-            Stamp(tree1, 12, 20, 0f, 0.95f), Stamp(tree2, 11, 39, 0f, 0.85f),
-            Stamp(tree1, 11, 77, 0f, 0.95f), Stamp(tree2, 116, 14, 0f, 0.85f),
-            Stamp(tree1, 116, 39, 0f, 0.95f), Stamp(tree2, 116, 68, 0f, 0.85f),
-            Stamp(tree1, 28, 15, 0f, 0.75f), Stamp(tree2, 43, 15, 0f, 0.7f),
-            Stamp(tree1, 82, 15, 0f, 0.75f), Stamp(tree2, 100, 15, 0f, 0.7f),
-            Stamp(tree3, 13, 39, 0f, 0.8f), Stamp(tree3, 116, 34, 0f, 0.8f),
-            Stamp(tree4, 29, 39, 0f, 0.8f), Stamp(tree4, 92, 39, 0f, 0.8f),
-            Stamp(tree4, 29, 68, 0f, 0.8f), Stamp(tree4, 92, 68, 0f, 0.8f),
-            Stamp(bench, 40, 27, 0f, 0.7f), Stamp(bench, 102, 27, 0f, 0.7f),
-            Stamp(bench, 40, 61, 0f, 0.7f), Stamp(bench, 102, 61, 0f, 0.7f),
-            Stamp(lamp, 107, 14, 0f, 0.5f), Stamp(lamp, 115, 34, 0f, 0.5f),
-            Stamp(lamp, 107, 49, 0f, 0.5f), Stamp(lamp, 116, 70, 0f, 0.5f)
+            Stamp(marketBlock, 24, 20, 0f, 0.62f), Stamp(apartmentBlock, 48, 20, 0f, 0.55f),
+            Stamp(house1, 24, 38, 0f, 0.75f), Stamp(house2, 48, 38, 0f, 0.72f),
+            Stamp(house3, 24, 44, 180f, 0.72f), Stamp(house1, 48, 48, 180f, 0.76f),
+            Stamp(marketBlock, 144, 20, 0f, 0.62f), Stamp(apartmentBlock, 112, 20, 0f, 0.55f),
+            Stamp(house2, 112, 38, 0f, 0.72f), Stamp(house3, 144, 38, 0f, 0.7f),
+            Stamp(house1, 112, 48, 180f, 0.76f), Stamp(house2, 144, 44, 180f, 0.72f),
+            Stamp(marketBlock, 24, 90, 180f, 0.62f), Stamp(apartmentBlock, 48, 90, 180f, 0.55f),
+            Stamp(house3, 24, 66, 0f, 0.72f), Stamp(house1, 48, 66, 0f, 0.76f),
+            Stamp(house2, 24, 70, 180f, 0.7f), Stamp(house3, 48, 76, 180f, 0.74f),
+            Stamp(marketBlock, 112, 90, 180f, 0.62f), Stamp(apartmentBlock, 144, 90, 180f, 0.55f),
+            Stamp(house1, 112, 66, 0f, 0.76f), Stamp(house2, 144, 66, 0f, 0.72f),
+            Stamp(house3, 112, 76, 180f, 0.72f), Stamp(house1, 144, 70, 180f, 0.76f),
+            Stamp(nightPark, 52, 46, 0f, 0.48f), Stamp(nightPark, 116, 46, 0f, 0.48f),
+            Stamp(nightPark, 52, 66, 0f, 0.48f), Stamp(nightPark, 116, 66, 0f, 0.48f),
+            Stamp(fountain, 52, 46, 0f, 0.24f), Stamp(fountain, 116, 46, 0f, 0.24f),
+            Stamp(fountain, 52, 66, 0f, 0.24f), Stamp(fountain, 116, 66, 0f, 0.24f),
+            Stamp(tree1, 18, 22, 0f, 0.92f), Stamp(tree2, 18, 52, 0f, 0.92f),
+            Stamp(tree1, 70, 22, 0f, 0.92f), Stamp(tree2, 70, 52, 0f, 0.92f),
+            Stamp(tree1, 98, 22, 0f, 0.92f), Stamp(tree2, 98, 52, 0f, 0.92f),
+            Stamp(tree1, 150, 22, 0f, 0.92f), Stamp(tree2, 150, 52, 0f, 0.92f),
+            Stamp(tree1, 18, 82, 0f, 0.92f), Stamp(tree2, 70, 82, 0f, 0.92f),
+            Stamp(tree1, 98, 82, 0f, 0.92f), Stamp(tree2, 150, 82, 0f, 0.92f),
+            Stamp(tree3, 48, 32, 0f, 1f), Stamp(tree3, 120, 32, 0f, 1f),
+            Stamp(tree3, 48, 80, 0f, 1f), Stamp(tree3, 120, 80, 0f, 1f),
+            Stamp(tree4, 42, 32, 0f, 0.62f), Stamp(tree4, 126, 32, 0f, 0.62f),
+            Stamp(tree4, 42, 80, 0f, 0.62f), Stamp(tree4, 126, 80, 0f, 0.62f),
+            Stamp(bench, 48, 46, 0f, 0.48f), Stamp(bench, 112, 46, 0f, 0.48f),
+            Stamp(bench, 48, 66, 0f, 0.48f), Stamp(bench, 112, 66, 0f, 0.48f),
+            Stamp(lamp, 78, 20, 0f, 1.12f), Stamp(lamp, 90, 20, 0f, 1.12f),
+            Stamp(lamp, 78, 92, 0f, 1.12f), Stamp(lamp, 90, 92, 0f, 1.12f),
+            Stamp(parkedCar1, 20, 22, 90f, 0.95f), Stamp(parkedCar2, 148, 22, 270f, 0.95f),
+            Stamp(parkedCar1, 20, 90, 90f, 0.95f), Stamp(parkedCar2, 148, 90, 270f, 0.95f),
+            Stamp(parkedCar1, 60, 22, 90f, 0.86f), Stamp(parkedCar2, 108, 22, 270f, 0.86f),
+            Stamp(parkedCar1, 60, 90, 90f, 0.86f), Stamp(parkedCar2, 108, 90, 270f, 0.86f),
+            Stamp(tree1, 40, 30, 0f, 0.95f), Stamp(tree2, 60, 30, 0f, 0.95f),
+            Stamp(tree1, 108, 30, 0f, 0.95f), Stamp(tree2, 128, 30, 0f, 0.95f),
+            Stamp(tree1, 40, 82, 0f, 0.95f), Stamp(tree2, 60, 82, 0f, 0.95f),
+            Stamp(tree1, 108, 82, 0f, 0.95f), Stamp(tree2, 128, 82, 0f, 0.95f),
+            Stamp(lamp, 40, 34, 0f, 0.92f), Stamp(lamp, 128, 34, 0f, 0.92f),
+            Stamp(lamp, 40, 78, 0f, 0.92f), Stamp(lamp, 128, 78, 0f, 0.92f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(civicHall, 72, 34, 0f, 0.46f), Stamp(workshop, 70, 22, 0f, 0.62f),
+            Stamp(cafe, 98, 22, 0f, 0.7f), Stamp(workshop, 70, 78, 180f, 0.62f),
+            Stamp(cafe, 98, 78, 180f, 0.7f), Stamp(civicHall, 72, 78, 180f, 0.46f),
+            Stamp(workshop, 24, 52, 90f, 0.58f), Stamp(workshop, 152, 52, 270f, 0.58f),
+            Stamp(cafe, 42, 30, 0f, 0.62f), Stamp(cafe, 142, 30, 0f, 0.62f),
+            Stamp(cafe, 42, 90, 180f, 0.62f), Stamp(cafe, 142, 90, 180f, 0.62f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(house1, 42, 34, 0f, 0.56f), Stamp(house2, 54, 34, 0f, 0.52f),
+            Stamp(house3, 42, 44, 180f, 0.54f), Stamp(house1, 54, 44, 180f, 0.56f),
+            Stamp(house2, 114, 34, 0f, 0.54f), Stamp(house3, 126, 34, 0f, 0.52f),
+            Stamp(house1, 114, 44, 180f, 0.56f), Stamp(house2, 126, 44, 180f, 0.54f),
+            Stamp(house3, 42, 68, 0f, 0.54f), Stamp(house1, 54, 68, 0f, 0.52f),
+            Stamp(house2, 42, 78, 180f, 0.54f), Stamp(house3, 54, 78, 180f, 0.52f),
+            Stamp(house1, 114, 68, 0f, 0.56f), Stamp(house2, 126, 68, 0f, 0.52f),
+            Stamp(house3, 114, 78, 180f, 0.54f), Stamp(house1, 126, 78, 180f, 0.56f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(urbanLot, 24, 20, 0f, 0.98f), Stamp(urbanLot, 48, 20, 0f, 0.98f),
+            Stamp(urbanLot, 144, 20, 0f, 0.98f), Stamp(urbanLot, 112, 20, 0f, 0.98f),
+            Stamp(urbanLot, 24, 90, 180f, 0.98f), Stamp(urbanLot, 48, 90, 180f, 0.98f),
+            Stamp(urbanLot, 112, 90, 180f, 0.98f), Stamp(urbanLot, 144, 90, 180f, 0.98f),
+            Stamp(urbanLot, 42, 34, 0f, 0.68f), Stamp(urbanLot, 54, 34, 0f, 0.68f),
+            Stamp(urbanLot, 42, 44, 180f, 0.68f), Stamp(urbanLot, 54, 44, 180f, 0.68f),
+            Stamp(urbanLot, 114, 34, 0f, 0.68f), Stamp(urbanLot, 126, 34, 0f, 0.68f),
+            Stamp(urbanLot, 114, 44, 180f, 0.68f), Stamp(urbanLot, 126, 44, 180f, 0.68f),
+            Stamp(urbanLot, 42, 68, 0f, 0.68f), Stamp(urbanLot, 54, 68, 0f, 0.68f),
+            Stamp(urbanLot, 42, 78, 180f, 0.68f), Stamp(urbanLot, 54, 78, 180f, 0.68f),
+            Stamp(urbanLot, 114, 68, 0f, 0.68f), Stamp(urbanLot, 126, 68, 0f, 0.68f),
+            Stamp(urbanLot, 114, 78, 180f, 0.68f), Stamp(urbanLot, 126, 78, 180f, 0.68f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(urbanLot, 72, 34, 0f, 0.82f), Stamp(urbanLot, 70, 22, 0f, 0.82f),
+            Stamp(urbanLot, 98, 22, 0f, 0.82f), Stamp(urbanLot, 72, 78, 180f, 0.82f),
+            Stamp(urbanLot, 98, 78, 180f, 0.82f),
+            Stamp(urbanLot, 24, 52, 90f, 0.74f), Stamp(urbanLot, 152, 52, 270f, 0.74f),
+            Stamp(urbanLot, 42, 30, 0f, 0.72f), Stamp(urbanLot, 142, 30, 0f, 0.72f),
+            Stamp(urbanLot, 42, 90, 180f, 0.72f), Stamp(urbanLot, 142, 90, 180f, 0.72f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(civicHall, 72, 48, 0f, 0.36f), Stamp(marketBlock, 96, 48, 0f, 0.55f),
+            Stamp(cafe, 72, 64, 180f, 0.6f), Stamp(workshop, 96, 64, 180f, 0.6f),
+            Stamp(urbanLot, 72, 48, 0f, 0.7f), Stamp(urbanLot, 96, 48, 0f, 0.7f),
+            Stamp(urbanLot, 72, 64, 180f, 0.7f), Stamp(urbanLot, 96, 64, 180f, 0.7f),
+            Stamp(tree1, 64, 48, 0f, 0.8f), Stamp(tree2, 104, 48, 0f, 0.8f),
+            Stamp(tree1, 64, 64, 0f, 0.8f), Stamp(tree2, 104, 64, 0f, 0.8f),
+            Stamp(lamp, 64, 52, 0f, 0.82f), Stamp(lamp, 104, 52, 0f, 0.82f),
+            Stamp(lamp, 64, 60, 0f, 0.82f), Stamp(lamp, 104, 60, 0f, 0.82f)
+        });
+        // Add a readable mixed-use heart just off the central traffic spine. The
+        // square is offset from both main roads so its buildings remain on lots
+        // and the intersection stays clear for driving.
+        AddStamps(blueprint, new[] {
+            Stamp(nightPark, 70, 34, 0f, 0.66f), Stamp(fountain, 70, 34, 0f, 0.3f),
+            Stamp(bench, 64, 34, 0f, 0.55f), Stamp(bench, 76, 34, 180f, 0.55f),
+            Stamp(lamp, 64, 30, 0f, 0.82f), Stamp(lamp, 76, 30, 0f, 0.82f),
+            Stamp(marketBlock, 48, 34, 0f, 0.68f), Stamp(cafe, 48, 44, 180f, 0.66f),
+            Stamp(apartmentBlock, 118, 34, 0f, 0.62f), Stamp(workshop, 118, 44, 180f, 0.66f),
+            Stamp(urbanLot, 48, 34, 0f, 0.78f), Stamp(urbanLot, 48, 44, 180f, 0.78f),
+            Stamp(urbanLot, 118, 34, 0f, 0.78f), Stamp(urbanLot, 118, 44, 180f, 0.78f),
+            Stamp(tree3, 40, 34, 0f, 0.88f), Stamp(tree2, 126, 34, 0f, 0.88f),
+            Stamp(tree1, 40, 44, 0f, 0.88f), Stamp(tree3, 126, 44, 0f, 0.88f),
+            Stamp(parkedCar1, 56, 30, 90f, 0.78f), Stamp(parkedCar2, 110, 30, 270f, 0.78f)
+        });
+        // Fill the long residential blocks with varied house sizes and small
+        // yards. These positions sit between the local streets instead of on
+        // the main road cells, which keeps the town dense without blocking play.
+        AddStamps(blueprint, new[] {
+            Stamp(residentialLot, 30, 22, 0f, 0.72f), Stamp(house1, 30, 22, 0f, 0.68f),
+            Stamp(residentialLot, 42, 22, 0f, 0.7f), Stamp(house2, 42, 22, 0f, 0.66f),
+            Stamp(residentialLot, 70, 22, 0f, 0.72f), Stamp(house3, 70, 22, 0f, 0.68f),
+            Stamp(residentialLot, 76, 48, 180f, 0.7f), Stamp(house1, 76, 48, 180f, 0.66f),
+            Stamp(residentialLot, 100, 22, 0f, 0.72f), Stamp(house2, 100, 22, 0f, 0.68f),
+            Stamp(residentialLot, 138, 22, 0f, 0.7f), Stamp(house3, 138, 22, 0f, 0.66f),
+            Stamp(residentialLot, 100, 48, 180f, 0.72f), Stamp(house1, 100, 48, 180f, 0.68f),
+            Stamp(residentialLot, 138, 48, 180f, 0.7f), Stamp(house2, 138, 48, 180f, 0.66f),
+            Stamp(residentialLot, 30, 70, 0f, 0.72f), Stamp(house3, 30, 70, 0f, 0.68f),
+            Stamp(residentialLot, 42, 70, 0f, 0.7f), Stamp(house1, 42, 70, 0f, 0.66f),
+            Stamp(residentialLot, 76, 70, 0f, 0.72f), Stamp(house2, 76, 70, 0f, 0.68f),
+            Stamp(residentialLot, 76, 98, 180f, 0.7f), Stamp(house3, 76, 98, 180f, 0.66f),
+            Stamp(residentialLot, 100, 70, 0f, 0.72f), Stamp(house1, 100, 70, 0f, 0.68f),
+            Stamp(residentialLot, 138, 70, 0f, 0.7f), Stamp(house2, 138, 70, 0f, 0.66f),
+            Stamp(residentialLot, 100, 98, 180f, 0.72f), Stamp(house3, 100, 98, 180f, 0.68f),
+            Stamp(residentialLot, 138, 98, 180f, 0.7f), Stamp(house1, 138, 98, 180f, 0.66f)
         });
         return blueprint;
     }
-
     static PizzaMapBlueprint CreateVillageBlueprint(
         PizzaMapTheme theme, GameObject house1, GameObject house2, GameObject house3,
         GameObject tree1, GameObject tree2, GameObject tree3, GameObject tree4,
-        GameObject fountain, GameObject bench, GameObject lamp, GameObject park) {
+        GameObject fountain, GameObject bench, GameObject lamp, GameObject park,
+        GameObject parkedCar1, GameObject parkedCar2,
+        GameObject apartmentBlock, GameObject marketBlock,
+        GameObject civicHall, GameObject workshop, GameObject cafe, GameObject residentialLot) {
 
-        PizzaMapBlueprint blueprint = CreateBlueprint("MeadowVillage", "Expressway", theme, new Vector2Int(144, 96));
-        blueprint.cameraReferenceHorizontalWorldSize = 28f;
+        PizzaMapBlueprint blueprint = CreateBlueprint(
+            "MeadowVillage", "Expressway", theme, new Vector2Int(176, 120));
+        blueprint.cameraReferenceHorizontalWorldSize = 34f;
 
-        AddRoad(blueprint, 2, new Vector2Int(10, 12), new Vector2Int(54, 12), new Vector2Int(62, 20));
-        AddRoad(blueprint, 2, new Vector2Int(10, 12), new Vector2Int(10, 42), new Vector2Int(18, 50));
-        AddRoad(blueprint, 2, new Vector2Int(134, 12), new Vector2Int(134, 42), new Vector2Int(126, 50));
-        AddRoad(blueprint, 7, new Vector2Int(72, 5), new Vector2Int(72, 91));
-        AddRoad(blueprint, 7, new Vector2Int(5, 48), new Vector2Int(139, 48));
-        AddRoad(blueprint, 2, new Vector2Int(18, 18), new Vector2Int(48, 18), new Vector2Int(58, 28),
-            new Vector2Int(58, 38), new Vector2Int(42, 42), new Vector2Int(18, 34), new Vector2Int(18, 18));
-        AddRoad(blueprint, 2, new Vector2Int(88, 18), new Vector2Int(118, 18), new Vector2Int(128, 28),
-            new Vector2Int(128, 40), new Vector2Int(104, 40), new Vector2Int(88, 32), new Vector2Int(88, 18));
-        AddRoad(blueprint, 2, new Vector2Int(18, 58), new Vector2Int(44, 58), new Vector2Int(56, 70),
-            new Vector2Int(56, 82), new Vector2Int(18, 82), new Vector2Int(18, 58));
-        AddRoad(blueprint, 2, new Vector2Int(88, 58), new Vector2Int(122, 58), new Vector2Int(122, 70),
-            new Vector2Int(112, 82), new Vector2Int(88, 82), new Vector2Int(88, 58));
-        AddRoad(blueprint, 2, new Vector2Int(58, 38), new Vector2Int(66, 38), new Vector2Int(70, 44));
-        AddRoad(blueprint, 2, new Vector2Int(88, 40), new Vector2Int(80, 40), new Vector2Int(74, 44));
-        AddRoad(blueprint, 2, new Vector2Int(56, 70), new Vector2Int(64, 58));
-        AddRoad(blueprint, 2, new Vector2Int(88, 70), new Vector2Int(80, 58));
-        AddRoad(blueprint, 2, new Vector2Int(18, 34), new Vector2Int(10, 42));
-        AddRoad(blueprint, 2, new Vector2Int(122, 82), new Vector2Int(134, 86));
+        AddRoad(blueprint, 9, new Vector2Int(8, 60), new Vector2Int(168, 60));
+        AddRoad(blueprint, 7, new Vector2Int(88, 6), new Vector2Int(88, 114));
+        AddRoad(blueprint, 3, new Vector2Int(16, 16), new Vector2Int(160, 16),
+            new Vector2Int(160, 104), new Vector2Int(16, 104), new Vector2Int(16, 16));
+        // Four broad ramps tie the perimeter expressway to the neighborhood
+        // loops. They are part of the main route, so their diagonal lane
+        // details remain visible while local two-cell streets stay unmarked.
+        AddRoad(blueprint, 5, new Vector2Int(16, 16), new Vector2Int(26, 26));
+        AddRoad(blueprint, 5, new Vector2Int(160, 16), new Vector2Int(148, 24));
+        AddRoad(blueprint, 5, new Vector2Int(16, 104), new Vector2Int(26, 94));
+        AddRoad(blueprint, 5, new Vector2Int(160, 104), new Vector2Int(154, 94));
+        AddRoad(blueprint, 2, new Vector2Int(26, 26), new Vector2Int(62, 26),
+            new Vector2Int(62, 48), new Vector2Int(46, 48), new Vector2Int(46, 38),
+            new Vector2Int(26, 38), new Vector2Int(26, 26));
+        AddRoad(blueprint, 2, new Vector2Int(108, 24), new Vector2Int(148, 24),
+            new Vector2Int(148, 44), new Vector2Int(126, 44), new Vector2Int(126, 34),
+            new Vector2Int(108, 34), new Vector2Int(108, 24));
+        AddRoad(blueprint, 2, new Vector2Int(26, 74), new Vector2Int(46, 74),
+            new Vector2Int(46, 94), new Vector2Int(70, 94), new Vector2Int(70, 78),
+            new Vector2Int(26, 78), new Vector2Int(26, 74));
+        AddRoad(blueprint, 2, new Vector2Int(106, 76), new Vector2Int(134, 76),
+            new Vector2Int(134, 94), new Vector2Int(154, 94), new Vector2Int(154, 72),
+            new Vector2Int(106, 72), new Vector2Int(106, 76));
+        AddRoad(blueprint, 2, new Vector2Int(26, 26), new Vector2Int(26, 16));
+        AddRoad(blueprint, 2, new Vector2Int(62, 26), new Vector2Int(62, 16));
+        AddRoad(blueprint, 2, new Vector2Int(62, 38), new Vector2Int(88, 38));
+        AddRoad(blueprint, 2, new Vector2Int(108, 24), new Vector2Int(108, 16));
+        AddRoad(blueprint, 2, new Vector2Int(148, 24), new Vector2Int(148, 16));
+        AddRoad(blueprint, 2, new Vector2Int(108, 34), new Vector2Int(88, 34));
+        AddRoad(blueprint, 2, new Vector2Int(26, 78), new Vector2Int(26, 104));
+        AddRoad(blueprint, 2, new Vector2Int(70, 78), new Vector2Int(70, 60));
+        AddRoad(blueprint, 2, new Vector2Int(106, 76), new Vector2Int(106, 60));
+        AddRoad(blueprint, 2, new Vector2Int(154, 72), new Vector2Int(154, 104));
 
-        AddStyledZone(blueprint, new RectInt(20, 20, 36, 20), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(90, 20, 36, 20), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(20, 60, 35, 20), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(90, 60, 30, 20), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(22, 22, 32, 16), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(92, 22, 32, 16), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(22, 60, 32, 19), PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
-        AddStyledZone(blueprint, new RectInt(92, 60, 26, 19), PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
-        AddStyledZone(blueprint, new RectInt(12, 12, 38, 5), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(94, 12, 34, 5), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(12, 84, 42, 5), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(92, 84, 34, 5), PizzaMapBlueprint.TerrainTileStyle.GroundDark);
-        AddStyledZone(blueprint, new RectInt(22, 66, 14, 9), PizzaMapBlueprint.TerrainTileStyle.Water);
-        AddStyledZone(blueprint, new RectInt(38, 64, 14, 12), PizzaMapBlueprint.TerrainTileStyle.Dirt);
-        AddStyledZone(blueprint, new RectInt(96, 66, 18, 10), PizzaMapBlueprint.TerrainTileStyle.Dirt);
+        AddStyledZone(blueprint, new RectInt(20, 20, 48, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(108, 20, 48, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(20, 66, 48, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(108, 66, 48, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundSoft);
+        AddStyledZone(blueprint, new RectInt(34, 31, 30, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(114, 31, 30, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(34, 75, 30, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(114, 75, 30, 14),
+            PizzaMapBlueprint.TerrainTileStyle.GroundAccent);
+        AddStyledZone(blueprint, new RectInt(18, 18, 10, 28),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(148, 18, 10, 28),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(18, 74, 10, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(148, 74, 10, 26),
+            PizzaMapBlueprint.TerrainTileStyle.GroundDark);
+        AddStyledZone(blueprint, new RectInt(34, 18, 24, 7),
+            PizzaMapBlueprint.TerrainTileStyle.Dirt);
+        AddStyledZone(blueprint, new RectInt(120, 95, 24, 7),
+            PizzaMapBlueprint.TerrainTileStyle.Dirt);
+        // Small planted courtyards break up the paved blocks. They sit under
+        // the four neighborhood parks and remain well clear of the main and
+        // local roads, giving the daytime town a deliberate green rhythm.
+        AddStyledZone(blueprint, new RectInt(48, 30, 20, 14),
+            PizzaMapBlueprint.TerrainTileStyle.Terrain);
+        AddStyledZone(blueprint, new RectInt(128, 30, 20, 14),
+            PizzaMapBlueprint.TerrainTileStyle.Terrain);
+        AddStyledZone(blueprint, new RectInt(48, 78, 20, 14),
+            PizzaMapBlueprint.TerrainTileStyle.Terrain);
+        AddStyledZone(blueprint, new RectInt(128, 78, 20, 14),
+            PizzaMapBlueprint.TerrainTileStyle.Terrain);
+        AddStyledZone(blueprint, new RectInt(60, 42, 20, 16),
+            PizzaMapBlueprint.TerrainTileStyle.Terrain);
 
-        blueprint.shopPosition = new Vector2Int(24, 28);
+        blueprint.shopPosition = new Vector2Int(36, 22);
         blueprint.shopRotationDegrees = 0f;
-        blueprint.roadsidePosition = new Vector2Int(130, 80);
+        blueprint.roadsidePosition = new Vector2Int(154, 110);
         blueprint.roadsideRotationDegrees = 90f;
-        blueprint.spawnPosition = new Vector2Int(10, 48);
-        blueprint.extractionPosition = new Vector2Int(134, 48);
+        blueprint.spawnPosition = new Vector2Int(8, 60);
+        blueprint.extractionPosition = new Vector2Int(168, 60);
         AddCustomers(blueprint, new[] {
-            new Vector2Int(28, 24), new Vector2Int(42, 24), new Vector2Int(48, 34),
-            new Vector2Int(96, 24), new Vector2Int(110, 24), new Vector2Int(118, 34),
-            new Vector2Int(42, 62), new Vector2Int(48, 76),
-            new Vector2Int(96, 64), new Vector2Int(108, 64), new Vector2Int(112, 76)
+            new Vector2Int(34, 22), new Vector2Int(52, 22), new Vector2Int(68, 36),
+            new Vector2Int(68, 44), new Vector2Int(34, 52), new Vector2Int(52, 52),
+            new Vector2Int(114, 18), new Vector2Int(134, 18), new Vector2Int(152, 34),
+            new Vector2Int(152, 44), new Vector2Int(114, 52), new Vector2Int(134, 52),
+            new Vector2Int(34, 68), new Vector2Int(52, 68), new Vector2Int(74, 82),
+            new Vector2Int(34, 98), new Vector2Int(52, 98), new Vector2Int(74, 88),
+            new Vector2Int(114, 68), new Vector2Int(132, 68), new Vector2Int(156, 82),
+            new Vector2Int(114, 98), new Vector2Int(132, 98), new Vector2Int(156, 88)
         });
         AddStamps(blueprint, new[] {
-            Stamp(house1, 23, 22, 0f, 0.95f), Stamp(house2, 39, 22, 0f, 0.85f),
-            Stamp(house3, 23, 32, 180f, 0.8f), Stamp(house1, 39, 32, 180f, 0.9f),
-            Stamp(house2, 93, 22, 0f, 0.85f), Stamp(house1, 109, 22, 0f, 0.9f),
-            Stamp(house3, 93, 32, 180f, 0.8f), Stamp(house2, 109, 32, 180f, 0.85f),
-            Stamp(house2, 40, 61, 0f, 0.85f), Stamp(house1, 30, 61, 0f, 0.8f),
-            Stamp(house3, 40, 74, 180f, 0.75f), Stamp(house2, 48, 74, 180f, 0.8f),
-            Stamp(house1, 93, 61, 0f, 0.9f), Stamp(house2, 108, 61, 0f, 0.82f),
-            Stamp(house3, 93, 74, 180f, 0.75f), Stamp(house1, 108, 74, 180f, 0.9f),
-            Stamp(park, 50, 29, 0f, 0.72f), Stamp(park, 120, 29, 0f, 0.68f),
-            Stamp(park, 46, 69, 0f, 0.6f), Stamp(park, 116, 70, 0f, 0.65f),
-            Stamp(fountain, 50, 29, 0f, 0.35f), Stamp(fountain, 120, 29, 0f, 0.32f),
-            Stamp(fountain, 116, 70, 0f, 0.3f),
-            Stamp(tree1, 13, 15, 0f, 0.95f), Stamp(tree2, 20, 42, 0f, 0.85f),
-            Stamp(tree1, 13, 82, 0f, 0.95f), Stamp(tree2, 130, 15, 0f, 0.85f),
-            Stamp(tree1, 130, 40, 0f, 0.95f), Stamp(tree2, 130, 76, 0f, 0.85f),
-            Stamp(tree1, 28, 15, 0f, 0.75f), Stamp(tree2, 46, 15, 0f, 0.7f),
-            Stamp(tree1, 96, 15, 0f, 0.75f), Stamp(tree2, 116, 15, 0f, 0.7f),
-            Stamp(tree3, 18, 43, 0f, 0.8f), Stamp(tree3, 125, 43, 0f, 0.8f),
-            Stamp(tree4, 32, 40, 0f, 0.8f), Stamp(tree4, 101, 40, 0f, 0.8f),
-            Stamp(tree4, 32, 78, 0f, 0.8f), Stamp(tree4, 101, 78, 0f, 0.8f),
-            Stamp(bench, 46, 29, 0f, 0.65f), Stamp(bench, 116, 29, 0f, 0.65f),
-            Stamp(bench, 48, 69, 0f, 0.58f), Stamp(bench, 114, 70, 0f, 0.62f),
-            Stamp(lamp, 19, 25, 0f, 0.5f), Stamp(lamp, 124, 34, 0f, 0.5f),
-            Stamp(lamp, 19, 64, 0f, 0.5f), Stamp(lamp, 124, 64, 0f, 0.5f)
+            Stamp(house1, 34, 34, 0f, 0.82f), Stamp(house2, 54, 34, 0f, 0.76f),
+            Stamp(house3, 34, 42, 180f, 0.76f), Stamp(house1, 54, 42, 180f, 0.8f),
+            Stamp(house2, 20, 24, 0f, 0.7f), Stamp(house3, 20, 42, 180f, 0.7f),
+            Stamp(house2, 114, 30, 0f, 0.76f), Stamp(house3, 134, 34, 0f, 0.74f),
+            Stamp(house1, 114, 42, 180f, 0.8f), Stamp(house2, 134, 42, 180f, 0.76f),
+            Stamp(house3, 150, 24, 0f, 0.68f), Stamp(house1, 150, 42, 180f, 0.72f),
+            Stamp(house3, 34, 82, 0f, 0.76f), Stamp(house1, 54, 82, 0f, 0.8f),
+            Stamp(house2, 34, 86, 180f, 0.74f), Stamp(house3, 54, 86, 180f, 0.78f),
+            Stamp(house1, 20, 76, 0f, 0.7f), Stamp(house2, 20, 94, 180f, 0.68f),
+            Stamp(house1, 114, 78, 0f, 0.8f), Stamp(house2, 130, 82, 0f, 0.76f),
+            Stamp(house3, 114, 86, 180f, 0.76f), Stamp(house1, 128, 86, 180f, 0.8f),
+            Stamp(house2, 150, 76, 0f, 0.68f), Stamp(house3, 152, 88, 180f, 0.72f),
+            Stamp(park, 54, 38, 0f, 0.55f), Stamp(park, 138, 38, 0f, 0.55f),
+            Stamp(park, 58, 88, 0f, 0.55f), Stamp(park, 142, 88, 0f, 0.55f),
+            Stamp(fountain, 54, 38, 0f, 0.28f), Stamp(fountain, 138, 38, 0f, 0.28f),
+            Stamp(fountain, 58, 88, 0f, 0.28f), Stamp(fountain, 142, 88, 0f, 0.28f),
+            Stamp(tree1, 20, 20, 0f, 1.05f), Stamp(tree2, 24, 52, 0f, 1.05f),
+            Stamp(tree1, 20, 84, 0f, 1.05f), Stamp(tree2, 152, 20, 0f, 1.05f),
+            Stamp(tree1, 152, 52, 0f, 1.05f), Stamp(tree2, 152, 84, 0f, 1.05f),
+            Stamp(tree3, 76, 22, 0f, 1.1f), Stamp(tree3, 100, 22, 0f, 1.1f),
+            Stamp(tree3, 76, 98, 0f, 1.1f), Stamp(tree3, 100, 98, 0f, 1.1f),
+            Stamp(tree4, 46, 29, 0f, 0.7f), Stamp(tree4, 126, 29, 0f, 0.7f),
+            Stamp(tree4, 58, 70, 0f, 0.7f), Stamp(tree4, 126, 73, 0f, 0.7f),
+            Stamp(bench, 42, 42, 0f, 0.55f), Stamp(bench, 122, 38, 0f, 0.55f),
+            Stamp(bench, 42, 82, 0f, 0.55f), Stamp(bench, 122, 82, 0f, 0.55f),
+            Stamp(lamp, 80, 22, 0f, 1.2f), Stamp(lamp, 96, 22, 0f, 1.2f),
+            Stamp(lamp, 80, 98, 0f, 1.2f), Stamp(lamp, 96, 98, 0f, 1.2f),
+            Stamp(parkedCar1, 24, 22, 90f, 1f), Stamp(parkedCar2, 152, 22, 270f, 1f),
+            Stamp(parkedCar1, 24, 98, 90f, 1f), Stamp(parkedCar2, 152, 98, 270f, 1f),
+            Stamp(marketBlock, 56, 20, 0f, 0.68f), Stamp(apartmentBlock, 116, 20, 0f, 0.58f),
+            Stamp(marketBlock, 56, 100, 180f, 0.68f), Stamp(apartmentBlock, 116, 100, 180f, 0.58f),
+            Stamp(house1, 42, 22, 0f, 0.56f), Stamp(house2, 128, 22, 0f, 0.54f),
+            Stamp(house1, 42, 98, 180f, 0.56f), Stamp(house2, 128, 98, 180f, 0.54f),
+            Stamp(tree1, 24, 30, 0f, 0.8f), Stamp(tree2, 24, 44, 0f, 0.8f),
+            Stamp(tree1, 72, 34, 0f, 0.75f), Stamp(tree2, 72, 42, 0f, 0.75f),
+            Stamp(tree1, 104, 30, 0f, 0.8f), Stamp(tree2, 104, 44, 0f, 0.8f),
+            Stamp(tree1, 152, 34, 0f, 0.75f), Stamp(tree2, 152, 42, 0f, 0.75f),
+            Stamp(tree1, 24, 74, 0f, 0.8f), Stamp(tree2, 24, 88, 0f, 0.8f),
+            Stamp(tree1, 72, 78, 0f, 0.75f), Stamp(tree2, 72, 86, 0f, 0.75f),
+            Stamp(tree1, 104, 74, 0f, 0.8f), Stamp(tree2, 104, 88, 0f, 0.8f),
+            Stamp(tree1, 152, 78, 0f, 0.75f), Stamp(tree2, 152, 86, 0f, 0.75f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(civicHall, 72, 30, 0f, 0.46f), Stamp(workshop, 72, 22, 0f, 0.62f),
+            Stamp(workshop, 72, 90, 180f, 0.62f), Stamp(civicHall, 72, 82, 180f, 0.46f),
+            Stamp(workshop, 24, 52, 90f, 0.56f), Stamp(workshop, 152, 52, 270f, 0.56f),
+            Stamp(cafe, 40, 30, 0f, 0.6f), Stamp(cafe, 136, 30, 0f, 0.6f),
+            Stamp(cafe, 40, 90, 180f, 0.6f), Stamp(cafe, 136, 90, 180f, 0.6f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(house3, 30, 30, 0f, 0.56f), Stamp(house1, 40, 30, 0f, 0.54f),
+            Stamp(house2, 30, 44, 180f, 0.54f), Stamp(house3, 40, 44, 180f, 0.56f),
+            Stamp(house1, 116, 30, 0f, 0.55f), Stamp(house2, 124, 30, 0f, 0.52f),
+            Stamp(house3, 136, 30, 0f, 0.54f), Stamp(house1, 116, 40, 180f, 0.54f),
+            Stamp(house2, 136, 40, 180f, 0.54f),
+            Stamp(house1, 30, 82, 0f, 0.54f), Stamp(house2, 40, 82, 0f, 0.52f),
+            Stamp(house3, 54, 82, 0f, 0.54f), Stamp(house1, 64, 82, 0f, 0.52f),
+            Stamp(house2, 30, 90, 180f, 0.54f), Stamp(house3, 40, 90, 180f, 0.52f),
+            Stamp(house1, 54, 90, 180f, 0.54f), Stamp(house2, 64, 90, 180f, 0.52f),
+            Stamp(house3, 112, 82, 0f, 0.55f), Stamp(house1, 122, 82, 0f, 0.52f),
+            Stamp(house2, 136, 82, 0f, 0.54f), Stamp(house3, 146, 82, 0f, 0.52f),
+            Stamp(house1, 112, 90, 180f, 0.54f), Stamp(house2, 122, 90, 180f, 0.52f),
+            Stamp(house3, 136, 90, 180f, 0.54f), Stamp(house1, 146, 90, 180f, 0.52f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(residentialLot, 34, 34, 0f, 0.76f), Stamp(residentialLot, 54, 34, 0f, 0.76f),
+            Stamp(residentialLot, 34, 42, 180f, 0.76f), Stamp(residentialLot, 54, 42, 180f, 0.76f),
+            Stamp(residentialLot, 114, 30, 0f, 0.76f), Stamp(residentialLot, 134, 34, 0f, 0.76f),
+            Stamp(residentialLot, 114, 42, 180f, 0.76f), Stamp(residentialLot, 134, 42, 180f, 0.76f),
+            Stamp(residentialLot, 34, 82, 0f, 0.76f), Stamp(residentialLot, 54, 82, 0f, 0.76f),
+            Stamp(residentialLot, 34, 86, 180f, 0.76f), Stamp(residentialLot, 54, 86, 180f, 0.76f),
+            Stamp(residentialLot, 114, 78, 0f, 0.76f), Stamp(residentialLot, 130, 82, 0f, 0.76f),
+            Stamp(residentialLot, 114, 86, 180f, 0.76f), Stamp(residentialLot, 128, 86, 180f, 0.76f),
+            Stamp(residentialLot, 40, 30, 0f, 0.68f), Stamp(residentialLot, 40, 44, 180f, 0.68f),
+            Stamp(residentialLot, 124, 30, 0f, 0.68f), Stamp(residentialLot, 136, 40, 180f, 0.68f),
+            Stamp(residentialLot, 40, 82, 0f, 0.68f), Stamp(residentialLot, 64, 82, 0f, 0.68f),
+            Stamp(residentialLot, 40, 90, 180f, 0.68f), Stamp(residentialLot, 64, 90, 180f, 0.68f),
+            Stamp(residentialLot, 122, 82, 0f, 0.68f), Stamp(residentialLot, 146, 82, 0f, 0.68f),
+            Stamp(residentialLot, 122, 90, 180f, 0.68f), Stamp(residentialLot, 146, 90, 180f, 0.68f),
+            Stamp(park, 58, 34, 0f, 0.42f), Stamp(fountain, 58, 34, 0f, 0.2f),
+            Stamp(park, 142, 34, 0f, 0.42f), Stamp(fountain, 142, 34, 0f, 0.2f),
+            Stamp(park, 58, 86, 180f, 0.42f), Stamp(fountain, 58, 86, 180f, 0.2f),
+            Stamp(park, 142, 86, 180f, 0.42f), Stamp(fountain, 142, 86, 180f, 0.2f),
+            Stamp(tree1, 38, 34, 0f, 0.72f), Stamp(tree2, 54, 38, 0f, 0.72f),
+            Stamp(tree1, 118, 38, 0f, 0.72f), Stamp(tree2, 134, 38, 0f, 0.72f),
+            Stamp(tree1, 38, 86, 0f, 0.72f), Stamp(tree2, 54, 86, 0f, 0.72f),
+            Stamp(tree1, 118, 86, 0f, 0.72f), Stamp(tree2, 146, 86, 0f, 0.72f),
+            Stamp(lamp, 42, 34, 0f, 0.8f), Stamp(lamp, 50, 42, 180f, 0.8f),
+            Stamp(lamp, 120, 30, 0f, 0.8f), Stamp(lamp, 130, 42, 180f, 0.8f),
+            Stamp(lamp, 42, 82, 0f, 0.8f), Stamp(lamp, 50, 90, 180f, 0.8f),
+            Stamp(lamp, 122, 82, 0f, 0.8f), Stamp(lamp, 130, 90, 180f, 0.8f)
+        });
+        // A village square sits beside the highway spine instead of in its
+        // junction. It gives the large green quadrants a recognizable civic
+        // destination while preserving a clear route through the map.
+        AddStamps(blueprint, new[] {
+            Stamp(park, 70, 50, 0f, 0.86f), Stamp(fountain, 70, 50, 0f, 0.34f),
+            Stamp(bench, 64, 50, 0f, 0.62f), Stamp(bench, 76, 50, 180f, 0.62f),
+            Stamp(lamp, 64, 46, 0f, 0.9f), Stamp(lamp, 76, 46, 0f, 0.9f),
+            Stamp(civicHall, 52, 50, 0f, 0.54f), Stamp(cafe, 52, 40, 180f, 0.66f),
+            Stamp(workshop, 120, 50, 0f, 0.66f), Stamp(marketBlock, 120, 40, 0f, 0.72f),
+            Stamp(residentialLot, 52, 50, 0f, 0.8f), Stamp(residentialLot, 52, 40, 180f, 0.74f),
+            Stamp(residentialLot, 120, 50, 0f, 0.8f), Stamp(residentialLot, 120, 40, 0f, 0.74f),
+            Stamp(tree3, 42, 50, 0f, 0.9f), Stamp(tree1, 82, 50, 0f, 0.9f),
+            Stamp(tree2, 110, 50, 0f, 0.9f), Stamp(tree3, 132, 50, 0f, 0.9f),
+            Stamp(parkedCar1, 58, 46, 90f, 0.78f), Stamp(parkedCar2, 114, 46, 270f, 0.78f)
+        });
+        // Add a second, irregular row of homes in every quadrant. The spacing
+        // leaves the local loop roads and the main cross completely open.
+        AddStamps(blueprint, new[] {
+            Stamp(residentialLot, 30, 22, 0f, 0.72f), Stamp(house1, 30, 22, 0f, 0.68f),
+            Stamp(residentialLot, 44, 22, 0f, 0.7f), Stamp(house2, 44, 22, 0f, 0.66f),
+            Stamp(residentialLot, 70, 22, 0f, 0.72f), Stamp(house3, 70, 22, 0f, 0.68f),
+            Stamp(residentialLot, 34, 48, 180f, 0.7f), Stamp(house1, 34, 48, 180f, 0.66f),
+            Stamp(residentialLot, 48, 48, 180f, 0.72f), Stamp(house3, 48, 48, 180f, 0.68f),
+            Stamp(residentialLot, 104, 22, 0f, 0.72f), Stamp(house2, 104, 22, 0f, 0.68f),
+            Stamp(residentialLot, 122, 22, 0f, 0.7f), Stamp(house1, 122, 22, 0f, 0.66f),
+            Stamp(residentialLot, 148, 22, 0f, 0.72f), Stamp(house3, 148, 22, 0f, 0.68f),
+            Stamp(residentialLot, 104, 48, 180f, 0.7f), Stamp(house2, 104, 48, 180f, 0.66f),
+            Stamp(residentialLot, 140, 48, 180f, 0.72f), Stamp(house1, 140, 48, 180f, 0.68f),
+            Stamp(residentialLot, 30, 72, 0f, 0.72f), Stamp(house2, 30, 72, 0f, 0.68f),
+            Stamp(residentialLot, 44, 72, 0f, 0.7f), Stamp(house3, 44, 72, 0f, 0.66f),
+            Stamp(residentialLot, 70, 72, 0f, 0.72f), Stamp(house1, 70, 72, 0f, 0.68f),
+            Stamp(residentialLot, 34, 98, 180f, 0.7f), Stamp(house2, 34, 98, 180f, 0.66f),
+            Stamp(residentialLot, 48, 98, 180f, 0.72f), Stamp(house1, 48, 98, 180f, 0.68f),
+            Stamp(residentialLot, 104, 72, 0f, 0.72f), Stamp(house3, 104, 72, 0f, 0.68f),
+            Stamp(residentialLot, 122, 72, 0f, 0.7f), Stamp(house1, 122, 72, 0f, 0.66f),
+            Stamp(residentialLot, 148, 72, 0f, 0.72f), Stamp(house2, 148, 72, 0f, 0.68f),
+            Stamp(residentialLot, 104, 98, 180f, 0.7f), Stamp(house3, 104, 98, 180f, 0.66f),
+            Stamp(residentialLot, 122, 98, 180f, 0.72f), Stamp(house2, 122, 98, 180f, 0.68f),
+            Stamp(residentialLot, 148, 98, 180f, 0.7f), Stamp(house1, 148, 98, 180f, 0.66f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(tree1, 22, 30, 0f, 0.86f), Stamp(tree2, 58, 30, 0f, 0.86f),
+            Stamp(tree3, 22, 48, 0f, 0.86f), Stamp(tree1, 58, 48, 0f, 0.86f),
+            Stamp(tree2, 100, 30, 0f, 0.86f), Stamp(tree3, 156, 30, 0f, 0.86f),
+            Stamp(tree1, 100, 48, 0f, 0.86f), Stamp(tree2, 156, 48, 0f, 0.86f),
+            Stamp(tree3, 22, 78, 0f, 0.86f), Stamp(tree1, 58, 78, 0f, 0.86f),
+            Stamp(tree2, 22, 100, 0f, 0.86f), Stamp(tree3, 58, 100, 0f, 0.86f),
+            Stamp(tree1, 100, 78, 0f, 0.86f), Stamp(tree2, 156, 78, 0f, 0.86f),
+            Stamp(tree3, 100, 100, 0f, 0.86f), Stamp(tree1, 156, 100, 0f, 0.86f),
+            Stamp(lamp, 62, 24, 0f, 0.86f), Stamp(lamp, 114, 24, 0f, 0.86f),
+            Stamp(lamp, 62, 96, 0f, 0.86f), Stamp(lamp, 114, 96, 0f, 0.86f)
+        });
+        // Use the remaining safe strips inside each loop for a continuous town
+        // fabric. Every house is paired with a yard and placed clear of the
+        // local roads, so density increases without creating visual blockers.
+        AddStamps(blueprint, new[] {
+            Stamp(residentialLot, 30, 22, 0f, 0.66f), Stamp(house2, 30, 22, 0f, 0.62f),
+            Stamp(residentialLot, 42, 22, 0f, 0.68f), Stamp(house3, 42, 22, 0f, 0.64f),
+            Stamp(residentialLot, 54, 22, 0f, 0.66f), Stamp(house1, 54, 22, 0f, 0.62f),
+            Stamp(residentialLot, 20, 32, 90f, 0.64f), Stamp(house2, 20, 32, 90f, 0.6f),
+            Stamp(residentialLot, 20, 44, 90f, 0.64f), Stamp(house3, 20, 44, 90f, 0.6f),
+            Stamp(residentialLot, 72, 32, 270f, 0.66f), Stamp(house1, 72, 32, 270f, 0.62f),
+            Stamp(residentialLot, 72, 46, 270f, 0.66f), Stamp(house2, 72, 46, 270f, 0.62f),
+            Stamp(residentialLot, 30, 52, 180f, 0.66f), Stamp(house3, 30, 52, 180f, 0.62f),
+            Stamp(residentialLot, 42, 52, 180f, 0.68f), Stamp(house1, 42, 52, 180f, 0.64f),
+            Stamp(residentialLot, 54, 52, 180f, 0.66f), Stamp(house2, 54, 52, 180f, 0.62f),
+            Stamp(residentialLot, 66, 52, 180f, 0.68f), Stamp(house3, 66, 52, 180f, 0.64f),
+            Stamp(residentialLot, 100, 20, 0f, 0.66f), Stamp(house1, 100, 20, 0f, 0.62f),
+            Stamp(residentialLot, 112, 20, 0f, 0.68f), Stamp(house2, 112, 20, 0f, 0.64f),
+            Stamp(residentialLot, 124, 20, 0f, 0.66f), Stamp(house3, 124, 20, 0f, 0.62f),
+            Stamp(residentialLot, 100, 50, 0f, 0.64f), Stamp(house1, 100, 50, 0f, 0.6f),
+            Stamp(residentialLot, 112, 50, 0f, 0.66f), Stamp(house2, 112, 50, 0f, 0.62f),
+            Stamp(residentialLot, 124, 50, 0f, 0.68f), Stamp(house3, 124, 50, 0f, 0.64f),
+            Stamp(residentialLot, 136, 50, 0f, 0.66f), Stamp(house1, 136, 50, 0f, 0.62f),
+            Stamp(residentialLot, 100, 30, 90f, 0.64f), Stamp(house2, 100, 30, 90f, 0.6f),
+            Stamp(residentialLot, 100, 42, 90f, 0.64f), Stamp(house3, 100, 42, 90f, 0.6f),
+            Stamp(residentialLot, 154, 30, 270f, 0.64f), Stamp(house1, 154, 30, 270f, 0.6f),
+            Stamp(residentialLot, 154, 42, 270f, 0.64f), Stamp(house2, 154, 42, 270f, 0.6f),
+            Stamp(residentialLot, 30, 68, 0f, 0.66f), Stamp(house1, 30, 68, 0f, 0.62f),
+            Stamp(residentialLot, 42, 68, 0f, 0.68f), Stamp(house2, 42, 68, 0f, 0.64f),
+            Stamp(residentialLot, 54, 68, 0f, 0.66f), Stamp(house3, 54, 68, 0f, 0.62f),
+            Stamp(residentialLot, 20, 78, 90f, 0.64f), Stamp(house1, 20, 78, 90f, 0.6f),
+            Stamp(residentialLot, 20, 90, 90f, 0.64f), Stamp(house2, 20, 90, 90f, 0.6f),
+            Stamp(residentialLot, 72, 78, 270f, 0.66f), Stamp(house3, 72, 78, 270f, 0.62f),
+            Stamp(residentialLot, 72, 90, 270f, 0.66f), Stamp(house1, 72, 90, 270f, 0.62f),
+            Stamp(residentialLot, 30, 100, 180f, 0.66f), Stamp(house2, 30, 100, 180f, 0.62f),
+            Stamp(residentialLot, 42, 100, 180f, 0.68f), Stamp(house3, 42, 100, 180f, 0.64f),
+            Stamp(residentialLot, 54, 100, 180f, 0.66f), Stamp(house1, 54, 100, 180f, 0.62f),
+            Stamp(residentialLot, 100, 68, 0f, 0.66f), Stamp(house2, 100, 68, 0f, 0.62f),
+            Stamp(residentialLot, 112, 68, 0f, 0.68f), Stamp(house3, 112, 68, 0f, 0.64f),
+            Stamp(residentialLot, 124, 68, 0f, 0.66f), Stamp(house1, 124, 68, 0f, 0.62f),
+            Stamp(residentialLot, 136, 68, 0f, 0.68f), Stamp(house2, 136, 68, 0f, 0.64f),
+            Stamp(residentialLot, 100, 100, 180f, 0.66f), Stamp(house3, 100, 100, 180f, 0.62f),
+            Stamp(residentialLot, 112, 100, 180f, 0.68f), Stamp(house1, 112, 100, 180f, 0.64f),
+            Stamp(residentialLot, 124, 100, 180f, 0.66f), Stamp(house2, 124, 100, 180f, 0.62f),
+            Stamp(residentialLot, 136, 100, 180f, 0.68f), Stamp(house3, 136, 100, 180f, 0.64f),
+            Stamp(residentialLot, 100, 78, 90f, 0.64f), Stamp(house1, 100, 78, 90f, 0.6f),
+            Stamp(residentialLot, 100, 90, 90f, 0.64f), Stamp(house2, 100, 90, 90f, 0.6f),
+            Stamp(residentialLot, 154, 78, 270f, 0.64f), Stamp(house3, 154, 78, 270f, 0.6f),
+            Stamp(residentialLot, 154, 90, 270f, 0.64f), Stamp(house1, 154, 90, 270f, 0.6f)
+        });
+        // The unbuilt perimeter is treated as a planted town edge rather than
+        // an accidental empty border. These trees frame the settlement and
+        // keep the play area readable at the larger camera scale.
+        AddStamps(blueprint, new[] {
+            Stamp(tree1, 24, 8, 0f, 0.86f), Stamp(tree2, 40, 8, 0f, 0.86f),
+            Stamp(tree3, 56, 8, 0f, 0.86f), Stamp(tree1, 72, 8, 0f, 0.86f),
+            Stamp(tree2, 104, 8, 0f, 0.86f), Stamp(tree3, 120, 8, 0f, 0.86f),
+            Stamp(tree1, 136, 8, 0f, 0.86f), Stamp(tree2, 152, 8, 0f, 0.86f),
+            Stamp(tree3, 24, 112, 0f, 0.86f), Stamp(tree1, 40, 112, 0f, 0.86f),
+            Stamp(tree2, 56, 112, 0f, 0.86f), Stamp(tree3, 72, 112, 0f, 0.86f),
+            Stamp(tree1, 104, 112, 0f, 0.86f), Stamp(tree2, 120, 112, 0f, 0.86f),
+            Stamp(tree3, 136, 112, 0f, 0.86f), Stamp(tree1, 152, 112, 0f, 0.86f),
+            Stamp(tree2, 8, 24, 90f, 0.86f), Stamp(tree3, 8, 40, 90f, 0.86f),
+            Stamp(tree1, 8, 80, 90f, 0.86f), Stamp(tree2, 8, 96, 90f, 0.86f),
+            Stamp(tree3, 168, 24, 270f, 0.86f), Stamp(tree1, 168, 40, 270f, 0.86f),
+            Stamp(tree2, 168, 80, 270f, 0.86f), Stamp(tree3, 168, 96, 270f, 0.86f)
+        });
+        AddStamps(blueprint, new[] {
+            Stamp(apartmentBlock, 80, 22, 0f, 0.66f), Stamp(marketBlock, 96, 98, 180f, 0.76f),
+            Stamp(residentialLot, 80, 22, 0f, 0.8f), Stamp(residentialLot, 96, 98, 180f, 0.84f),
+            Stamp(lamp, 80, 30, 0f, 0.9f), Stamp(lamp, 96, 90, 0f, 0.9f)
         });
         return blueprint;
     }
-
     static void AddRoad(PizzaMapBlueprint blueprint, int width, params Vector2Int[] points) {
         PizzaMapBlueprint.RoadStroke stroke = new PizzaMapBlueprint.RoadStroke();
         stroke.width = width;
@@ -970,6 +1224,11 @@ public class PizzaMapAuthoringWindow : EditorWindow {
     }
 
     static void BuildScene(PizzaMapBlueprint blueprint) {
+        if (blueprint != null && blueprint.preserveAuthoredScene) {
+            Debug.Log("Preserved scene-authored map: " + blueprint.sceneName);
+            return;
+        }
+
         if (blueprint == null || blueprint.theme == null || blueprint.theme.roadTile == null) {
             throw new InvalidOperationException("Blueprint is missing a theme or road tile.");
         }
@@ -1000,7 +1259,15 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         Tilemap diagonalRoads = CreateTilemap(world.transform, "Diagonal Road Details", -26);
         Tilemap roadMarkings = CreateTilemap(world.transform, "Road Markings", -25);
 
-        PaintRectangle(ground, blueprint.mapSize, blueprint.theme.groundTile);
+        sceneRoot.mapGrid = grid;
+        sceneRoot.groundTilemap = ground;
+        sceneRoot.terrainTilemap = terrain;
+        sceneRoot.roadTilemap = roads;
+        sceneRoot.roadEdgeTilemap = roadEdges;
+        sceneRoot.diagonalRoadTilemap = diagonalRoads;
+        sceneRoot.roadMarkingsTilemap = roadMarkings;
+
+        PaintGround(ground, blueprint);
         PaintTerrain(terrain, blueprint);
         Dictionary<Vector3Int, float> diagonalAngles = new Dictionary<Vector3Int, float>();
         HashSet<Vector3Int> roadCells = PaintRoads(roads, blueprint, diagonalAngles);
@@ -1011,7 +1278,7 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         GameObject decorationsObject = new GameObject("Prefab Decorations");
         decorationsObject.transform.SetParent(sceneRoot.transform, false);
         Transform decorations = decorationsObject.transform;
-        PlaceDecorations(decorations, grid, blueprint);
+        PlaceDecorations(decorations, grid, blueprint, roadCells);
         world.transform.SetSiblingIndex(0);
 
         sceneRoot.mapGrid = grid;
@@ -1043,14 +1310,30 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         return tilemapObject.GetComponent<Tilemap>();
     }
 
-    static void PaintRectangle(Tilemap tilemap, Vector2Int size, TileBase tile) {
-        if (tile == null) {
-            return;
-        }
+    static void PaintGround(Tilemap tilemap, PizzaMapBlueprint blueprint) {
+        TileBase ground = blueprint.theme.groundTile;
+        TileBase soft = blueprint.theme.groundSoftTile;
+        TileBase dark = blueprint.theme.groundDarkTile;
+        TileBase accent = blueprint.theme.groundAccentTile;
+        for (int y = 0; y < blueprint.mapSize.y; y++) {
+            for (int x = 0; x < blueprint.mapSize.x; x++) {
+                int clusterX = x / 4;
+                int clusterY = y / 4;
+                int pattern = Mathf.Abs((clusterX * 37 + clusterY * 53 + clusterX * clusterY * 3) % 100);
+                TileBase tile = ground;
+                if (soft != null && pattern < 18) {
+                    tile = soft;
+                }
+                else if (dark != null && pattern >= 18 && pattern < 25) {
+                    tile = dark;
+                }
+                else if (accent != null && pattern >= 25 && pattern < 31) {
+                    tile = accent;
+                }
 
-        for (int y = 0; y < size.y; y++) {
-            for (int x = 0; x < size.x; x++) {
-                tilemap.SetTile(new Vector3Int(x, y, 0), tile);
+                if (tile != null) {
+                    tilemap.SetTile(new Vector3Int(x, y, 0), tile);
+                }
             }
         }
     }
@@ -1183,6 +1466,8 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         foreach (Vector3Int edgeCell in edgeCells) {
             tilemap.SetTile(edgeCell, blueprint.theme.roadEdgeTile);
         }
+
+        tilemap.RefreshAllTiles();
     }
 
     static void PaintDiagonalRoadDetails(
@@ -1201,6 +1486,10 @@ public class PizzaMapAuthoringWindow : EditorWindow {
     static void PaintRoadMarkings(Tilemap tilemap, PizzaMapBlueprint blueprint) {
         for (int i = 0; i < blueprint.roadStrokes.Count; i++) {
             PizzaMapBlueprint.RoadStroke stroke = blueprint.roadStrokes[i];
+            if (stroke.width < 5) {
+                continue;
+            }
+
             TileBase marking = stroke.width >= 5
                 ? blueprint.theme.roadDoubleMarkingTile
                 : blueprint.theme.roadMarkingTile;
@@ -1238,7 +1527,9 @@ public class PizzaMapAuthoringWindow : EditorWindow {
         }
     }
 
-    static void PlaceDecorations(Transform parent, Grid grid, PizzaMapBlueprint blueprint) {
+    static void PlaceDecorations(
+        Transform parent, Grid grid, PizzaMapBlueprint blueprint, HashSet<Vector3Int> roadCells) {
+        int movedBuildings = 0;
         for (int i = 0; i < blueprint.decorations.Count; i++) {
             PizzaMapBlueprint.DecorationStamp stamp = blueprint.decorations[i];
             if (stamp.prefab == null) {
@@ -1257,7 +1548,72 @@ public class PizzaMapAuthoringWindow : EditorWindow {
             instance.transform.position = GridToWorld(grid, stamp.cell);
             instance.transform.rotation = Quaternion.Euler(0f, 0f, stamp.rotationDegrees);
             instance.transform.localScale *= Mathf.Max(0.01f, stamp.scaleMultiplier);
+            if (IsBuildingDecoration(sourceName) && MoveBuildingOffRoad(
+                instance, grid, blueprint.mapSize, stamp.cell, roadCells)) {
+                movedBuildings++;
+            }
         }
+
+        if (movedBuildings > 0) {
+            Debug.Log("Moved " + movedBuildings + " building stamps away from drivable road cells.");
+        }
+    }
+
+    static bool IsBuildingDecoration(string sourceName) {
+        return sourceName.StartsWith("MapHouse") || sourceName.StartsWith("MapApartment") ||
+            sourceName.StartsWith("MapMarket") || sourceName.StartsWith("MapCivic") ||
+            sourceName.StartsWith("MapWorkshop") || sourceName.StartsWith("MapCafe");
+    }
+
+    static bool MoveBuildingOffRoad(
+        GameObject instance, Grid grid, Vector2Int mapSize, Vector2Int authoredCell,
+        HashSet<Vector3Int> roadCells) {
+        Physics2D.SyncTransforms();
+        if (!BuildingIntersectsRoad(instance, grid, roadCells)) {
+            return false;
+        }
+
+        for (int radius = 1; radius <= 6; radius++) {
+            for (int offsetY = -radius; offsetY <= radius; offsetY++) {
+                for (int offsetX = -radius; offsetX <= radius; offsetX++) {
+                    if (Mathf.Abs(offsetX) + Mathf.Abs(offsetY) != radius) {
+                        continue;
+                    }
+
+                    Vector2Int candidate = authoredCell + new Vector2Int(offsetX, offsetY);
+                    if (candidate.x < 0 || candidate.y < 0 ||
+                        candidate.x >= mapSize.x || candidate.y >= mapSize.y) {
+                        continue;
+                    }
+
+                    instance.transform.position = GridToWorld(grid, candidate);
+                    Physics2D.SyncTransforms();
+                    if (!BuildingIntersectsRoad(instance, grid, roadCells)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        instance.transform.position = GridToWorld(grid, authoredCell);
+        return false;
+    }
+
+    static bool BuildingIntersectsRoad(GameObject instance, Grid grid, HashSet<Vector3Int> roadCells) {
+        BoxCollider2D[] colliders = instance.GetComponentsInChildren<BoxCollider2D>(true);
+        for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++) {
+            Bounds colliderBounds = colliders[colliderIndex].bounds;
+            foreach (Vector3Int roadCell in roadCells) {
+                Bounds roadBounds = new Bounds(
+                    GridToWorld(grid, new Vector2Int(roadCell.x, roadCell.y)),
+                    Vector3.one);
+                if (colliderBounds.Intersects(roadBounds)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     static List<Transform> DetachServices(Transform mapRoot) {

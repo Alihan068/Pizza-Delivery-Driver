@@ -32,12 +32,16 @@ public class PizzaMapTheme : ScriptableObject {
     [Tooltip("Dark grass variation used for shaded or framed ground regions.")]
     public TileBase groundDarkTile;
 
-    /// <summary>RuleTile used for all connected drivable roads in this theme.</summary>
-    [Tooltip("Road RuleTile. All road cells in a map should use this asset.")]
-    public PizzaRoadRuleTile roadTile;
+    /// <summary>Tile used for all connected drivable roads in this theme.</summary>
+    [Tooltip("Road tile. The map author may assign a standard Unity RuleTile here.")]
+    public TileBase roadTile;
 
-    /// <summary>Optional tile painted around roads as a sidewalk or terrain shoulder.</summary>
-    [Tooltip("Optional road-edge tile painted around drivable roads.")]
+    /// <summary>
+    /// Tile painted around drivable roads as the sidewalk or terrain shoulder.
+    /// The map author may assign a standard RuleTile when the sidewalk belongs to
+    /// the same Tilemap as the road, or author a separate edge layer manually.
+    /// </summary>
+    [Tooltip("Sidewalk RuleTile painted around drivable roads.")]
     public TileBase roadEdgeTile;
 
     /// <summary>Tile used for dashed center markings on narrow roads.</summary>

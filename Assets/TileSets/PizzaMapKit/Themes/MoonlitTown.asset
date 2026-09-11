@@ -18,12 +18,12 @@ MonoBehaviour:
   groundAccentTile: {fileID: 11400000, guid: 23cc80bd626b4524a8844bef86a5bc5d, type: 2}
   groundSoftTile: {fileID: 11400000, guid: 0534d48fad8543841985d2e71338976f, type: 2}
   groundDarkTile: {fileID: 11400000, guid: f3e90002ba9460c4185bbbaefa3f3380, type: 2}
-  roadTile: {fileID: 11400000, guid: 9baae2bea4089784d989b2d209b2464f, type: 2}
-  roadEdgeTile: {fileID: 11400000, guid: 1dd539408d6ffb9469e245f2c78c6a4a, type: 2}
-  roadMarkingTile: {fileID: 11400000, guid: 8875c6ac7f3ac3e4c8c0f317ec9b936f, type: 2}
-  roadDoubleMarkingTile: {fileID: 11400000, guid: 69c34b6ffab248047a28bd99225a99f7, type: 2}
-  diagonalRoadMarkingTile: {fileID: 11400000, guid: 768d9289c12b0134680c2846e0cae7d0, type: 2}
-  terrainTile: {fileID: 11400000, guid: 3df8e8d9f3b98744d834130e42ce5b54, type: 2}
-  secondaryTerrainTile: {fileID: 11400000, guid: ba50d40f64425454d81318dc52bb4307, type: 2}
+  roadTile: {fileID: 0}
+  roadEdgeTile: {fileID: 0}
+  roadMarkingTile: {fileID: 11400000, guid: 5a424a654edf33b4ea7063b42d09f383, type: 2}
+  roadDoubleMarkingTile: {fileID: 11400000, guid: beda66bf612c1b0499fb2200000d1327, type: 2}
+  diagonalRoadMarkingTile: {fileID: 11400000, guid: 40bd17b5420dbfd49b49252b2385cf1a, type: 2}
+  terrainTile: {fileID: 11400000, guid: 907641b63929e48429aec00f356b17d1, type: 2}
+  secondaryTerrainTile: {fileID: 11400000, guid: 085f74619dfb64d4291ac2c4747b0fa9, type: 2}
   globalLightColor: {r: 0.45, g: 0.58, b: 0.9, a: 1}
   globalLightIntensity: 0.85

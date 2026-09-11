@@ -15,6 +15,10 @@ public class PizzaMapBlueprint : ScriptableObject {
     /// <summary>Scene that receives this layout when the map builder runs.</summary>
     public string sceneName;
 
+    /// <summary>Protects a finished, scene-authored layout from destructive bulk regeneration.</summary>
+    [Tooltip("Keep enabled for maps edited directly in the scene. Bulk generation will skip this scene.")]
+    public bool preserveAuthoredScene;
+
     /// <summary>Theme supplying compatible tile assets and lighting.</summary>
     public PizzaMapTheme theme;
 

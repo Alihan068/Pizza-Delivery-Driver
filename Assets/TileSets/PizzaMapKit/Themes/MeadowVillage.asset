@@ -14,16 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   themeId: MeadowVillage
   displayNameKey: Meadow Village
-  groundTile: {fileID: 11400000, guid: 35a0feb4171da6c409640779f260c2df, type: 2}
-  groundAccentTile: {fileID: 11400000, guid: 0d55639ea83ebd74b8aac3c48621f2bf, type: 2}
-  groundSoftTile: {fileID: 11400000, guid: d47c605d83deda64fb22ab12064f7675, type: 2}
-  groundDarkTile: {fileID: 11400000, guid: 2c82c42f8680f5e458258c8b68516252, type: 2}
-  roadTile: {fileID: 11400000, guid: 972ed87133a5562489420ccc48aa44de, type: 2}
-  roadEdgeTile: {fileID: 11400000, guid: 35ad53ba57b96f54181b50dc721072e5, type: 2}
-  roadMarkingTile: {fileID: 11400000, guid: 45af92cd1940c7243a63aa480b7a13c3, type: 2}
-  roadDoubleMarkingTile: {fileID: 11400000, guid: 6ae4b2ef5fa8c5d40af680adad35a382, type: 2}
-  diagonalRoadMarkingTile: {fileID: 11400000, guid: c06de6cc6f325eb4b8d713e9f17168e9, type: 2}
-  terrainTile: {fileID: 11400000, guid: e1858939196ef6e4585be5516662f606, type: 2}
-  secondaryTerrainTile: {fileID: 11400000, guid: 5d76aa646eb773749b734ebb4d6b0374, type: 2}
+  groundTile: {fileID: 11400000, guid: 81beec19ea7c2814988511e0757a08e7, type: 2}
+  groundAccentTile: {fileID: 11400000, guid: 27f347719b15a384e97dde6a57b19d66, type: 2}
+  groundSoftTile: {fileID: 11400000, guid: 7dbdb9142766a9643ac712ab9e2e31a8, type: 2}
+  groundDarkTile: {fileID: 11400000, guid: 2a6b6089dcc98b444b18b8686a53071d, type: 2}
+  roadTile: {fileID: 0}
+  roadEdgeTile: {fileID: 0}
+  roadMarkingTile: {fileID: 11400000, guid: 26ac885f797e2be42914a66d0b75892a, type: 2}
+  roadDoubleMarkingTile: {fileID: 11400000, guid: 3ddb70a5bafdd1a46870edf9c2257ad6, type: 2}
+  diagonalRoadMarkingTile: {fileID: 11400000, guid: 0d13a05ad45136c49b7d326c07fc3e0f, type: 2}
+  terrainTile: {fileID: 11400000, guid: b6eea7d71a148294382fc3a0741bf64e, type: 2}
+  secondaryTerrainTile: {fileID: 11400000, guid: 654159715ed14d7478b27b5deb06c079, type: 2}
   globalLightColor: {r: 1, g: 0.94, b: 0.78, a: 1}
   globalLightIntensity: 1.05
