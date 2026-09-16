@@ -20,6 +20,23 @@ public class LevelData : ScriptableObject {
     public float partialExtension = 12f;
     public float partialExtensionCapMult = 1.0f;
 
+    [Header("Distance Wait")]
+    [Tooltip("Straight-line distance from the driver within which a new customer gets no extra wait time.")]
+    [Min(0f)] public float waitDistanceFreeRadius = 20f;
+    [Tooltip("Extra wait seconds granted per world unit of driver-to-customer distance beyond the free radius.")]
+    [Min(0f)] public float waitPerDistanceUnit = 0.35f;
+    [Tooltip("Upper bound on the distance bonus in seconds. Zero disables the cap.")]
+    [Min(0f)] public float waitDistanceBonusCap = 60f;
+
+    /// <summary>Returns the extra wait seconds a customer receives for being far from the driver when it spawns.</summary>
+    /// <param name="distanceToDriver">Straight-line world distance between the driver and the customer.</param>
+    /// <returns>Bonus seconds, zero inside the free radius, capped by <see cref="waitDistanceBonusCap"/> when that is positive.</returns>
+    public float GetDistanceWaitBonus(float distanceToDriver) {
+        float beyond = Mathf.Max(0f, distanceToDriver - waitDistanceFreeRadius);
+        float bonus = beyond * waitPerDistanceUnit;
+        return waitDistanceBonusCap > 0f ? Mathf.Min(bonus, waitDistanceBonusCap) : bonus;
+    }
+
     [Header("Reward")]
     public int pizzaBaseReward = 9;
     public int tipPerPizza = 7;

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   languageCode: en
   nativeName: English
-  systemLanguages: 0a000000
+  systemLanguages: 0a0000000a000000
   entries:
   - key: menu.quit
     text: Quit
@@ -346,6 +346,10 @@ MonoBehaviour:
     text: Start Job
   - key: garage.mapSelection.backToGarage
     text: Back to Garage
+  - key: garage.mapSelection.duration
+    text: Shift Duration
+  - key: garage.mapSelection.durationValue
+    text: '{0} minutes'
   - key: difficulty.tier1.name
     text: Tier 1
   - key: difficulty.tier1.description
@@ -367,9 +371,9 @@ MonoBehaviour:
   - key: map.difficulty.best
     text: 'Best score: {0}'
   - key: map.difficulty.unlock
-    text: 'Unlock at {0} score in the previous tier'
+    text: Unlock at {0} score in the previous tier
   - key: map.difficulty.requires
-    text: 'Requires {0} score in the previous tier'
+    text: Requires {0} score in the previous tier
   - key: map.difficulty.counter
     text: '{0}/{1}'
   - key: map.difficulty.unlocked
@@ -409,17 +413,17 @@ MonoBehaviour:
   - key: settings.vSync
     text: VSync
   - key: settings.previous
-    text: '<'
+    text: <
   - key: settings.next
     text: '>'
   - key: settings.developerTools
     text: Developer Tools
   - key: settings.developer.addMoney
-    text: 'Add Money +${0}'
+    text: Add Money +${0}
   - key: settings.developer.addRating
-    text: 'Add Rating +{0}'
+    text: Add Rating +{0}
   - key: settings.developer.removeRating
-    text: 'Remove Rating -{0}'
+    text: Remove Rating -{0}
   - key: settings.developer.unlockVehicles
     text: Unlock All Vehicles
   - key: settings.developer.unlockMaps
@@ -429,11 +433,11 @@ MonoBehaviour:
   - key: settings.developer.unavailable
     text: Game Manager is unavailable.
   - key: settings.developer.moneyAdded
-    text: 'Added ${0}.'
+    text: Added ${0}.
   - key: settings.developer.ratingAdded
-    text: 'Added {0} rating.'
+    text: Added {0} rating.
   - key: settings.developer.ratingRemoved
-    text: 'Removed {0} rating.'
+    text: Removed {0} rating.
   - key: settings.developer.vehiclesUnlocked
     text: 'Vehicle records changed: {0}.'
   - key: settings.developer.mapsUnlocked
@@ -466,15 +470,15 @@ MonoBehaviour:
   - key: garage.advancedTuning.speedValue
     text: 'Floor: {0:0.0} / Selected: {1:0.0} / Max: {2:0.0}'
   - key: garage.advancedTuning.driftGrip
-    text: 'Drift Grip (lower = more slide)'
+    text: Drift Grip (lower = more slide)
   - key: garage.advancedTuning.driftGripValue
     text: '{0:0.00}'
   - key: garage.advancedTuning.driftSteering
-    text: 'Drift Steering (higher = sharper)'
+    text: Drift Steering (higher = sharper)
   - key: garage.advancedTuning.driftSteeringValue
     text: '{0:0.00}'
   - key: garage.advancedTuning.gripEntry
-    text: 'Grip Entry (lower = faster)'
+    text: Grip Entry (lower = faster)
   - key: garage.advancedTuning.gripEntryValue
     text: '{0:0.00}s'
   - key: garage.advancedTuning.reset
@@ -485,3 +489,8 @@ MonoBehaviour:
     text: Balanced
   - key: garage.advancedTuning.presetSlide
     text: Slide
+  - key: map.riverside.name
+    text: Riverside
+  - key: map.riverside.desc
+    text: 'A bayside metropolis: ring roads, a central roundabout, dense downtown
+      blocks and long industrial runs.'

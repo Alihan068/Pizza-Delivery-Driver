@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35b3c93352666b84aa2de79d5a9df3cd, type: 3}
+  m_Name: Level_04
+  m_EditorClassIdentifier: 
+  orderMin: 1
+  orderScale: 0.8
+  difficultyLevels:
+  - difficultyId: tier_01
+    displayNameKey: difficulty.tier1.name
+    descriptionKey: difficulty.tier1.description
+    orderMin: 1
+    orderMax: 2
+    pizzaLossChancePercent: 20
+    scorePenaltyPerPizzaLost: 50
+    rewardMultiplier: 1
+    unlockTargetScoreForNext: 1000
+  - difficultyId: tier_02
+    displayNameKey: difficulty.tier2.name
+    descriptionKey: difficulty.tier2.description
+    orderMin: 2
+    orderMax: 4
+    pizzaLossChancePercent: 50
+    scorePenaltyPerPizzaLost: 50
+    rewardMultiplier: 1.2
+    unlockTargetScoreForNext: 2200
+  - difficultyId: tier_03
+    displayNameKey: difficulty.tier3.name
+    descriptionKey: difficulty.tier3.description
+    orderMin: 3
+    orderMax: 6
+    pizzaLossChancePercent: 70
+    scorePenaltyPerPizzaLost: 50
+    rewardMultiplier: 1.5
+    unlockTargetScoreForNext: 0
+  waitBase: 34
+  waitPerOrderPizza: 13
+  partialExtension: 10
+  partialExtensionCapMult: 0.9
+  pizzaBaseReward: 26
+  tipPerPizza: 9
+  completionBonusBase: 26
+  bonusExponent: 1.6
+  failPenaltyPerPizza: 9
+  completedDespawnDelay: 3
+  timedOutDespawnDelay: 2
+  pizzaCost: 1
+  maxActiveCustomers: 5
+  demonstratePartialDeliveryOnFirstShift: 1
+  difficultyRampStart: 0.15
+  difficultyRampEnd: 1
+  obstacleSpawnIntervalMultiplierAtEnd: 0.6
+  customerWaitMultiplierAtEnd: 0.75

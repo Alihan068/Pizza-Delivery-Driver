@@ -67,14 +67,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f9ffa1b2bfe46c84c98b23993ae0bc17, type: 2}
   - {fileID: 11400000, guid: c08db5ffd4ce35e48acf13e1b0ca142b, type: 2}
   - {fileID: 11400000, guid: 482b7c169bfe53c4a9639af753acec35, type: 2}
+  - {fileID: 11400000, guid: 483f5731be9db1343b893d016f45e3f0, type: 2}
   allModifiers:
   - {fileID: 11400000, guid: d69dd2701b7505f469e95ef17b51b0d6, type: 2}
   - {fileID: 11400000, guid: 034126ed877d7ad43a68ea1a4fbcd57e, type: 2}
   - {fileID: 11400000, guid: 6b5a8d8e307bd6540ac95884f311b2bf, type: 2}
   currentVehicle: {fileID: 0}
   currentMap: {fileID: 0}
+  currentDifficultyId: 
   vehicleSaveList: []
   ownedMapIds: []
+  mapDifficultyProgress: []
   driverStats:
     capacityLevel: 0
     protectionLevel: 0

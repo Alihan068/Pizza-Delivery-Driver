@@ -3,11 +3,13 @@ using UnityEngine;
 
 public class ScoreHandler : MonoBehaviour {
     [Header("Game Settings")]
-    [SerializeField] float levelDurationInMinutes = 3f;
+    [SerializeField] float levelDurationInMinutes = 5f;
     float currentTimer;
     float totalDurationSeconds;
     float activeSessionSeconds;
     bool isGameActive = true;
+    /// <summary>Duration selected for this shift, in minutes.</summary>
+    public int ShiftDurationMinutes { get; private set; }
 
     [Header("Session Data")]
     public int currentScore;
@@ -38,7 +40,10 @@ public class ScoreHandler : MonoBehaviour {
     void Start() {
         gameUIManager = FindFirstObjectByType<GameUIManager>();
         resultPanel = FindFirstObjectByType<SessionResultPanel>(FindObjectsInactive.Include);
-        currentTimer = IsFreeplay ? 0f : levelDurationInMinutes * 60f;
+        ShiftDurationMinutes = GameManager.Instance != null
+            ? GameManager.Instance.SelectedShiftDurationMinutes
+            : Mathf.Max(1, Mathf.RoundToInt(levelDurationInMinutes));
+        currentTimer = IsFreeplay ? 0f : ShiftDurationMinutes * 60f;
         totalDurationSeconds = currentTimer;
 
         if (!IsFreeplay && GameManager.Instance != null) GameManager.Instance.MarkShiftStarted();

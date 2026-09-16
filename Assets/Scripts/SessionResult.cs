@@ -7,6 +7,12 @@ public struct SessionResult {
     public int bankBefore;
     public int bankAfter;
 
+    /// <summary>Finite shift duration selected before this session began, in minutes.</summary>
+    public int shiftDurationMinutes;
+
+    /// <summary>Competitive eligibility decision produced when the session was settled.</summary>
+    public CompetitiveEligibilityStatus competitiveEligibility;
+
     /// <summary>Signed courier-rating change produced by this shift.</summary>
     public int ratingDelta;
 

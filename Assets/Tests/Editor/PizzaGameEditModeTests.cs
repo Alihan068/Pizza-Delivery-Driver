@@ -27,6 +27,25 @@ public class PizzaGameEditModeTests {
         Assert.IsTrue(order.IsComplete);
     }
 
+    /// <summary>Verifies that distant customers gain wait time only beyond the free radius and never past the cap.</summary>
+    [Test]
+    public void LevelData_DistanceWaitBonusRespectsFreeRadiusAndCap() {
+        var level = ScriptableObject.CreateInstance<LevelData>();
+        level.waitDistanceFreeRadius = 20f;
+        level.waitPerDistanceUnit = 0.5f;
+        level.waitDistanceBonusCap = 30f;
+
+        Assert.AreEqual(0f, level.GetDistanceWaitBonus(10f), 0.001f);
+        Assert.AreEqual(0f, level.GetDistanceWaitBonus(20f), 0.001f);
+        Assert.AreEqual(15f, level.GetDistanceWaitBonus(50f), 0.001f);
+        Assert.AreEqual(30f, level.GetDistanceWaitBonus(500f), 0.001f);
+
+        level.waitDistanceBonusCap = 0f;
+        Assert.AreEqual(240f, level.GetDistanceWaitBonus(500f), 0.001f);
+
+        Object.DestroyImmediate(level);
+    }
+
     /// <summary>Verifies that strong service performance produces a positive rating delta.</summary>
     [Test]
     public void CareerManager_StrongShiftProducesPositiveRatingDelta() {

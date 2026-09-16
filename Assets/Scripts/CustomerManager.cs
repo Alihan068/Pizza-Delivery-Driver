@@ -149,6 +149,11 @@ public class CustomerManager : MonoBehaviour {
         float waitBase = levelData != null ? levelData.waitBase : 40f;
         float waitPerPizza = levelData != null ? levelData.waitPerOrderPizza : 0f;
         float baseWaitTime = waitBase + waitPerPizza * totalPizzas;
+        if (delivery == null) delivery = FindFirstObjectByType<Delivery>();
+        if (levelData != null && delivery != null) {
+            float distanceToDriver = Vector2.Distance(delivery.transform.position, selectedCustomerObj.transform.position);
+            baseWaitTime += levelData.GetDistanceWaitBonus(distanceToDriver);
+        }
         float shiftProgress = scoreHandler != null ? scoreHandler.ShiftProgress01 : 0f;
         float waitTime = levelData != null ? baseWaitTime * levelData.GetCustomerWaitMultiplier(shiftProgress) : baseWaitTime;
 

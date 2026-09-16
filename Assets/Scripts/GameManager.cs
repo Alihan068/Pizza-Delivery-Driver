@@ -44,6 +44,12 @@ public class GameManager : MonoBehaviour {
     [Header("Career State")]
     public VehicleData currentVehicle;
     public MapData currentMap;
+    [Header("Shift Selection")]
+    [Tooltip("Fallback duration used when the map selection screen has not supplied a duration.")]
+    [SerializeField] int defaultShiftDurationMinutes = 5;
+    [Tooltip("Fixed duration accepted by the first standard leaderboard and achievement ruleset.")]
+    [SerializeField] int competitiveDurationMinutes = 5;
+    int selectedShiftDurationMinutes;
     /// <summary>Permanent id of the selected difficulty inside currentMap.</summary>
     public string currentDifficultyId;
     ShiftModifierData currentModifier;
@@ -115,6 +121,13 @@ public class GameManager : MonoBehaviour {
 
     /// <summary>True while the current gameplay scene is running an endless session.</summary>
     public bool IsFreeplayMode => isFreeplayMode;
+
+    /// <summary>Duration selected for the next finite shift, in whole minutes.</summary>
+    /// <remarks>This is temporary session setup and is deliberately excluded from career saves.</remarks>
+    public int SelectedShiftDurationMinutes => Mathf.Max(1, selectedShiftDurationMinutes);
+
+    /// <summary>Duration accepted by the first standard competitive ruleset, in minutes.</summary>
+    public int CompetitiveDurationMinutes => Mathf.Max(1, competitiveDurationMinutes);
 
     /// <summary>True after the authored final career challenge has been completed.</summary>
     public bool IsCareerCompleted => careerCompleted;
@@ -197,6 +210,7 @@ public class GameManager : MonoBehaviour {
     /// <returns>How reading the slot turned out.</returns>
     public SaveLoadStatus LoadCareer(int slotIndex) {
         isFreeplayMode = false;
+        selectedShiftDurationMinutes = Mathf.Max(1, defaultShiftDurationMinutes);
         ActiveSlot = Mathf.Clamp(slotIndex, 0, Saves.SlotCount - 1);
         PlayerPrefs.SetInt(LastSlotKey, ActiveSlot);
         PlayerPrefs.Save();
@@ -217,6 +231,7 @@ public class GameManager : MonoBehaviour {
     /// <param name="slotIndex">Slot the new career occupies.</param>
     public void StartNewCareer(int slotIndex) {
         isFreeplayMode = false;
+        selectedShiftDurationMinutes = Mathf.Max(1, defaultShiftDurationMinutes);
         ActiveSlot = Mathf.Clamp(slotIndex, 0, Saves.SlotCount - 1);
         PlayerPrefs.SetInt(LastSlotKey, ActiveSlot);
         PlayerPrefs.Save();
@@ -733,6 +748,31 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    /// <summary>Selects the finite shift duration used when the next gameplay scene starts.</summary>
+    /// <param name="minutes">Positive whole minutes supplied by the map selection data.</param>
+    /// <returns>True when the duration was accepted.</returns>
+    public bool SelectShiftDuration(int minutes) {
+        if (minutes <= 0) return false;
+        selectedShiftDurationMinutes = minutes;
+        return true;
+    }
+
+    /// <summary>Evaluates the current session against the standard competitive content rules.</summary>
+    /// <param name="durationMinutes">Duration used by the session.</param>
+    /// <param name="reason">Reason that ended the session.</param>
+    /// <param name="freeplay">Whether the session was endless.</param>
+    /// <returns>A status explaining eligibility for future leaderboard and achievement services.</returns>
+    public CompetitiveEligibilityStatus EvaluateCompetitiveEligibility(int durationMinutes,
+        EndReason reason, bool freeplay) {
+        bool builtInMap = Content != null && Content.GetMapProviderId(currentMap) == BuiltInContentProvider.SourceId;
+        bool builtInVehicle = Content != null && Content.GetVehicleProviderId(currentVehicle) == BuiltInContentProvider.SourceId;
+        VehicleSaveData vehicleSave = GetCurrentVehicleSave();
+        bool customTuning = vehicleSave != null && vehicleSave.hasCustomTuning;
+        bool completed = reason == EndReason.TimeUp || reason == EndReason.Extracted;
+        return CompetitiveRunRules.Evaluate(freeplay, builtInMap, builtInVehicle, customTuning,
+            durationMinutes, CompetitiveDurationMinutes, completed);
+    }
+
     // --------------------------------------------------------------- upgrades
 
     /// <summary>Price of buying the next level of a stat.</summary>
@@ -1036,7 +1076,9 @@ public class GameManager : MonoBehaviour {
             bankAfter = totalMoney,
             rankAfter = CurrentRank,
             isFreeplay = freeplay,
-            isFinalShift = wasFinalShift
+            isFinalShift = wasFinalShift,
+            shiftDurationMinutes = SelectedShiftDurationMinutes,
+            competitiveEligibility = EvaluateCompetitiveEligibility(SelectedShiftDurationMinutes, reason, freeplay)
         };
 
         // Rent is charged inside this same call, atomically with the day's last shift, rather than

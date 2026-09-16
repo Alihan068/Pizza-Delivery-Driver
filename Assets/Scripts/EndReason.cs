@@ -3,7 +3,7 @@
 /// repair bill is calculated.
 /// </summary>
 public enum EndReason {
-    /// <summary>The three minute timer ran out. Earnings are kept in full.</summary>
+    /// <summary>The selected finite shift timer ran out. Earnings are kept in full.</summary>
     TimeUp,
 
     /// <summary>The player reached the extraction zone and held it. Earnings are kept in full.</summary>

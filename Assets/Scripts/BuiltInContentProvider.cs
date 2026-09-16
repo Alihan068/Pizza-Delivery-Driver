@@ -10,6 +10,9 @@ using System.Collections.Generic;
 /// </remarks>
 public class BuiltInContentProvider : IContentProvider {
 
+    /// <summary>Stable provider id used to distinguish shipped content from external content.</summary>
+    public const string SourceId = "built-in";
+
     readonly VehicleData[] vehicles;
     readonly MapData[] maps;
 
@@ -22,7 +25,7 @@ public class BuiltInContentProvider : IContentProvider {
     }
 
     /// <summary>Identifies this source as the shipped content.</summary>
-    public string ProviderId => "built-in";
+    public string ProviderId => SourceId;
 
     /// <summary>Returns the built-in vehicles, skipping empty array entries.</summary>
     /// <returns>The vehicles in authored order.</returns>

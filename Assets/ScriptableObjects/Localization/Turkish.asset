@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   languageCode: tr
   nativeName: "T\xFCrk\xE7e"
-  systemLanguages: 25000000
+  systemLanguages: 2500000025000000
   entries:
   - key: menu.quit
     text: "\xC7\u0131k\u0131\u015F"
@@ -338,39 +338,46 @@ MonoBehaviour:
   - key: garage.mapSelection.close
     text: Kapat
   - key: garage.mapSelection.open
-    text: "Harita Seç"
+    text: "Harita Se\xE7"
   - key: garage.mapSelection.startJob
     text: "\u0130\u015F Ba\u015Flat"
   - key: garage.mapSelection.backToGarage
     text: "Garaja D\xF6n"
+  - key: garage.mapSelection.duration
+    text: "Vardiya S\xFCresi"
+  - key: garage.mapSelection.durationValue
+    text: '{0} dakika'
   - key: difficulty.tier1.name
     text: Zorluk 1
   - key: difficulty.tier1.description
-    text: "Küçük siparişler ve kaza başına düşük pizza kaybı riski."
+    text: "K\xFC\xE7\xFCk sipari\u015Fler ve kaza ba\u015F\u0131na d\xFC\u015F\xFCk
+      pizza kayb\u0131 riski."
   - key: difficulty.tier2.name
     text: Zorluk 2
   - key: difficulty.tier2.description
-    text: "Daha büyük siparişler ve kaza başına daha yüksek pizza kaybı riski."
+    text: "Daha b\xFCy\xFCk sipari\u015Fler ve kaza ba\u015F\u0131na daha y\xFCksek
+      pizza kayb\u0131 riski."
   - key: difficulty.tier3.name
     text: Zorluk 3
   - key: difficulty.tier3.description
-    text: "Büyük siparişler ve yüksek pizza kaybı riski. Daha fazla kazandırır."
+    text: "B\xFCy\xFCk sipari\u015Fler ve y\xFCksek pizza kayb\u0131 riski. Daha
+      fazla kazand\u0131r\u0131r."
   - key: map.difficulty.orders
-    text: 'Siparişler: {0}-{1} pizza'
+    text: "Sipari\u015Fler: {0}-{1} pizza"
   - key: map.difficulty.loss
-    text: 'Kazada pizza kaybı: %{0}'
+    text: "Kazada pizza kayb\u0131: %{0}"
   - key: map.difficulty.reward
-    text: 'Kazanç çarpanı: x{0:0.##}'
+    text: "Kazan\xE7 \xE7arpan\u0131: x{0:0.##}"
   - key: map.difficulty.best
     text: 'En iyi skor: {0}'
   - key: map.difficulty.unlock
-    text: 'Önceki zorlukta {0} skoruna ulaş'
+    text: "\xD6nceki zorlukta {0} skoruna ula\u015F"
   - key: map.difficulty.requires
-    text: 'Önceki zorlukta {0} skor gerekli'
+    text: "\xD6nceki zorlukta {0} skor gerekli"
   - key: map.difficulty.counter
     text: '{0}/{1}'
   - key: map.difficulty.unlocked
-    text: Açık
+    text: "A\xE7\u0131k"
   - key: map.difficulty.locked
     text: Kilitli
   - key: map.difficulty.unavailable
@@ -406,71 +413,76 @@ MonoBehaviour:
   - key: settings.vSync
     text: VSync
   - key: settings.previous
-    text: '<'
+    text: <
   - key: settings.next
     text: '>'
   - key: settings.developerTools
-    text: Geliştirici Araçları
+    text: "Geli\u015Ftirici Ara\xE7lar\u0131"
   - key: settings.developer.addMoney
-    text: 'Para Ekle +{0}$'
+    text: Para Ekle +{0}$
   - key: settings.developer.addRating
-    text: 'Puan Ekle +{0}'
+    text: Puan Ekle +{0}
   - key: settings.developer.removeRating
-    text: 'Puan Çıkar -{0}'
+    text: "Puan \xC7\u0131kar -{0}"
   - key: settings.developer.unlockVehicles
-    text: Tüm Araçları Aç
+    text: "T\xFCm Ara\xE7lar\u0131 A\xE7"
   - key: settings.developer.unlockMaps
-    text: Tüm Haritaları ve Zorlukları Aç
+    text: "T\xFCm Haritalar\u0131 ve Zorluklar\u0131 A\xE7"
   - key: settings.developer.ready
-    text: Bir geliştirici işlemi seç.
+    text: "Bir geli\u015Ftirici i\u015Flemi se\xE7."
   - key: settings.developer.unavailable
-    text: Game Manager kullanılamıyor.
+    text: "Game Manager kullan\u0131lam\u0131yor."
   - key: settings.developer.moneyAdded
     text: '{0}$ eklendi.'
   - key: settings.developer.ratingAdded
     text: '{0} puan eklendi.'
   - key: settings.developer.ratingRemoved
-    text: '{0} puan çıkarıldı.'
+    text: "{0} puan \xE7\u0131kar\u0131ld\u0131."
   - key: settings.developer.vehiclesUnlocked
-    text: 'Değişen araç kaydı: {0}.'
+    text: "De\u011Fi\u015Fen ara\xE7 kayd\u0131: {0}."
   - key: settings.developer.mapsUnlocked
-    text: 'Değişen harita kaydı: {0}.'
+    text: "De\u011Fi\u015Fen harita kayd\u0131: {0}."
   - key: onboarding.controls
     text: "WASD / Ok Tu\u015Flar\u0131: S\xFCr.\nPizza toplama noktas\u0131ndan pizza
       al.\nS\xFCre dolmadan m\xFC\u015Fterilere teslim et.\nEngellerden ka\xE7\u0131n:
       \xE7arpmalar can g\xF6t\xFCr\xFCr ve pizza d\xFC\u015F\xFCrebilir.\nVardiyay\u0131
       bitirmek i\xE7in b\xF6lgede extraction tu\u015Funa bas\u0131l\u0131 tut."
   - key: garage.advancedTuning
-    text: 'Gelişmiş Ayar: {0}'
+    text: "Geli\u015Fmi\u015F Ayar: {0}"
   - key: garage.advancedTuning.on
-    text: AÇIK
+    text: "A\xC7IK"
   - key: garage.advancedTuning.off
     text: KAPALI
   - key: garage.driftTuning
-    text: Drift Ayarları
+    text: "Drift Ayarlar\u0131"
   - key: garage.advancedTuning.title
-    text: Gelişmiş Ayarlar
+    text: "Geli\u015Fmi\u015F Ayarlar"
   - key: garage.advancedTuning.speed
-    text: Hız
+    text: "H\u0131z"
   - key: garage.advancedTuning.speedValue
-    text: 'Taban: {0:0.0} / Seçili: {1:0.0} / Azami: {2:0.0}'
+    text: "Taban: {0:0.0} / Se\xE7ili: {1:0.0} / Azami: {2:0.0}"
   - key: garage.advancedTuning.driftGrip
-    text: 'Drift Tutuşu (düşük = daha çok kayma)'
+    text: "Drift Tutu\u015Fu (d\xFC\u015F\xFCk = daha \xE7ok kayma)"
   - key: garage.advancedTuning.driftGripValue
     text: '{0:0.00}'
   - key: garage.advancedTuning.driftSteering
-    text: 'Drift Direksiyonu (yüksek = daha keskin)'
+    text: "Drift Direksiyonu (y\xFCksek = daha keskin)"
   - key: garage.advancedTuning.driftSteeringValue
     text: '{0:0.00}'
   - key: garage.advancedTuning.gripEntry
-    text: 'Tutuş Geçişi (düşük = daha hızlı)'
+    text: "Tutu\u015F Ge\xE7i\u015Fi (d\xFC\u015F\xFCk = daha h\u0131zl\u0131)"
   - key: garage.advancedTuning.gripEntryValue
     text: '{0:0.00}sn'
   - key: garage.advancedTuning.reset
-    text: Klasiğe Sıfırla
+    text: "Klasi\u011Fe S\u0131f\u0131rla"
   - key: garage.advancedTuning.presetGrip
-    text: Tutuş
+    text: "Tutu\u015F"
   - key: garage.advancedTuning.presetBalanced
     text: Dengeli
   - key: garage.advancedTuning.presetSlide
     text: Kayma
+  - key: map.riverside.name
+    text: Riverside
+  - key: map.riverside.desc
+    text: 'Koy kiyisinda bir metropol: cevre yollari, merkezde doner kavsak, yogun
+      sehir merkezi bloklari ve uzun sanayi hatlari.'

@@ -85,6 +85,14 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] Color filledStarColor = new Color(1f, 0.78f, 0.08f, 1f);
     [SerializeField] Color emptyStarColor = Color.black;
 
+    [Header("Shift Duration")]
+    [Tooltip("Finite shift durations offered by this selection screen. The list is data-driven so new durations can be added without changing the picker logic.")]
+    [SerializeField] int[] sessionDurationOptionsMinutes = new int[] { 3, 5, 10 };
+    [SerializeField] TextMeshProUGUI sessionDurationText;
+    [SerializeField] Button previousSessionDurationButton;
+    [SerializeField] Button nextSessionDurationButton;
+    [SerializeField] float sessionDurationFontSize = 21f;
+
     [Header("Modifier Display")]
     [SerializeField] TextMeshProUGUI modifierTitleText;
     [SerializeField] TextMeshProUGUI modifierNameText;
@@ -109,12 +117,15 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] string difficultyUnlockKey = "map.difficulty.unlock";
     [SerializeField] string difficultyRequiresKey = "map.difficulty.requires";
     [SerializeField] string difficultyCounterKey = "map.difficulty.counter";
+    [SerializeField] string sessionDurationTitleKey = "garage.mapSelection.duration";
+    [SerializeField] string sessionDurationValueKey = "garage.mapSelection.durationValue";
     [SerializeField] string modifierNoneKey = "garage.modifier.none";
     [SerializeField] string modifierNoneDescriptionKey = "garage.modifier.noneDescription";
 
     int mapIndex;
     int modifierIndex;
     int difficultyIndex;
+    int sessionDurationIndex;
     bool listenersBound;
     bool runtimeLayoutBuilt;
     RectTransform runtimeMapContent;
@@ -149,6 +160,8 @@ public class MapSelectionPanel : MonoBehaviour {
             nextMapButton.onClick.AddListener(() => ChangeMap(1));
         if (previousDifficultyButton != null) previousDifficultyButton.onClick.AddListener(() => ChangeDifficulty(-1));
         if (nextDifficultyButton != null) nextDifficultyButton.onClick.AddListener(() => ChangeDifficulty(1));
+        if (previousSessionDurationButton != null) previousSessionDurationButton.onClick.AddListener(() => ChangeSessionDuration(-1));
+        if (nextSessionDurationButton != null) nextSessionDurationButton.onClick.AddListener(() => ChangeSessionDuration(1));
         if (previousModifierButton != null) previousModifierButton.onClick.AddListener(() => ChangeModifier(-1));
         if (nextModifierButton != null) nextModifierButton.onClick.AddListener(() => ChangeModifier(1));
         if (closeButton != null) closeButton.onClick.AddListener(Close);
@@ -176,6 +189,7 @@ public class MapSelectionPanel : MonoBehaviour {
         MapData map = GetSelectedMap(manager);
         difficultyIndex = FindDifficultyIndex(map != null ? map.levelData : null, manager.currentDifficultyId);
         if (difficultyIndex < 0) difficultyIndex = 0;
+        sessionDurationIndex = FindSessionDurationIndex(manager.SelectedShiftDurationMinutes);
     }
 
     void ChangeMap(int direction) {
@@ -204,6 +218,12 @@ public class MapSelectionPanel : MonoBehaviour {
         RefreshUI();
     }
 
+    void ChangeSessionDuration(int direction) {
+        if (sessionDurationOptionsMinutes == null || sessionDurationOptionsMinutes.Length == 0) return;
+        sessionDurationIndex = WrapIndex(sessionDurationIndex + direction, sessionDurationOptionsMinutes.Length);
+        RefreshUI();
+    }
+
     /// <summary>Applies the currently previewed map, difficulty, and modifier to the next shift.</summary>
     /// <returns>True when the preview was valid and applied successfully.</returns>
     public bool TryApplyPreviewSelection() {
@@ -219,6 +239,8 @@ public class MapSelectionPanel : MonoBehaviour {
         if (difficulty != null)
             manager.SelectDifficulty(map, difficulty.difficultyId);
         manager.SelectModifier(GetSelectedModifier(manager));
+        if (sessionDurationOptionsMinutes != null && sessionDurationOptionsMinutes.Length > 0)
+            manager.SelectShiftDuration(sessionDurationOptionsMinutes[sessionDurationIndex]);
         ResolveInitialSelection();
         RefreshUI();
         return IsPreviewApplied();
@@ -245,8 +267,11 @@ public class MapSelectionPanel : MonoBehaviour {
         MapDifficultyData difficulty = GetSelectedDifficulty(map);
         bool difficultyApplied = difficulty == null || manager.CurrentDifficulty == difficulty ||
             (manager.CurrentDifficulty != null && difficulty != null && manager.CurrentDifficulty.difficultyId == difficulty.difficultyId);
+        bool durationApplied = sessionDurationOptionsMinutes != null && sessionDurationOptionsMinutes.Length > 0 &&
+            manager.SelectedShiftDurationMinutes == Mathf.Max(1, sessionDurationOptionsMinutes[Mathf.Clamp(sessionDurationIndex, 0, sessionDurationOptionsMinutes.Length - 1)]);
         return map != null && manager.IsMapOwned(map) && manager.currentMap == map &&
             manager.CurrentModifier == modifier && difficultyApplied &&
+            durationApplied &&
             (difficulty == null || manager.IsDifficultyUnlocked(map, difficultyIndex));
     }
 
@@ -285,6 +310,7 @@ public class MapSelectionPanel : MonoBehaviour {
         }
 
         RefreshDifficultyUI(manager, map);
+        RefreshSessionDurationUI();
         RefreshRuntimeMapCards(manager);
 
         var modifier = GetSelectedModifier(manager);
@@ -432,24 +458,32 @@ public class MapSelectionPanel : MonoBehaviour {
             new Vector2(0.05f, 0.30f), new Vector2(0.95f, 0.40f), "DifficultySummary");
         SetRuntimeTextStyle(difficultySummaryText, difficultySummaryFontSize, FontStyles.Normal);
         difficultyStarsGraphic = ConfigureRuntimeStars(difficultyStarsGraphic, difficultyStarsText, detailBox,
-            new Vector2(0.35f, 0.24f), new Vector2(0.65f, 0.29f));
+            new Vector2(0.35f, 0.27f), new Vector2(0.65f, 0.32f));
         previousDifficultyButton = ConfigureRuntimeButton(previousDifficultyButton, detailBox, previousMapButton,
-            new Vector2(0.06f, 0.22f), new Vector2(0.22f, 0.31f), "<");
+            new Vector2(0.06f, 0.25f), new Vector2(0.22f, 0.34f), "<");
         nextDifficultyButton = ConfigureRuntimeButton(nextDifficultyButton, detailBox, nextMapButton,
-            new Vector2(0.78f, 0.22f), new Vector2(0.94f, 0.31f), ">");
+            new Vector2(0.78f, 0.25f), new Vector2(0.94f, 0.34f), ">");
 
-        SetResponsiveText(modifierTitleText, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.22f));
+        sessionDurationText = ConfigureRuntimeText(sessionDurationText, detailBox, mapDescriptionText,
+            new Vector2(0.25f, 0.20f), new Vector2(0.75f, 0.25f), "SessionDuration");
+        SetRuntimeTextStyle(sessionDurationText, sessionDurationFontSize, FontStyles.Bold);
+        previousSessionDurationButton = ConfigureRuntimeButton(previousSessionDurationButton, detailBox, previousDifficultyButton,
+            new Vector2(0.06f, 0.19f), new Vector2(0.22f, 0.25f), "<");
+        nextSessionDurationButton = ConfigureRuntimeButton(nextSessionDurationButton, detailBox, nextDifficultyButton,
+            new Vector2(0.78f, 0.19f), new Vector2(0.94f, 0.25f), ">");
+
+        SetResponsiveText(modifierTitleText, new Vector2(0.05f, 0.15f), new Vector2(0.95f, 0.19f));
         SetRuntimeTextStyle(modifierTitleText, modifierTitleFontSize, FontStyles.Bold);
-        SetResponsiveText(modifierNameText, new Vector2(0.05f, 0.13f), new Vector2(0.95f, 0.18f));
+        SetResponsiveText(modifierNameText, new Vector2(0.05f, 0.10f), new Vector2(0.95f, 0.15f));
         SetRuntimeTextStyle(modifierNameText, modifierNameFontSize, FontStyles.Bold);
-        SetResponsiveText(modifierDescriptionText, new Vector2(0.05f, 0.08f), new Vector2(0.95f, 0.13f));
+        SetResponsiveText(modifierDescriptionText, new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.10f));
         SetRuntimeTextStyle(modifierDescriptionText, modifierDescriptionFontSize, FontStyles.Normal);
         SetResponsiveRect(previousModifierButton != null ? previousModifierButton.transform as RectTransform : null,
-            new Vector2(0.06f, 0.01f), new Vector2(0.22f, 0.08f));
+            new Vector2(0.06f, 0.01f), new Vector2(0.22f, 0.05f));
         SetResponsiveRect(nextModifierButton != null ? nextModifierButton.transform as RectTransform : null,
-            new Vector2(0.78f, 0.01f), new Vector2(0.94f, 0.08f));
+            new Vector2(0.78f, 0.01f), new Vector2(0.94f, 0.05f));
         SetResponsiveRect(startJobButton != null ? startJobButton.transform as RectTransform : null,
-            new Vector2(0.25f, 0.01f), new Vector2(0.75f, 0.07f));
+            new Vector2(0.25f, 0.01f), new Vector2(0.75f, 0.06f));
     }
 
     TextMeshProUGUI ConfigureRuntimeText(TextMeshProUGUI existing, RectTransform parent, TMP_Text template,
@@ -755,6 +789,27 @@ public class MapSelectionPanel : MonoBehaviour {
         bool canCycle = map != null && map.levelData != null && map.levelData.difficultyLevels != null && map.levelData.difficultyLevels.Count > 1;
         if (previousDifficultyButton != null) previousDifficultyButton.interactable = canCycle;
         if (nextDifficultyButton != null) nextDifficultyButton.interactable = canCycle;
+    }
+
+    void RefreshSessionDurationUI() {
+        int count = sessionDurationOptionsMinutes != null ? sessionDurationOptionsMinutes.Length : 0;
+        bool available = count > 0;
+        int minutes = available ? Mathf.Max(1, sessionDurationOptionsMinutes[Mathf.Clamp(sessionDurationIndex, 0, count - 1)]) : 0;
+        if (sessionDurationText != null) {
+            sessionDurationText.text = available
+                ? LocalizationManager.Get(sessionDurationTitleKey) + "\n" + LocalizationManager.Get(sessionDurationValueKey, minutes)
+                : string.Empty;
+        }
+        bool canCycle = count > 1;
+        if (previousSessionDurationButton != null) previousSessionDurationButton.interactable = canCycle;
+        if (nextSessionDurationButton != null) nextSessionDurationButton.interactable = canCycle;
+    }
+
+    int FindSessionDurationIndex(int minutes) {
+        if (sessionDurationOptionsMinutes == null || sessionDurationOptionsMinutes.Length == 0) return 0;
+        for (int i = 0; i < sessionDurationOptionsMinutes.Length; i++)
+            if (sessionDurationOptionsMinutes[i] == minutes) return i;
+        return 0;
     }
 
     int FindMapIndex(IReadOnlyList<MapData> maps, MapData selected) {
