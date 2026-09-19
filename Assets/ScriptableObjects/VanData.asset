@@ -28,7 +28,7 @@ MonoBehaviour:
   baseSpeed: 3.2
   speedStep: 0.1
   maxSpeedLevel: 25
-  minimumTuningSpeed: 2.0
+  minimumTuningSpeed: 2
   speedCostMult: 0.5
   baseTurn: 145
   turnStep: 10
@@ -81,3 +81,7 @@ MonoBehaviour:
     driftEnterDwell: 0
     driftExitDwell: 0.25
     driftRequiresHandbrake: 1
+  bodySettings:
+    baseMass: 1
+    massByHealthLevel: []
+  explosionResistance: 0

@@ -20,6 +20,7 @@ public class VehicleDataEditor : Editor {
     bool showUpgrades = true;
     bool showDriving = true;
     bool showPlayerTuning = true;
+    bool showPhysicsMass = true;
     bool showCostPreview = true;
 
     void OnEnable() {
@@ -42,6 +43,7 @@ public class VehicleDataEditor : Editor {
         DrawUpgradeGroup();
         DrawPlayerTuningGroup();
         DrawDrivingGroup();
+        DrawPhysicsMassGroup();
 
         if (EditorGUI.EndChangeCheck()) {
             serializedObject.ApplyModifiedProperties();
@@ -93,6 +95,9 @@ public class VehicleDataEditor : Editor {
             DrawStatGroup("Armor", "baseArmor", "armorStep", "maxArmorLevel", "armorCostMult", "damage reduction 0..1");
             DrawStatGroup("Storage", "baseCapacity", "capacityStep", "maxCapacityLevel", "capacityCostMult", "pizzas");
             DrawStatGroup("Stabilizer", "baseProtection", "protectionStep", "maxProtectionLevel", "protectionCostMult", "pizza protection 0..1");
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Explosion resistance (0..1, not upgradable yet)", EditorStyles.boldLabel);
+            DrawProperty("explosionResistance", "Explosion Resistance", "Damage reduction against blast/explosion damage. Separate from Armor (collision) — never applied a second time on top of it.");
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
     }
@@ -135,6 +140,22 @@ public class VehicleDataEditor : Editor {
             DrawDrivingRelativeProperty("playerDriftSteeringMultiplierMax", "Maximum drift steering", "Higher values rotate the vehicle more sharply while drifting.");
             DrawDrivingRelativeProperty("playerGripEnterTimeMin", "Fastest grip entry", "Lower values transition into drift grip faster.");
             DrawDrivingRelativeProperty("playerGripEnterTimeMax", "Slowest grip entry", "Higher values make the grip transition gentler.");
+        }
+        EditorGUILayout.EndFoldoutHeaderGroup();
+    }
+
+    void DrawPhysicsMassGroup() {
+        showPhysicsMass = EditorGUILayout.BeginFoldoutHeaderGroup(showPhysicsMass, "Physics mass");
+        if (showPhysicsMass) {
+            EditorGUILayout.HelpBox("Rigidbody2D mass is resolved from here once at spawn. It only affects collision push/momentum, never this vehicle's own acceleration target. The per-Health-level table is optional; an empty table uses Base Mass at every level.", MessageType.None);
+            DrawProperty("bodySettings.baseMass", "Base Mass", "Rigidbody2D mass with no Health upgrades, or when the table below has no entry for the current level.");
+            SerializedProperty table = serializedObject.FindProperty("bodySettings.massByHealthLevel");
+            if (table == null) {
+                EditorGUILayout.HelpBox("Missing VehicleBodySettings field: massByHealthLevel", MessageType.Error);
+            }
+            else {
+                EditorGUILayout.PropertyField(table, new GUIContent("Mass By Health Level", "Index 0 = zero Health upgrades bought. Optional; leave empty to always use Base Mass."), true);
+            }
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
     }

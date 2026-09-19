@@ -142,6 +142,14 @@ public class VehicleData : ScriptableObject {
     /// <summary>Driving and drift tuning authored for this vehicle.</summary>
     public VehicleDrivingSettings drivingSettings = new VehicleDrivingSettings();
 
+    [Header("Physics Mass")]
+    /// <summary>Rigidbody2D mass resolution for this vehicle, assigned once at spawn. Affects collision push/momentum only, never this vehicle's own acceleration target.</summary>
+    public VehicleBodySettings bodySettings = new VehicleBodySettings();
+
+    [Header("Explosion")]
+    /// <summary>Damage reduction against blast/explosion damage, from 0 to 1. Separate from baseArmor (collision damage reduction) — never applied a second time on top of it.</summary>
+    [Range(0, 1)] public float explosionResistance = 0f;
+
     // The four accessors below exist so that callers never have to know which field belongs to
     // which stat. Before this, the same six-way switch was repeated in GameManager and
     // GarageManager against magic strings, and a mistyped key silently charged the player without

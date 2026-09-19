@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f18692fddbd18a4da4e0fd0c899de30, type: 3}
+  m_Name: NoTraffic
+  m_EditorClassIdentifier: 
+  modifierId: a1c3e5f7b9d1436f8a2c4e6f8b0d2c4e
+  displayNameKey: modifier.notraffic.name
+  descriptionKey: modifier.notraffic.description
+  lightColor: {r: 1, g: 1, b: 1, a: 1}
+  lightBlend: 0
+  lightIntensityMultiplier: 1
+  speedDelta: 0
+  turnDelta: 0
+  healthDelta: 0
+  armorDelta: 0
+  capacityDelta: 0
+  protectionDelta: 0
+  scoreMultiplier: 0.6
+  disablesCivilianTraffic: 1
+  disablesPolice: 0

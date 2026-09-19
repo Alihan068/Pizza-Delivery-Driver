@@ -49,6 +49,10 @@ public class MapData : ScriptableObject {
     [Tooltip("One-time currency price to purchase this map. Zero makes it free.")]
     public int unlockPrice;
 
+    [Header("Traffic And Police (Optional)")]
+    [Tooltip("Optional civilian/police navigation data for this map. Null means traffic and police are unsupported here; existing gameplay is unaffected either way.")]
+    public TrafficMapData trafficMapData;
+
     /// <summary>Name shown to the player, resolved from <see cref="displayNameKey"/>.</summary>
     /// <returns>The localized name, or the asset name when no key is set.</returns>
     public string GetDisplayName() {

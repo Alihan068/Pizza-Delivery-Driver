@@ -494,3 +494,11 @@ MonoBehaviour:
   - key: map.riverside.desc
     text: 'A bayside metropolis: ring roads, a central roundabout, dense downtown
       blocks and long industrial runs.'
+  - key: modifier.notraffic.name
+    text: No Traffic
+  - key: modifier.notraffic.description
+    text: Civilian traffic is disabled for this shift. Lowers the final score.
+  - key: modifier.peaceful.name
+    text: Peaceful
+  - key: modifier.peaceful.description
+    text: Police pursuit is disabled for this shift. Lowers the final score.

@@ -49,6 +49,27 @@ public class ShiftModifierData : ScriptableObject {
     [Tooltip("Temporary pizza protection chance change for this shift.")]
     public float protectionDelta;
 
+    [Header("Score And Capability Flags")]
+    [Range(0f, 1f)]
+    [Tooltip("Nerf applied to this shift's final score when this modifier is selected. 1 is neutral, 0 zeroes the score. Combined with other selected modifiers by multiplication.")]
+    public float scoreMultiplier = 1f;
+
+    [Tooltip("When true, civilian traffic is disabled for the shift while this modifier is selected.")]
+    public bool disablesCivilianTraffic;
+
+    [Tooltip("When true, police pursuit is disabled for the shift while this modifier is selected.")]
+    public bool disablesPolice;
+
+    [Tooltip("Optional exclusivity group id. At most one modifier sharing the same non-empty group id may be selected at once. Leave empty for no exclusivity.")]
+    public string exclusiveGroup = string.Empty;
+
+    /// <summary>Whether the authored score multiplier is a finite value in the accepted [0, 1] range.</summary>
+    /// <returns>False for NaN, infinity, or a value outside [0, 1]; such a modifier must be rejected, not clamped silently.</returns>
+    public bool HasValidScoreMultiplier() {
+        return !float.IsNaN(scoreMultiplier) && !float.IsInfinity(scoreMultiplier) &&
+            scoreMultiplier >= 0f && scoreMultiplier <= 1f;
+    }
+
     /// <summary>Gets the authored temporary delta for one vehicle stat.</summary>
     /// <param name="stat">Stat to resolve.</param>
     /// <returns>The delta, or zero when the stat is unknown.</returns>

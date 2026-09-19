@@ -60,4 +60,16 @@ public struct SessionResult {
 
     /// <summary>True when all three authored perfect-shift checks passed.</summary>
     public bool perfectShift;
+
+    /// <summary>Plain sum of every AddScore event for the shift, before any modifier multiplier.</summary>
+    public int rawScore;
+
+    /// <summary>Product of every selected modifier's score multiplier applied to this shift. Neutral (1) when none were selected.</summary>
+    public float scoreMultiplier;
+
+    /// <summary>The number shown on HUD, the result screen, best-score records, and difficulty tier score: floor(max(0, rawScore) * scoreMultiplier).</summary>
+    public int finalScore;
+
+    /// <summary>Permanent ids of the modifiers applied to this shift, in canonical order. Empty when none were selected.</summary>
+    public string[] appliedModifierIds;
 }

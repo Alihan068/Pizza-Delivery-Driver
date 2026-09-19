@@ -17,6 +17,7 @@ public class ShiftModifierController : MonoBehaviour {
     Color baseLightColor = Color.white;
     float baseLightIntensity = 1f;
     bool capturedBaseLight;
+    FrozenModifierRules frozenModifiers;
 
     void Awake() {
         if (globalLight == null) return;
@@ -29,19 +30,25 @@ public class ShiftModifierController : MonoBehaviour {
         ApplySelectedModifier();
     }
 
-    /// <summary>Applies the selected modifier or restores the scene's authored lighting.</summary>
+    /// <summary>Applies the captured session blend, independent of later selection or asset edits.</summary>
     public void ApplySelectedModifier() {
         if (globalLight == null || !capturedBaseLight) return;
 
-        ShiftModifierData modifier = GameManager.Instance != null ? GameManager.Instance.CurrentModifier : null;
-        if (modifier == null) {
-            globalLight.color = baseLightColor;
-            globalLight.intensity = baseLightIntensity;
-            return;
+        if (frozenModifiers == null) {
+            var host = SessionSceneRules.ResolveHost(gameObject.scene);
+            if (host != null) {
+                host.PrepareSession(GameManager.Instance);
+                frozenModifiers = host.Coordinator?.Context.Modifiers;
+            }
+            else if (GameManager.Instance != null) {
+                frozenModifiers = GameManager.Instance.PrepareSession(gameObject.scene).Modifiers;
+            }
+            frozenModifiers ??= new FrozenModifierRules(null);
         }
-
-        globalLight.color = Color.Lerp(baseLightColor, modifier.lightColor, Mathf.Clamp01(modifier.lightBlend));
-        globalLight.intensity = baseLightIntensity * Mathf.Max(0.01f, modifier.lightIntensityMultiplier);
+        frozenModifiers.ApplyLight(baseLightColor, baseLightIntensity,
+            out Color resultColor, out float resultIntensity);
+        globalLight.color = resultColor;
+        globalLight.intensity = resultIntensity;
     }
 
     void OnDestroy() {

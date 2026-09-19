@@ -308,6 +308,8 @@ public static class VehicleValidator {
         CheckStat(issues, data, "Protection", data.protectionStep, data.maxProtectionLevel, data.protectionCostMult);
 
         ValidateDrivingSettings(data, issues);
+        ValidateBodySettings(data, issues);
+        ValidateExplosionResistance(data, issues);
 
         if (data.baseHealth <= 0f) issues.Add(VehicleIssue.Error(id + " baseHealth is zero or negative. The vehicle would die on the first frame.", data));
         if (data.baseSpeed <= 0f) issues.Add(VehicleIssue.Error(id + " baseSpeed is zero or negative. The vehicle would not move.", data));
@@ -389,6 +391,43 @@ public static class VehicleValidator {
             settings.driftSteeringMultiplier);
         ValidateTuningRange(issues, data, id, "playerGripEnterTime", settings.playerGripEnterTimeMin,
             settings.playerGripEnterTimeMax, settings.gripEnterTime);
+    }
+
+    static void ValidateBodySettings(VehicleData data, List<VehicleIssue> issues) {
+        string id = Quote(data.name) + " Mass";
+        var body = data.bodySettings;
+        if (body == null) {
+            issues.Add(VehicleIssue.Error(id + " bodySettings is missing. A vehicle cannot spawn without a resolvable Rigidbody2D mass.", data));
+            return;
+        }
+
+        CheckFiniteNonNegative(issues, data, id, "baseMass", body.baseMass);
+        if (!float.IsNaN(body.baseMass) && !float.IsInfinity(body.baseMass) && body.baseMass == 0f) {
+            issues.Add(VehicleIssue.Error(id + " baseMass is zero. Rigidbody2D mass must be positive.", data));
+        }
+
+        if (body.massByHealthLevel != null) {
+            for (int i = 0; i < body.massByHealthLevel.Length; i++) {
+                float value = body.massByHealthLevel[i];
+                if (float.IsNaN(value) || float.IsInfinity(value)) {
+                    issues.Add(VehicleIssue.Error(id + " massByHealthLevel[" + i + "] is NaN or infinity.", data));
+                }
+                else if (value <= 0f) {
+                    issues.Add(VehicleIssue.Warning(id + " massByHealthLevel[" + i + "] is zero or negative (" + value +
+                        "); ResolveMass falls back to baseMass for this level.", data));
+                }
+            }
+        }
+    }
+
+    static void ValidateExplosionResistance(VehicleData data, List<VehicleIssue> issues) {
+        string id = Quote(data.name) + " Explosion";
+        if (float.IsNaN(data.explosionResistance) || float.IsInfinity(data.explosionResistance)) {
+            issues.Add(VehicleIssue.Error(id + " explosionResistance is NaN or infinity.", data));
+        }
+        else if (data.explosionResistance < 0f || data.explosionResistance > 1f) {
+            issues.Add(VehicleIssue.Error(id + " explosionResistance (" + data.explosionResistance + ") is outside [0, 1].", data));
+        }
     }
 
     static void ValidateTuningEnvelope(VehicleData data, List<VehicleIssue> issues) {
@@ -585,6 +624,10 @@ public static class VehicleValidator {
             Compare(drift, "protectionStep", probe.protectionStep, reference.protectionStep);
             Compare(drift, "maxProtectionLevel", probe.maxProtectionLevel, reference.maxProtectionLevel);
             Compare(drift, "protectionCostMult", probe.protectionCostMult, reference.protectionCostMult);
+            if (probe.bodySettings != null && reference.bodySettings != null) {
+                Compare(drift, "bodySettings.baseMass", probe.bodySettings.baseMass, reference.bodySettings.baseMass);
+            }
+            Compare(drift, "explosionResistance", probe.explosionResistance, reference.explosionResistance);
 
             if (drift.Count > 0) {
                 issues.Add(VehicleIssue.Warning("The C# defaults in VehicleData.cs no longer match " + reference.name +

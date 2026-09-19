@@ -74,7 +74,7 @@ public class GameUIManager : MonoBehaviour {
     public void UpdateScoreDisplays() {
         //Take score from ScoreHandler
         if (scoreHandler != null) {
-            scoreText.text = "= " + scoreHandler.currentScore;
+            scoreText.text = "= " + scoreHandler.FinalScore;
             moneyText.text = "= " + scoreHandler.sessionEarnings;
         }
     }

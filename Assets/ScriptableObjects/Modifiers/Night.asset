@@ -24,3 +24,6 @@ MonoBehaviour:
   armorDelta: 0
   capacityDelta: 0
   protectionDelta: 0
+  scoreMultiplier: 1
+  disablesCivilianTraffic: 0
+  disablesPolice: 0

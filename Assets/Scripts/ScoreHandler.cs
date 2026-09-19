@@ -7,12 +7,30 @@ public class ScoreHandler : MonoBehaviour {
     float currentTimer;
     float totalDurationSeconds;
     float activeSessionSeconds;
-    bool isGameActive = true;
+    bool isGameActive;
+    bool started;
+    [SerializeField] TrafficSessionHost sessionHost;
+    TrafficSessionContext sessionContext;
+    GameManager sessionManager;
     /// <summary>Duration selected for this shift, in minutes.</summary>
     public int ShiftDurationMinutes { get; private set; }
 
     [Header("Session Data")]
+    /// <summary>Raw score: the plain sum of every AddScore event this shift, before any modifier multiplier.</summary>
     public int currentScore;
+
+    /// <summary>
+    /// Live preview of the score this shift would settle at right now: <see cref="currentScore"/>
+    /// nerfed by the frozen session modifiers' combined coefficient. HUD reads this, never the
+    /// raw <see cref="currentScore"/>, so the number displayed during play never disagrees with the
+    /// one <see cref="GameManager.SettleSession"/> authoritatively computes at end of shift.
+    /// </summary>
+    public int FinalScore {
+        get {
+            float multiplier = sessionContext != null ? sessionContext.Modifiers.ScoreMultiplier : 1f;
+            return ModifierScoreRules.ComputeFinalScore(currentScore, multiplier);
+        }
+    }
     public int sessionEarnings { get; private set; }
     public int missedCustomers { get; private set; }
     public int ordersCompleted { get; private set; }
@@ -23,7 +41,8 @@ public class ScoreHandler : MonoBehaviour {
     public bool IsGameActive => isGameActive;
 
     /// <summary>True when this score handler is running an endless session.</summary>
-    public bool IsFreeplay => GameManager.Instance != null && GameManager.Instance.IsFreeplayMode;
+    public bool IsFreeplay => sessionContext != null ? sessionContext.Draft.isFreeplay :
+        GameManager.Instance != null && GameManager.Instance.IsFreeplayMode;
 
     /// <summary>Seconds remaining in the active shift.</summary>
     public float RemainingTimeSeconds => Mathf.Max(0f, currentTimer);
@@ -38,10 +57,29 @@ public class ScoreHandler : MonoBehaviour {
     SessionResultPanel resultPanel;
 
     void Start() {
-        gameUIManager = FindFirstObjectByType<GameUIManager>();
-        resultPanel = FindFirstObjectByType<SessionResultPanel>(FindObjectsInactive.Include);
-        ShiftDurationMinutes = GameManager.Instance != null
-            ? GameManager.Instance.SelectedShiftDurationMinutes
+        sessionManager = GameManager.Instance;
+        if (sessionHost == null) sessionHost = SessionSceneRules.ResolveHost(gameObject.scene);
+        if (sessionHost != null) {
+            sessionHost.PrepareSession(sessionManager);
+            sessionContext = sessionHost.Coordinator?.Context;
+            sessionHost.Activated += BeginSession;
+            sessionHost.Ended += StopSession;
+            if (sessionHost.IsActive || sessionHost.IsLegacyMap) BeginSession();
+        }
+        else {
+            sessionContext = sessionManager != null ? sessionManager.PrepareSession(gameObject.scene) : null;
+            BeginSession();
+        }
+    }
+
+    void BeginSession() {
+        if (started || (sessionContext != null && sessionContext.Phase == TrafficSessionPhase.Ended)) return;
+        started = true;
+        isGameActive = true;
+        gameUIManager = SessionSceneRules.ResolveComponent<GameUIManager>(gameObject.scene);
+        resultPanel = SessionSceneRules.ResolveComponent<SessionResultPanel>(gameObject.scene, true);
+        ShiftDurationMinutes = sessionContext != null
+            ? sessionContext.Draft.shiftDurationMinutes
             : Mathf.Max(1, Mathf.RoundToInt(levelDurationInMinutes));
         currentTimer = IsFreeplay ? 0f : ShiftDurationMinutes * 60f;
         totalDurationSeconds = currentTimer;
@@ -50,6 +88,17 @@ public class ScoreHandler : MonoBehaviour {
         CreateShiftObjectives();
         if (IsFreeplay && gameUIManager != null) gameUIManager.ShowEndlessTimer();
         UpdateUI();
+    }
+
+    void StopSession() { isGameActive = false; }
+
+    void OnDestroy() {
+        if (sessionHost != null) {
+            sessionHost.Activated -= BeginSession;
+            sessionHost.Ended -= StopSession;
+            sessionHost.EndSession();
+        }
+        if (sessionManager != null) sessionManager.ReleaseSession(sessionContext);
     }
 
     void CreateShiftObjectives() {
@@ -155,7 +204,7 @@ public class ScoreHandler : MonoBehaviour {
         var data = GameManager.Instance.CareerData;
         int quotaTarget = data.GetObjectiveTarget(ShiftObjectiveType.Quota, GameManager.Instance.GetShiftCapacity(), GameManager.Instance.CurrentRank);
         int requiredDeliveries = Mathf.FloorToInt(quotaTarget * data.fastExtractionQuotaFraction);
-        Delivery delivery = FindFirstObjectByType<Delivery>();
+        Delivery delivery = SessionSceneRules.ResolveComponent<Delivery>(gameObject.scene);
         bool hasTime = RemainingTimeSeconds >= data.fastExtractionMinSecondsRemaining;
         bool hasDeliveries = delivery != null && delivery.pizzaDelivered >= requiredDeliveries;
         if (!hasTime || !hasDeliveries) return;
@@ -213,16 +262,18 @@ public class ScoreHandler : MonoBehaviour {
         }
 
         isGameActive = false;
+        if (sessionHost != null) sessionHost.EndSession();
+        else sessionContext?.SetPhase(TrafficSessionPhase.Ended);
         FinalizeObjectives();
 
-        Driver driver = FindFirstObjectByType<Driver>();
+        Driver driver = SessionSceneRules.ResolveComponent<Driver>(gameObject.scene);
         float hp = driver != null ? driver.currentHealth : 0f;
         float maxHp = driver != null ? driver.maxHealth : 0f;
 
-        Delivery delivery = FindFirstObjectByType<Delivery>();
+        Delivery delivery = SessionSceneRules.ResolveComponent<Delivery>(gameObject.scene);
         int delivered = delivery != null ? delivery.pizzaDelivered : 0;
 
-        CustomerManager customerManager = FindFirstObjectByType<CustomerManager>();
+        CustomerManager customerManager = SessionSceneRules.ResolveComponent<CustomerManager>(gameObject.scene);
         int ordersOffered = customerManager != null ? customerManager.ordersOffered : 0;
 
         bool freeplay = IsFreeplay;
@@ -234,7 +285,7 @@ public class ScoreHandler : MonoBehaviour {
         result.perfectShift = !freeplay && result.noMissedOrders && result.noCollisionDamage && result.noPizzasLost &&
                               (reason == EndReason.TimeUp || reason == EndReason.Extracted);
 
-        if (resultPanel != null) resultPanel.Show(result, delivered, missedCustomers, currentScore, destinationScene);
+        if (resultPanel != null) resultPanel.Show(result, delivered, missedCustomers, result.finalScore, destinationScene);
         Time.timeScale = 0f;
     }
 }

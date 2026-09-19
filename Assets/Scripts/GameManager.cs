@@ -53,6 +53,7 @@ public class GameManager : MonoBehaviour {
     /// <summary>Permanent id of the selected difficulty inside currentMap.</summary>
     public string currentDifficultyId;
     ShiftModifierData currentModifier;
+    readonly List<string> selectedModifierIds = new List<string>();
     public List<VehicleSaveData> vehicleSaveList = new List<VehicleSaveData>();
     /// <summary>Permanent map ids the active profile has purchased or received as a starter.</summary>
     public List<string> ownedMapIds = new List<string>();
@@ -87,6 +88,65 @@ public class GameManager : MonoBehaviour {
     public int bestFreeplayDeliveries;
 
     bool isFreeplayMode;
+    int sessionSceneHandle;
+    int initialSceneHandle;
+    readonly Dictionary<VehicleStatId, float> frozenShiftStats = new Dictionary<VehicleStatId, float>();
+    float frozenShiftSpeed;
+    bool frozenBuiltInMap;
+    bool frozenBuiltInVehicle;
+    bool frozenCustomTuning;
+    int frozenCompetitiveDuration;
+
+    /// <summary>Scene-owned rules retained through settlement; cleared when that scene unloads.</summary>
+    public TrafficSessionContext ActiveSession { get; private set; }
+
+    /// <summary>Captures modifier and effective stat values once per scene, before player instantiation.</summary>
+    /// <param name="scene">Scene owning this run; different scene handles create independent runs.</param>
+    /// <param name="map">Explicit authored binding when a traffic host is present.</param>
+    /// <param name="explicitBinding">True forbids any fallback to currentMap, including for null bindings.</param>
+    public TrafficSessionContext PrepareSession(Scene scene, MapData map = null, bool explicitBinding = false) {
+        if (ActiveSession != null && sessionSceneHandle == scene.handle) return ActiveSession;
+        if (ActiveSession != null) ReleaseSession(ActiveSession);
+        var context = SessionSceneRules.Create(this, map, explicitBinding, scene.name);
+        foreach (VehicleStatId stat in System.Enum.GetValues(typeof(VehicleStatId))) {
+            float value = GetStatValue(stat) + context.Modifiers.GetStatDelta(stat);
+            frozenShiftStats[stat] = stat == VehicleStatId.Armor || stat == VehicleStatId.Protection
+                ? Mathf.Clamp01(value) : Mathf.Max(0f, value);
+        }
+        frozenShiftSpeed = Mathf.Max(0f, GetSelectedBaseSpeed() + context.Modifiers.GetStatDelta(VehicleStatId.Speed));
+        MapData boundMap = explicitBinding ? map : currentMap;
+        frozenBuiltInMap = Content != null && Content.GetMapProviderId(boundMap) == BuiltInContentProvider.SourceId;
+        frozenBuiltInVehicle = Content != null && Content.GetVehicleProviderId(currentVehicle) == BuiltInContentProvider.SourceId;
+        var vehicleSave = GetCurrentVehicleSave();
+        frozenCustomTuning = vehicleSave != null && vehicleSave.hasCustomTuning;
+        frozenCompetitiveDuration = CompetitiveDurationMinutes;
+        sessionSceneHandle = scene.handle;
+        ActiveSession = context;
+        if (scene.handle == initialSceneHandle || !Application.isPlaying)
+            context.Integrity.MarkInvalid("Direct editor scene test is not a competitive career run.");
+        if (!explicitBinding) SessionSceneRules.Freeze(context, false);
+        return context;
+    }
+
+    /// <summary>Releases only the matching scene's context; stale teardown cannot clear a newer run.</summary>
+    public void ReleaseSession(TrafficSessionContext context) {
+        if (context == null || !ReferenceEquals(ActiveSession, context)) return;
+        context.SetPhase(TrafficSessionPhase.Ended);
+        ActiveSession = null;
+        frozenShiftStats.Clear();
+    }
+
+    void HandleSessionSceneUnloaded(Scene scene) {
+        if (ActiveSession != null && scene.handle == sessionSceneHandle) ReleaseSession(ActiveSession);
+    }
+
+    void OnDestroy() {
+        SceneManager.sceneUnloaded -= HandleSessionSceneUnloaded;
+        if (Instance == this) {
+            ReleaseSession(ActiveSession);
+            Instance = null;
+        }
+    }
 
     /// <summary>Every vehicle and map the game knows about, from all content sources.</summary>
     public ContentRegistry Content { get; private set; }
@@ -171,6 +231,8 @@ public class GameManager : MonoBehaviour {
         }
 
         Instance = this;
+        initialSceneHandle = gameObject.scene.handle;
+        SceneManager.sceneUnloaded += HandleSessionSceneUnloaded;
         DontDestroyOnLoad(gameObject);
 
         BuildContentRegistry();
@@ -639,11 +701,12 @@ public class GameManager : MonoBehaviour {
             currentVehicle.minimumTuningSpeed, GetUnlockedMaxSpeed());
     }
 
-    /// <summary>Effective speed passed to the next spawned vehicle after the selected shift modifier.</summary>
+    /// <summary>Effective speed passed to the next spawned vehicle after every selected shift modifier.</summary>
     /// <returns>The non-negative speed limit used by the movement motor.</returns>
     public float GetEffectiveShiftSpeed() {
+        if (ActiveSession != null) return frozenShiftSpeed;
         float speed = GetSelectedBaseSpeed();
-        if (currentModifier != null) speed += currentModifier.GetStatDelta(VehicleStatId.Speed);
+        speed += ModifierEffectResolver.GetCombinedStatDelta(GetSelectedModifiers(), VehicleStatId.Speed);
         return Mathf.Max(0f, speed);
     }
 
@@ -719,8 +782,9 @@ public class GameManager : MonoBehaviour {
     /// <param name="stat">Stat to read.</param>
     /// <returns>The effective shift value with valid fraction bounds applied.</returns>
     public float GetShiftStatValue(VehicleStatId stat) {
+        if (ActiveSession != null && frozenShiftStats.TryGetValue(stat, out float frozen)) return frozen;
         float value = GetStatValue(stat);
-        if (currentModifier != null) value += currentModifier.GetStatDelta(stat);
+        value += ModifierEffectResolver.GetCombinedStatDelta(GetSelectedModifiers(), stat);
         bool isFraction = stat == VehicleStatId.Armor || stat == VehicleStatId.Protection;
         return isFraction ? Mathf.Clamp01(value) : Mathf.Max(0f, value);
     }
@@ -731,11 +795,16 @@ public class GameManager : MonoBehaviour {
         return Mathf.Max(1, Mathf.RoundToInt(GetShiftStatValue(VehicleStatId.Capacity)));
     }
 
-    /// <summary>Selects a registered modifier for the next shift without changing career progress.</summary>
+    /// <summary>
+    /// Selects a registered modifier for the next shift without changing career progress.
+    /// Compatibility wrapper over <see cref="SelectModifiers"/> for the single-modifier screen:
+    /// it always builds a single-element (or empty) id request, so both selection states stay in sync.
+    /// </summary>
     /// <param name="modifier">Modifier to select, or null to play without one.</param>
     public void SelectModifier(ShiftModifierData modifier) {
         if (modifier == null) {
             currentModifier = null;
+            SelectModifiers(null);
             return;
         }
 
@@ -743,9 +812,55 @@ public class GameManager : MonoBehaviour {
         foreach (var candidate in allModifiers) {
             if (candidate == modifier) {
                 currentModifier = modifier;
+                SelectModifiers(new[] { modifier.modifierId });
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// Selects a duplicate-free, order-independent set of modifiers by stable id for the next shift.
+    /// Not saved to career progress. Unknown ids, duplicates, and exclusive-group conflicts are rejected.
+    /// </summary>
+    /// <param name="modifierIds">Requested modifier ids in any order.</param>
+    /// <returns>The resolved selection together with any rejected ids.</returns>
+    public ModifierSelectionResult SelectModifiers(IReadOnlyList<string> modifierIds) {
+        var result = ModifierSelectionResolver.Resolve(allModifiers, modifierIds);
+        selectedModifierIds.Clear();
+        foreach (var modifier in result.resolvedModifiers) selectedModifierIds.Add(modifier.modifierId);
+        return result;
+    }
+
+    /// <summary>Modifiers selected for the next shift, in canonical order. Not saved to career progress.</summary>
+    public IReadOnlyList<string> SelectedModifierIds => selectedModifierIds;
+
+    /// <summary>Resolves the selected modifier ids back to their assets, in the same canonical order.</summary>
+    /// <returns>Resolved modifiers; an id with no matching asset in <see cref="allModifiers"/> is skipped.</returns>
+    public IReadOnlyList<ShiftModifierData> GetSelectedModifiers() {
+        var resolved = new List<ShiftModifierData>(selectedModifierIds.Count);
+        if (allModifiers == null) return resolved;
+        foreach (var id in selectedModifierIds) {
+            foreach (var candidate in allModifiers) {
+                if (candidate != null && candidate.modifierId == id) {
+                    resolved.Add(candidate);
+                    break;
+                }
+            }
+        }
+        return resolved;
+    }
+
+    /// <summary>
+    /// Takes a detached copy of the current map/vehicle/difficulty/duration/modifier selection for a
+    /// new traffic/police session. This is the raw pre-validation draft; S02/S07 map validation turns
+    /// it into the final frozen <see cref="SessionRulesSnapshot"/>.
+    /// </summary>
+    /// <param name="sessionId">Caller-assigned identifier for the new session.</param>
+    public SessionSetupDraft CreateSessionSetupDraft(string sessionId) {
+        string mapId = currentMap != null ? currentMap.mapId : string.Empty;
+        string vehicleId = currentVehicle != null ? currentVehicle.vehicleId : string.Empty;
+        return new SessionSetupDraft(sessionId, mapId, vehicleId, currentDifficultyId,
+            SelectedShiftDurationMinutes, IsFreeplayMode, SelectedModifierIds);
     }
 
     /// <summary>Selects the finite shift duration used when the next gameplay scene starts.</summary>
@@ -764,6 +879,10 @@ public class GameManager : MonoBehaviour {
     /// <returns>A status explaining eligibility for future leaderboard and achievement services.</returns>
     public CompetitiveEligibilityStatus EvaluateCompetitiveEligibility(int durationMinutes,
         EndReason reason, bool freeplay) {
+        if (ActiveSession != null && !ActiveSession.Integrity.IsValid) return CompetitiveEligibilityStatus.Unfinished;
+        if (ActiveSession != null) return CompetitiveRunRules.Evaluate(ActiveSession.Draft.isFreeplay,
+            frozenBuiltInMap, frozenBuiltInVehicle, frozenCustomTuning, ActiveSession.Draft.shiftDurationMinutes,
+            frozenCompetitiveDuration, reason == EndReason.TimeUp || reason == EndReason.Extracted);
         bool builtInMap = Content != null && Content.GetMapProviderId(currentMap) == BuiltInContentProvider.SourceId;
         bool builtInVehicle = Content != null && Content.GetVehicleProviderId(currentVehicle) == BuiltInContentProvider.SourceId;
         VehicleSaveData vehicleSave = GetCurrentVehicleSave();
@@ -965,21 +1084,23 @@ public class GameManager : MonoBehaviour {
     /// <param name="reason">Ending reason used to reject abandoned sessions.</param>
     /// <returns>True when a best-score record was created or improved.</returns>
     public bool RecordDifficultyScore(int score, EndReason reason) {
-        if (IsFreeplayMode || reason == EndReason.Abandoned || reason == EndReason.Interrupted) return false;
-        if (currentMap == null || mapDifficultyProgress == null) return false;
-
-        MapDifficultyData difficulty = GetCurrentDifficulty();
-        if (difficulty == null || string.IsNullOrEmpty(currentMap.mapId) || string.IsNullOrEmpty(difficulty.difficultyId)) return false;
+        if ((ActiveSession != null ? ActiveSession.Draft.isFreeplay : IsFreeplayMode) ||
+            reason == EndReason.Abandoned || reason == EndReason.Interrupted) return false;
+        if (ActiveSession != null && !ActiveSession.Integrity.IsValid) return false;
+        if (mapDifficultyProgress == null) return false;
+        string mapId = ActiveSession != null ? ActiveSession.Draft.mapId : currentMap != null ? currentMap.mapId : null;
+        string difficultyId = ActiveSession != null ? ActiveSession.Draft.difficultyId : GetCurrentDifficulty()?.difficultyId;
+        if (string.IsNullOrEmpty(mapId) || string.IsNullOrEmpty(difficultyId)) return false;
 
         int safeScore = Mathf.Max(0, score);
         foreach (var progress in mapDifficultyProgress) {
-            if (progress == null || progress.mapId != currentMap.mapId || progress.difficultyId != difficulty.difficultyId) continue;
+            if (progress == null || progress.mapId != mapId || progress.difficultyId != difficultyId) continue;
             if (safeScore <= progress.bestScore) return false;
             progress.bestScore = safeScore;
             return true;
         }
 
-        mapDifficultyProgress.Add(new MapDifficultyProgress(currentMap.mapId, difficulty.difficultyId, safeScore));
+        mapDifficultyProgress.Add(new MapDifficultyProgress(mapId, difficultyId, safeScore));
         return true;
     }
 
@@ -1051,6 +1172,7 @@ public class GameManager : MonoBehaviour {
     /// <param name="freeplay">True when this is an endless session and career day state must not change.</param>
     /// <returns>A breakdown of the settlement for the result screen.</returns>
     public SessionResult SettleSession(int sessionEarnings, float currentHealth, float maxHealth, EndReason reason, int ordersCompleted, int ordersOffered, int missedCustomers, float activeSessionSeconds, int deliveredPizzas = 0, int score = 0, bool freeplay = false) {
+        if (ActiveSession != null) freeplay = ActiveSession.Draft.isFreeplay;
         bool wasFinalShift = !freeplay && IsFinalShift;
         int bankBefore = totalMoney;
 
@@ -1066,6 +1188,17 @@ public class GameManager : MonoBehaviour {
 
         totalMoney = SessionSettlementMath.CalculateBankAfter(bankBefore, kept, repair);
 
+        // RawScore is ScoreHandler's plain event accumulation (the "score" parameter); this is the
+        // single authoritative place that multiplies it by the selected modifiers' combined
+        // coefficient. HUD, the result screen, best-score records, and difficulty tier score all
+        // consume the resulting FinalScore, never the raw number, so they can never disagree.
+        var appliedModifiers = ActiveSession != null ? ActiveSession.Modifiers : new FrozenModifierRules(GetSelectedModifiers());
+        float combinedScoreMultiplier = appliedModifiers.ScoreMultiplier;
+        int finalScore = ModifierScoreRules.ComputeFinalScore(score, combinedScoreMultiplier);
+        var appliedModifierIds = new string[appliedModifiers.Ids.Count];
+        for (int i = 0; i < appliedModifierIds.Length; i++) appliedModifierIds[i] = appliedModifiers.Ids[i];
+        int duration = ActiveSession != null ? ActiveSession.Draft.shiftDurationMinutes : SelectedShiftDurationMinutes;
+
         var result = new SessionResult {
             reason = reason,
             grossEarnings = sessionEarnings,
@@ -1077,8 +1210,12 @@ public class GameManager : MonoBehaviour {
             rankAfter = CurrentRank,
             isFreeplay = freeplay,
             isFinalShift = wasFinalShift,
-            shiftDurationMinutes = SelectedShiftDurationMinutes,
-            competitiveEligibility = EvaluateCompetitiveEligibility(SelectedShiftDurationMinutes, reason, freeplay)
+            shiftDurationMinutes = duration,
+            competitiveEligibility = EvaluateCompetitiveEligibility(duration, reason, freeplay),
+            rawScore = score,
+            scoreMultiplier = combinedScoreMultiplier,
+            finalScore = finalScore,
+            appliedModifierIds = appliedModifierIds
         };
 
         // Rent is charged inside this same call, atomically with the day's last shift, rather than
@@ -1122,11 +1259,11 @@ public class GameManager : MonoBehaviour {
             reachedEnding = true;
         }
 
-        RecordSessionStatistics(freeplay, deliveredPizzas, ordersCompleted, score);
-        RecordDifficultyScore(score, reason);
+        RecordSessionStatistics(freeplay, deliveredPizzas, ordersCompleted, finalScore);
+        RecordDifficultyScore(finalScore, reason);
         result.careerCompleted = careerCompleted;
         result.finalShiftSucceeded = finalShiftSucceeded;
-        result.personalBestScore = !freeplay && score > 0 && score >= bestShiftScore;
+        result.personalBestScore = !freeplay && finalScore > 0 && finalScore >= bestShiftScore;
         result.personalBestDeliveries = !freeplay && deliveredPizzas > 0 && deliveredPizzas >= bestShiftDeliveries;
         result.personalBestFreeplayDeliveries = freeplay && deliveredPizzas > 0 && deliveredPizzas >= bestFreeplayDeliveries;
         result.bankAfter = totalMoney;

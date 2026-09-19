@@ -270,9 +270,19 @@ public class MapSelectionPanel : MonoBehaviour {
         bool durationApplied = sessionDurationOptionsMinutes != null && sessionDurationOptionsMinutes.Length > 0 &&
             manager.SelectedShiftDurationMinutes == Mathf.Max(1, sessionDurationOptionsMinutes[Mathf.Clamp(sessionDurationIndex, 0, sessionDurationOptionsMinutes.Length - 1)]);
         return map != null && manager.IsMapOwned(map) && manager.currentMap == map &&
-            manager.CurrentModifier == modifier && difficultyApplied &&
+            IsSingleModifierSelectionApplied(manager, modifier) && difficultyApplied &&
             durationApplied &&
             (difficulty == null || manager.IsDifficultyUnlocked(map, difficultyIndex));
+    }
+
+    // S01.7 bridge: this screen still previews at most one modifier, but the authoritative
+    // selection state is now GameManager's duplicate-free multi-select id set (S01.3/S01.4). Compare
+    // against that id set instead of the legacy CurrentModifier reference, so this single-selection
+    // screen and the future full multi-select UI (S10) can never silently disagree about what is applied.
+    static bool IsSingleModifierSelectionApplied(GameManager manager, ShiftModifierData previewedModifier) {
+        var selectedIds = manager.SelectedModifierIds;
+        if (previewedModifier == null) return selectedIds == null || selectedIds.Count == 0;
+        return selectedIds != null && selectedIds.Count == 1 && selectedIds[0] == previewedModifier.modifierId;
     }
 
     void RefreshUI() {

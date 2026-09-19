@@ -486,3 +486,11 @@ MonoBehaviour:
   - key: map.riverside.desc
     text: 'Koy kiyisinda bir metropol: cevre yollari, merkezde doner kavsak, yogun
       sehir merkezi bloklari ve uzun sanayi hatlari.'
+  - key: modifier.notraffic.name
+    text: Trafik Yok
+  - key: modifier.notraffic.description
+    text: "Bu vardiyada sivil trafik kapal\u0131. Nihai skoru d\xFC\u015F\xFCr\xFCr."
+  - key: modifier.peaceful.name
+    text: Sakin
+  - key: modifier.peaceful.description
+    text: "Bu vardiyada polis takibi kapal\u0131. Nihai skoru d\xFC\u015F\xFCr\xFCr."

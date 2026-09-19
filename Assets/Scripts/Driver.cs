@@ -31,6 +31,12 @@ public class Driver : MonoBehaviour {
     [SerializeField] float invulnerabilityWindow = 0.7f;
     float lastDamageTime = -999f;
 
+    [Header("Blast Damage")]
+    [Tooltip("Separate from invulnerabilityWindow (collision) — a blast never secretly benefits from the collision invulnerability window, and vice versa.")]
+    [SerializeField] float blastCooldownSeconds = 1f;
+    float lastBlastDamageTime = -999f;
+    TrafficSessionCoordinator damageSession;
+
     [Header("Obstacle Hit")]
     [SerializeField] float obstacleDamage = 6f;
     [SerializeField] float obstacleSlowMult = 0.6f;
@@ -103,12 +109,17 @@ public class Driver : MonoBehaviour {
             baseTurnSpeed = GameManager.Instance.GetShiftStatValue(VehicleStatId.Turn);
             currentHealth = GameManager.Instance.GetShiftStatValue(VehicleStatId.Health);
             armorPercent = GameManager.Instance.GetShiftStatValue(VehicleStatId.Armor);
+
+            VehicleData vehicle = GameManager.Instance.currentVehicle;
+            int healthLevel = GameManager.Instance.GetLevel(VehicleStatId.Health);
+            rb.mass = vehicle != null && vehicle.bodySettings != null ? vehicle.bodySettings.ResolveMass(healthLevel) : 1f;
         }
         else {
             baseMoveSpeed = 4f;
             baseTurnSpeed = 150f;
             currentHealth = 100f;
             armorPercent = 0f;
+            rb.mass = 1f;
         }
 
         maxHealth = currentHealth;
@@ -216,7 +227,43 @@ public class Driver : MonoBehaviour {
         Invoke(nameof(NormalizeColor), 0.5f);
     }
 
-    /// <summary>Shows the protection feedback when a damaging event loses no pizza.</summary>
+    /// <summary>
+    /// Applies pre-resolved blast damage (already run through BlastDamageMath with this vehicle's own
+    /// explosionResistance and the player's role multiplier baked in by the caller — collision armor
+    /// is never applied here a second time). Gated by its own blastCooldownSeconds, entirely separate
+    /// from the collision invulnerabilityWindow, so neither can be exploited to dodge the other.
+    /// First-scope behavior only: HP/UI/HandleDeath — no collisionDamageEvents or pizza-loss are
+    /// raised here, per contracts §5.
+    /// </summary>
+    /// <param name="amount">Final, already-resistance-adjusted damage to apply.</param>
+    /// <returns>True when the blast was accepted (not blocked by cooldown/already-disabled).</returns>
+    public bool ApplyBlastDamage(float amount) {
+        if (isDisabled || float.IsNaN(amount) || float.IsInfinity(amount) || amount <= 0f) return false;
+        if (damageSession != null && !damageSession.IsActive) return false;
+        if (scoreHandler != null && !scoreHandler.IsGameActive) return false;
+        if (Time.time - lastBlastDamageTime < blastCooldownSeconds) return false;
+        lastBlastDamageTime = Time.time;
+
+        currentHealth -= amount;
+
+        if (currentHealth <= 0) {
+            HandleDeath();
+            return true;
+        }
+
+        PlayCrashFlash();
+        if (impulseSource != null) impulseSource.GenerateImpulseWithForce(0.5f);
+        if (gameUIManager != null) gameUIManager.FlashHealthBar();
+        UpdateUIMethod();
+        return true;
+    }
+
+    /// <summary>Binds blast acceptance to the same scene session used by NPC damage receivers.</summary>
+    public void BindDamageSession(TrafficSessionCoordinator session) {
+        damageSession = session;
+    }
+
+    /// <summary>Shows protection feedback when a damaging event loses no pizza.</summary>
     public void PlayProtectionFlash() {
         if (spriteRenderer == null) return;
         spriteRenderer.color = protectionColor;
