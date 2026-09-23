@@ -1,0 +1,273 @@
+// STAGING ONLY: do not move under Assets/ or invoke before GO.
+// Purpose: author the minimal S05.6 VFX setup after review.
+// Scope is deliberately closed to seven NPC prefabs and the optional NarrowDistrict CivilianTraffic pool.
+
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+internal static class S05_6_VfxAuthoringHelper
+{
+    const string TrafficRoot = "Assets/Prefabs/Traffic/NarrowDistrict/";
+    const string ScenePath = "Assets/Scenes/NarrowDistrict.unity";
+    const string SmokePath = TrafficRoot + "DamageSmokeVisual.prefab";
+    const string CriticalPath = TrafficRoot + "DamageCriticalVisual.prefab";
+    const string ExplosionPath = TrafficRoot + "TrafficExplosionVisual.prefab";
+    const string ParticleMaterialPath = TrafficRoot + "S05_6_SpriteParticle.mat";
+
+    static readonly string[] NpcPrefabPaths =
+    {
+        TrafficRoot + "TrafficCompact_blue.prefab",
+        TrafficRoot + "TrafficCompact_green.prefab",
+        TrafficRoot + "TrafficCompact_red.prefab",
+        TrafficRoot + "TrafficCompact_yellow.prefab",
+        "Assets/Prefabs/Traffic/Police/PoliceStandard.prefab",
+        "Assets/Prefabs/Traffic/Police/PoliceHeavy.prefab",
+        "Assets/Prefabs/Traffic/Police/PoliceSport.prefab"
+    };
+
+    // Single entry point. It is intentionally not a menu item: the main agent invokes it only after GO.
+    internal static void CreateS05_6Authoring()
+    {
+        Scene narrowDistrict = ValidateLoadedNarrowDistrict(out GameObject civilianTraffic, out TrafficSessionHost host, out TrafficDamageWorld world);
+        ValidateExactTargets();
+
+        Material particleMaterial = CreateOrValidateParticleMaterial();
+        GameObject smoke = CreateOrValidateParticlePrefab(SmokePath, "DamageSmokeVisual", loop: true, burst: false, new Color(0.32f, 0.32f, 0.32f, 0.85f), particleMaterial);
+        GameObject critical = CreateOrValidateParticlePrefab(CriticalPath, "DamageCriticalVisual", loop: true, burst: false, new Color(1f, 0.35f, 0.05f, 0.95f), particleMaterial);
+        GameObject explosion = CreateOrValidateParticlePrefab(ExplosionPath, "TrafficExplosionVisual", loop: false, burst: true, new Color(1f, 0.25f, 0.02f, 1f), particleMaterial);
+
+        foreach (string path in NpcPrefabPaths)
+            AuthorNpcPrefab(path, smoke, critical);
+
+        AuthorOptionalNarrowDistrictPool(narrowDistrict, civilianTraffic, host, world, explosion);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+    }
+
+    static Scene ValidateLoadedNarrowDistrict(out GameObject civilianTraffic, out TrafficSessionHost host, out TrafficDamageWorld world)
+    {
+        Scene scene = SceneManager.GetSceneByPath(ScenePath);
+        civilianTraffic = null;
+        host = null;
+        world = null;
+        if (!scene.IsValid() || !scene.isLoaded)
+            return scene;
+        if (scene.isDirty)
+            throw new InvalidOperationException("Refusing S05.6 authoring while NarrowDistrict is dirty.");
+
+        ListSceneComponents(scene, out TrafficSessionHost[] hosts, out TrafficDamageWorld[] worlds);
+        if (hosts.Length != 1)
+            throw new InvalidOperationException("NarrowDistrict must contain exactly one TrafficSessionHost.");
+        if (worlds.Length != 1)
+            throw new InvalidOperationException("NarrowDistrict must contain exactly one TrafficDamageWorld.");
+
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name != "CivilianTraffic")
+                    continue;
+                if (civilianTraffic != null)
+                    throw new InvalidOperationException("NarrowDistrict contains multiple CivilianTraffic objects.");
+                civilianTraffic = child.gameObject;
+            }
+        }
+        if (civilianTraffic == null || !civilianTraffic.TryGetComponent(out TrafficDamageWorld ownedWorld) || ownedWorld != worlds[0])
+            throw new InvalidOperationException("CivilianTraffic must own the unique typed TrafficDamageWorld.");
+        if (civilianTraffic.GetComponent<TrafficSessionHost>() != hosts[0])
+            throw new InvalidOperationException("CivilianTraffic must own the unique TrafficSessionHost used by NarrowDistrict.");
+
+        host = hosts[0];
+        world = worlds[0];
+        return scene;
+    }
+
+    static void ListSceneComponents(Scene scene, out TrafficSessionHost[] hosts, out TrafficDamageWorld[] worlds)
+    {
+        var hostList = new List<TrafficSessionHost>();
+        var worldList = new List<TrafficDamageWorld>();
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            hostList.AddRange(root.GetComponentsInChildren<TrafficSessionHost>(true));
+            worldList.AddRange(root.GetComponentsInChildren<TrafficDamageWorld>(true));
+        }
+        hosts = hostList.ToArray();
+        worlds = worldList.ToArray();
+    }
+
+    static void ValidateExactTargets()
+    {
+        foreach (string path in NpcPrefabPaths)
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (prefab == null)
+                throw new InvalidOperationException("Expected S05.6 prefab is missing: " + path);
+        }
+
+        ValidateOwnedOrMissingEffectPath(SmokePath, "DamageSmokeVisual");
+        ValidateOwnedOrMissingEffectPath(CriticalPath, "DamageCriticalVisual");
+        ValidateOwnedOrMissingEffectPath(ExplosionPath, "TrafficExplosionVisual");
+    }
+
+    static void ValidateOwnedOrMissingEffectPath(string path, string expectedName)
+    {
+        GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existing != null && existing.name != expectedName)
+            throw new InvalidOperationException("Refusing to overwrite non-owned asset: " + path);
+    }
+
+    static GameObject CreateOrValidateParticlePrefab(string path, string expectedName, bool loop, bool burst, Color color, Material particleMaterial)
+    {
+        GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (existing != null)
+        {
+            if (existing.name != expectedName || existing.GetComponent<ParticleSystem>() == null)
+                throw new InvalidOperationException("Existing effect is not an owned S05.6 particle prefab: " + path);
+            return existing;
+        }
+
+        GameObject temporary = new GameObject(expectedName);
+        try
+        {
+            ParticleSystem particles = temporary.AddComponent<ParticleSystem>();
+            ParticleSystem.MainModule main = particles.main;
+            main.loop = loop;
+            main.playOnAwake = loop;
+            main.stopAction = ParticleSystemStopAction.None;
+            main.startLifetime = burst ? 0.45f : 1.1f;
+            main.startSpeed = burst ? 1.8f : 0.15f;
+            main.startSize = burst ? 0.22f : 0.16f;
+            main.startColor = color;
+
+            ParticleSystem.EmissionModule emission = particles.emission;
+            emission.enabled = true;
+            emission.rateOverTime = loop ? 5f : 0f;
+            if (burst)
+                emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 8) });
+
+            ParticleSystemRenderer renderer = temporary.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.sharedMaterial = particleMaterial;
+            renderer.sortingOrder = burst ? 20 : 1;
+
+            temporary.SetActive(burst);
+            return PrefabUtility.SaveAsPrefabAsset(temporary, path);
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(temporary);
+        }
+    }
+
+    static Material CreateOrValidateParticleMaterial()
+    {
+        Material existing = AssetDatabase.LoadAssetAtPath<Material>(ParticleMaterialPath);
+        if (existing != null)
+        {
+            ValidateParticleShader(existing);
+            return existing;
+        }
+
+        Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+        if (shader == null)
+            shader = Shader.Find("Sprites/Default");
+        if (shader == null)
+            throw new InvalidOperationException("No existing URP 2D or official sprite shader was found.");
+
+        Material created = new Material(shader) { name = "S05_6_SpriteParticle" };
+        AssetDatabase.CreateAsset(created, ParticleMaterialPath);
+        ValidateParticleShader(created);
+        return created;
+    }
+
+    static void ValidateParticleShader(Material material)
+    {
+        if (material == null || material.shader == null || material.shader.name.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0)
+            throw new InvalidOperationException("S05.6 particle material has no supported shader: " + ParticleMaterialPath);
+        if (material.shader.name != "Universal Render Pipeline/2D/Sprite-Unlit-Default" && material.shader.name != "Sprites/Default")
+            throw new InvalidOperationException("S05.6 particle material is not an approved sprite shader: " + material.shader.name);
+    }
+
+    static void AuthorNpcPrefab(string path, GameObject smokePrefab, GameObject criticalPrefab)
+    {
+        GameObject root = PrefabUtility.LoadPrefabContents(path);
+        try
+        {
+            NpcDamagePresentation presentation = root.GetComponent<NpcDamagePresentation>();
+            if (presentation == null)
+                presentation = root.AddComponent<NpcDamagePresentation>();
+
+            GameObject smoke = EnsureNestedChild(root, "DamageSmokeVisual", smokePrefab);
+            GameObject critical = EnsureNestedChild(root, "DamageCriticalVisual", criticalPrefab);
+            SetPresentationReferences(presentation, root, smoke, critical);
+            int bodyOrder = ResolveBody(root) != null ? ResolveBody(root).sortingOrder : 0;
+            smoke.GetComponent<ParticleSystemRenderer>().sortingOrder = bodyOrder + 1;
+            critical.GetComponent<ParticleSystemRenderer>().sortingOrder = bodyOrder + 1;
+            PrefabUtility.SaveAsPrefabAsset(root, path);
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
+
+    static GameObject EnsureNestedChild(GameObject root, string childName, GameObject sourcePrefab)
+    {
+        Transform child = root.transform.Find(childName);
+        if (child != null)
+        {
+            GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(child.gameObject);
+            if (source != sourcePrefab)
+                throw new InvalidOperationException("Existing S05.6 child is not the owned effect prefab: " + root.name + "/" + childName);
+            return child.gameObject;
+        }
+
+        GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(sourcePrefab, root.transform);
+        instance.name = childName;
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.transform.localScale = Vector3.one;
+        instance.SetActive(false);
+        return instance;
+    }
+
+    static void SetPresentationReferences(NpcDamagePresentation presentation, GameObject root, GameObject smoke, GameObject critical)
+    {
+        SerializedObject serialized = new SerializedObject(presentation);
+        serialized.FindProperty("body").objectReferenceValue = ResolveBody(root);
+        serialized.FindProperty("smoke").objectReferenceValue = smoke;
+        serialized.FindProperty("critical").objectReferenceValue = critical;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    static SpriteRenderer ResolveBody(GameObject root)
+    {
+        // Police uses TemporaryPoliceVisual; civilian roots already own the vehicle SpriteRenderer.
+        SpriteRenderer temporaryPolice = root.transform.Find("TemporaryPoliceVisual")?.GetComponent<SpriteRenderer>();
+        return temporaryPolice != null ? temporaryPolice : root.GetComponent<SpriteRenderer>();
+    }
+
+    static void AuthorOptionalNarrowDistrictPool(Scene scene, GameObject civilianTraffic, TrafficSessionHost host, TrafficDamageWorld world, GameObject explosionPrefab)
+    {
+        if (!scene.IsValid() || !scene.isLoaded)
+            return;
+
+        TrafficExplosionVisualPool pool = civilianTraffic.GetComponent<TrafficExplosionVisualPool>();
+        if (pool == null)
+            pool = civilianTraffic.AddComponent<TrafficExplosionVisualPool>();
+
+        SerializedObject serialized = new SerializedObject(pool);
+        serialized.FindProperty("world").objectReferenceValue = world;
+        serialized.FindProperty("effectPrefab").objectReferenceValue = explosionPrefab.GetComponent<ParticleSystem>();
+        serialized.FindProperty("capacity").intValue = 16;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+    }
+}
+#endif

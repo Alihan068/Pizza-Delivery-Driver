@@ -84,6 +84,23 @@ public static class VehicleTuningRules {
         return ClampPlayerValue(candidate, minimum, maximum);
     }
 
+    /// <summary>
+    /// Resolves a tuning value added after Advanced Tuning shipped. A negative saved value means the
+    /// player never set it (every older save), so the vehicle default is used even when the rest of
+    /// the vehicle's tuning is custom.
+    /// </summary>
+    /// <param name="advancedTuningEnabled">Whether Advanced Tuning is enabled in settings.</param>
+    /// <param name="hasCustomTuning">Whether this vehicle has a saved tuning snapshot.</param>
+    /// <param name="savedValue">Saved value; zero or negative means never set (JsonUtility reads a missing field as 0).</param>
+    /// <param name="classicValue">The vehicle's authored default.</param>
+    /// <param name="minimum">Lowest value the player may choose.</param>
+    /// <param name="maximum">Highest value the player may choose.</param>
+    public static float ResolveOptionalPlayerValue(bool advancedTuningEnabled, bool hasCustomTuning, float savedValue,
+        float classicValue, float minimum, float maximum) {
+        bool isSet = !float.IsNaN(savedValue) && savedValue > 0f;
+        return ResolvePlayerValue(advancedTuningEnabled, hasCustomTuning && isSet, savedValue, classicValue, minimum, maximum);
+    }
+
     static float SanitizeFinite(float value, float fallback) {
         if (float.IsNaN(value) || float.IsInfinity(value)) return fallback;
         return value;

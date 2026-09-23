@@ -21,10 +21,12 @@ public class AdvancedTuningPanel : MonoBehaviour {
     [SerializeField] Slider driftGripSlider;
     [SerializeField] Slider driftSteeringSlider;
     [SerializeField] Slider gripEntrySlider;
+    [SerializeField] Slider gripRecoverSlider;
     [SerializeField] TMP_Text speedValueText;
     [SerializeField] TMP_Text driftGripValueText;
     [SerializeField] TMP_Text driftSteeringValueText;
     [SerializeField] TMP_Text gripEntryValueText;
+    [SerializeField] TMP_Text gripRecoverValueText;
     [SerializeField] TMP_Text titleText;
     [SerializeField] Button resetButton;
     [SerializeField] Button gripPresetButton;
@@ -41,6 +43,8 @@ public class AdvancedTuningPanel : MonoBehaviour {
     [SerializeField] string driftSteeringValueKey = "garage.advancedTuning.driftSteeringValue";
     [SerializeField] string gripEntryKey = "garage.advancedTuning.gripEntry";
     [SerializeField] string gripEntryValueKey = "garage.advancedTuning.gripEntryValue";
+    [SerializeField] string gripRecoverKey = "garage.advancedTuning.gripRecover";
+    [SerializeField] string gripRecoverValueKey = "garage.advancedTuning.gripRecoverValue";
     [SerializeField] string resetKey = "garage.advancedTuning.reset";
     [SerializeField] string gripPresetKey = "garage.advancedTuning.presetGrip";
     [SerializeField] string balancedPresetKey = "garage.advancedTuning.presetBalanced";
@@ -69,9 +73,11 @@ public class AdvancedTuningPanel : MonoBehaviour {
     [SerializeField] float gripPresetGripPosition = 0.80f;
     [SerializeField] float gripPresetSteeringPosition = 0.30f;
     [SerializeField] float gripPresetEntryPosition = 0.70f;
+    [SerializeField] float gripPresetRecoverPosition = 0.15f;
     [SerializeField] float slidePresetGripPosition = 0.20f;
     [SerializeField] float slidePresetSteeringPosition = 0.85f;
     [SerializeField] float slidePresetEntryPosition = 0.20f;
+    [SerializeField] float slidePresetRecoverPosition = 0.85f;
 
     bool listenersBound;
     bool ignoreSliderEvents;
@@ -137,6 +143,9 @@ public class AdvancedTuningPanel : MonoBehaviour {
         float entry = VehicleTuningRules.ResolvePlayerValue(GameSettings.AdvancedTuningEnabled, hasCustom,
             save != null ? save.tunedGripEnterTime : 0f, settings.gripEnterTime,
             settings.playerGripEnterTimeMin, settings.playerGripEnterTimeMax);
+        float recover = VehicleTuningRules.ResolveOptionalPlayerValue(GameSettings.AdvancedTuningEnabled, hasCustom,
+            save != null ? save.tunedGripRecoverTime : -1f, settings.gripRecoverTime,
+            settings.playerGripRecoverTimeMin, settings.playerGripRecoverTimeMax);
 
         ignoreSliderEvents = true;
         ConfigureSlider(speedSlider, speedMin, speedMax, selectedSpeed);
@@ -144,14 +153,16 @@ public class AdvancedTuningPanel : MonoBehaviour {
         ConfigureSlider(driftSteeringSlider, settings.playerDriftSteeringMultiplierMin,
             settings.playerDriftSteeringMultiplierMax, steering);
         ConfigureSlider(gripEntrySlider, settings.playerGripEnterTimeMin, settings.playerGripEnterTimeMax, entry);
+        ConfigureSlider(gripRecoverSlider, settings.playerGripRecoverTimeMin, settings.playerGripRecoverTimeMax, recover);
         ignoreSliderEvents = false;
 
         if (GameSettings.AdvancedTuningEnabled && hasCustom &&
             (!Mathf.Approximately(save.tunedSpeed, selectedSpeed) ||
              !Mathf.Approximately(save.tunedDriftGrip, grip) ||
              !Mathf.Approximately(save.tunedDriftSteeringMultiplier, steering) ||
-             !Mathf.Approximately(save.tunedGripEnterTime, entry))) {
-            manager.SaveCurrentVehicleTuning(selectedSpeed, grip, steering, entry);
+             !Mathf.Approximately(save.tunedGripEnterTime, entry) ||
+             !Mathf.Approximately(save.tunedGripRecoverTime, recover))) {
+            manager.SaveCurrentVehicleTuning(selectedSpeed, grip, steering, entry, recover);
         }
 
         RefreshText(speedMax);
@@ -190,14 +201,16 @@ public class AdvancedTuningPanel : MonoBehaviour {
         titleText = CreateLabel("Title", panel, new Vector2(0.10f, 0.88f), new Vector2(0.90f, 0.98f), titleFontSize);
         closeButton = CreateButton("Close", panel, new Vector2(0.86f, 0.89f), new Vector2(0.97f, 0.98f), closeKey, buttonFontSize);
 
-        speedSlider = CreateTuningRow(panel, "SpeedRow", speedKey, 0.70f,
+        speedSlider = CreateTuningRow(panel, "SpeedRow", speedKey, 0.76f,
             out speedValueText);
-        driftGripSlider = CreateTuningRow(panel, "DriftGripRow", driftGripKey, 0.52f,
+        driftGripSlider = CreateTuningRow(panel, "DriftGripRow", driftGripKey, 0.615f,
             out driftGripValueText);
         driftSteeringSlider = CreateTuningRow(panel, "DriftSteeringRow", driftSteeringKey,
-            0.34f, out driftSteeringValueText);
-        gripEntrySlider = CreateTuningRow(panel, "GripEntryRow", gripEntryKey, 0.16f,
+            0.47f, out driftSteeringValueText);
+        gripEntrySlider = CreateTuningRow(panel, "GripEntryRow", gripEntryKey, 0.325f,
             out gripEntryValueText);
+        gripRecoverSlider = CreateTuningRow(panel, "GripRecoverRow", gripRecoverKey, 0.18f,
+            out gripRecoverValueText);
 
         resetButton = CreateButton("Reset", panel, new Vector2(0.08f, 0.04f), new Vector2(0.27f, 0.12f),
             resetKey, buttonFontSize);
@@ -266,6 +279,10 @@ public class AdvancedTuningPanel : MonoBehaviour {
             gripEntrySlider.onValueChanged.RemoveListener(OnSliderChanged);
             gripEntrySlider.onValueChanged.AddListener(OnSliderChanged);
         }
+        if (gripRecoverSlider != null) {
+            gripRecoverSlider.onValueChanged.RemoveListener(OnSliderChanged);
+            gripRecoverSlider.onValueChanged.AddListener(OnSliderChanged);
+        }
         listenersBound = true;
     }
 
@@ -280,13 +297,14 @@ public class AdvancedTuningPanel : MonoBehaviour {
         if (driftGripSlider != null) driftGripSlider.onValueChanged.RemoveListener(OnSliderChanged);
         if (driftSteeringSlider != null) driftSteeringSlider.onValueChanged.RemoveListener(OnSliderChanged);
         if (gripEntrySlider != null) gripEntrySlider.onValueChanged.RemoveListener(OnSliderChanged);
+        if (gripRecoverSlider != null) gripRecoverSlider.onValueChanged.RemoveListener(OnSliderChanged);
         listenersBound = false;
     }
 
     void OnSliderChanged(float value) {
         if (ignoreSliderEvents || GameManager.Instance == null) return;
         GameManager.Instance.SaveCurrentVehicleTuning(speedSlider.value, driftGripSlider.value,
-            driftSteeringSlider.value, gripEntrySlider.value);
+            driftSteeringSlider.value, gripEntrySlider.value, gripRecoverSlider != null ? gripRecoverSlider.value : -1f);
         RefreshText(speedSlider.maxValue);
     }
 
@@ -299,7 +317,7 @@ public class AdvancedTuningPanel : MonoBehaviour {
     void ApplyBalancedPreset() {
         VehicleDrivingSettings settings = GetAuthoredSettings();
         if (settings == null) return;
-        SetTuningValues(settings.driftGrip, settings.driftSteeringMultiplier, settings.gripEnterTime);
+        SetTuningValues(settings.driftGrip, settings.driftSteeringMultiplier, settings.gripEnterTime, settings.gripRecoverTime);
     }
 
     void ApplyGripPreset() {
@@ -310,7 +328,9 @@ public class AdvancedTuningPanel : MonoBehaviour {
             Mathf.Lerp(settings.playerDriftSteeringMultiplierMin, settings.playerDriftSteeringMultiplierMax,
                 Mathf.Clamp01(gripPresetSteeringPosition)),
             Mathf.Lerp(settings.playerGripEnterTimeMin, settings.playerGripEnterTimeMax,
-                Mathf.Clamp01(gripPresetEntryPosition)));
+                Mathf.Clamp01(gripPresetEntryPosition)),
+            Mathf.Lerp(settings.playerGripRecoverTimeMin, settings.playerGripRecoverTimeMax,
+                Mathf.Clamp01(gripPresetRecoverPosition)));
     }
 
     void ApplySlidePreset() {
@@ -321,14 +341,17 @@ public class AdvancedTuningPanel : MonoBehaviour {
             Mathf.Lerp(settings.playerDriftSteeringMultiplierMin, settings.playerDriftSteeringMultiplierMax,
                 Mathf.Clamp01(slidePresetSteeringPosition)),
             Mathf.Lerp(settings.playerGripEnterTimeMin, settings.playerGripEnterTimeMax,
-                Mathf.Clamp01(slidePresetEntryPosition)));
+                Mathf.Clamp01(slidePresetEntryPosition)),
+            Mathf.Lerp(settings.playerGripRecoverTimeMin, settings.playerGripRecoverTimeMax,
+                Mathf.Clamp01(slidePresetRecoverPosition)));
     }
 
-    void SetTuningValues(float grip, float steering, float entry) {
+    void SetTuningValues(float grip, float steering, float entry, float recover) {
         ignoreSliderEvents = true;
         driftGripSlider.value = grip;
         driftSteeringSlider.value = steering;
         gripEntrySlider.value = entry;
+        if (gripRecoverSlider != null) gripRecoverSlider.value = recover;
         ignoreSliderEvents = false;
         OnSliderChanged(0f);
     }
@@ -345,6 +368,7 @@ public class AdvancedTuningPanel : MonoBehaviour {
         if (driftGripValueText != null) driftGripValueText.text = LocalizationManager.Get(driftGripValueKey, driftGripSlider.value);
         if (driftSteeringValueText != null) driftSteeringValueText.text = LocalizationManager.Get(driftSteeringValueKey, driftSteeringSlider.value);
         if (gripEntryValueText != null) gripEntryValueText.text = LocalizationManager.Get(gripEntryValueKey, gripEntrySlider.value);
+        if (gripRecoverValueText != null && gripRecoverSlider != null) gripRecoverValueText.text = LocalizationManager.Get(gripRecoverValueKey, gripRecoverSlider.value);
     }
 
     void RefreshLocalizedText() {

@@ -15,6 +15,8 @@ public class PauseManager : MonoBehaviour {
     [SerializeField] Button resumeButton;
     [SerializeField] Button garageButton;
     [SerializeField] Button mainMenuButton;
+    [Tooltip("Optional authored restart button. When empty, one is created at runtime from the garage button so every gameplay scene gets it without scene edits.")]
+    [SerializeField] Button restartButton;
 
     [Header("Settings")]
     [SerializeField] GameObject pauseMenuRoot;
@@ -38,6 +40,13 @@ public class PauseManager : MonoBehaviour {
         if (resumeButton != null) resumeButton.onClick.AddListener(OnClickResume);
         if (garageButton != null) garageButton.onClick.AddListener(OnClickReturnToGarage);
         if (mainMenuButton != null) mainMenuButton.onClick.AddListener(OnClickMainMenu);
+        // Every gameplay scene carries the SettingsPanel prefab under PauseCanvas, but the field was never
+        // wired, so Settings hid the pause menu and showed nothing. Resolve it from this pause canvas only.
+        if (settingsPanel == null && pauseCanvas != null) settingsPanel = pauseCanvas.GetComponentInChildren<SettingsPanel>(true);
+        if (settingsPanel == null && settingsButton != null)
+            Debug.LogWarning("PauseManager has no SettingsPanel under its pause canvas; the Settings button cannot open anything.", this);
+        if (restartButton == null) restartButton = CreateRestartButton();
+        if (restartButton != null) restartButton.onClick.AddListener(OnClickRestart);
         if (settingsButton != null) settingsButton.onClick.AddListener(OnClickSettings);
         if (settingsPanel != null) {
             settingsPanel.Closed += CloseSettings;
@@ -53,6 +62,7 @@ public class PauseManager : MonoBehaviour {
         if (resumeButton != null) resumeButton.onClick.RemoveListener(OnClickResume);
         if (garageButton != null) garageButton.onClick.RemoveListener(OnClickReturnToGarage);
         if (mainMenuButton != null) mainMenuButton.onClick.RemoveListener(OnClickMainMenu);
+        if (restartButton != null) restartButton.onClick.RemoveListener(OnClickRestart);
         if (settingsButton != null) settingsButton.onClick.RemoveListener(OnClickSettings);
         if (settingsPanel != null) {
             settingsPanel.Closed -= CloseSettings;
@@ -62,6 +72,7 @@ public class PauseManager : MonoBehaviour {
     }
 
     void Update() {
+        if (S12BenchmarkGate.Requested) return;
         if (scoreHandler != null && !scoreHandler.IsGameActive) return;
         bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
         bool gamepadPausePressed = Gamepad.current != null && Gamepad.current.startButton.wasPressedThisFrame;
@@ -131,6 +142,37 @@ public class PauseManager : MonoBehaviour {
     /// <summary>Abandons the session and returns to the main menu.</summary>
     public void OnClickMainMenu() {
         AbandonTo(GameManager.Instance != null ? GameManager.Instance.Config.mainMenuScene : null);
+    }
+
+    /// <summary>
+    /// Restarts the shift on the same map with the same vehicle, difficulty, duration and modifiers.
+    /// The running shift is settled exactly like leaving from pause (unbanked earnings are lost,
+    /// repair is charged on the real remaining health), so a restart is never a free escape from a
+    /// bad run. If the replay cannot start, the normal result panel stays up as the fallback.
+    /// </summary>
+    public void OnClickRestart() {
+        GameManager manager = GameManager.Instance;
+        if (manager == null || scoreHandler == null) return;
+        AbandonTo(manager.Config.garageScene);
+        if (!manager.ReplayLastSession()) Debug.LogWarning("Restart could not replay the last shift; showing the result panel instead.", this);
+    }
+
+    /// <summary>Clones the garage button into a restart button directly under Resume, relabelled through localization.</summary>
+    Button CreateRestartButton() {
+        if (garageButton == null) return null;
+        Button clone = Instantiate(garageButton, garageButton.transform.parent);
+        clone.name = "RestartButton";
+        clone.onClick = new Button.ButtonClickedEvent(); // drop any persistent calls copied from the garage button
+        int index = resumeButton != null && resumeButton.transform.parent == clone.transform.parent
+            ? resumeButton.transform.GetSiblingIndex() + 1 : garageButton.transform.GetSiblingIndex();
+        clone.transform.SetSiblingIndex(index);
+        LocalizedText label = clone.GetComponentInChildren<LocalizedText>(true);
+        if (label != null) label.SetKey("pause.restart");
+        else {
+            TMPro.TMP_Text text = clone.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (text != null) text.text = LocalizationManager.Get("pause.restart");
+        }
+        return clone;
     }
 
     void AbandonTo(string destinationScene) {

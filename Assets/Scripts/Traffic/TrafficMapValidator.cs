@@ -28,6 +28,8 @@ public static class TrafficMapValidator {
         ValidateJunctions(document, issues);
         ValidateSpawns(document, issues, edgeIds);
         ValidateRoutes(document, limits, issues);
+        ValidatePoliceEntries(document, issues);
+        ValidateDifficultyProfileBindings(document, issues);
 
         if (document.edges == null || document.edges.Count == 0) {
             issues.Add(new TrafficValidationIssue("ZeroEdgeCount", string.Empty, "Document has no edges."));
@@ -179,6 +181,42 @@ public static class TrafficMapValidator {
             if (!CivilianRouteValidator.IsValid(document, route, out string issue)) {
                 issues.Add(new TrafficValidationIssue("OpenOrDisconnectedRoute", route.routeId, "Route " + route.routeId + ": " + issue));
             }
+        }
+    }
+
+    static void ValidatePoliceEntries(MapNavigationDocument document, List<TrafficValidationIssue> issues) {
+        if (document.policeEntries == null || document.policeEntries.Count == 0) return;
+        var spawnIds = new HashSet<string>();
+        if (document.spawnPoints != null) foreach (var spawn in document.spawnPoints)
+            if (spawn != null && !string.IsNullOrEmpty(spawn.spawnId)) spawnIds.Add(spawn.spawnId);
+
+        var entryIds = new HashSet<string>();
+        foreach (var entry in document.policeEntries) {
+            if (entry == null || string.IsNullOrEmpty(entry.entryId)) {
+                issues.Add(new TrafficValidationIssue("InvalidPoliceEntryId", string.Empty, "Police entry has a null/empty id."));
+                continue;
+            }
+            if (!entryIds.Add(entry.entryId))
+                issues.Add(new TrafficValidationIssue("DuplicatePoliceEntryId", entry.entryId, "Duplicate police entry id " + entry.entryId + "."));
+            if (string.IsNullOrEmpty(entry.spawnId) || !spawnIds.Contains(entry.spawnId))
+                issues.Add(new TrafficValidationIssue("DanglingPoliceEntrySpawn", entry.entryId, "Police entry references an unknown spawnId."));
+            if (entry.allowedRoles == null || !entry.allowedRoles.Contains(VehicleRole.Police))
+                issues.Add(new TrafficValidationIssue("PoliceEntryDisallowsPolice", entry.entryId, "Police entry must allow the Police vehicle role."));
+        }
+    }
+
+    static void ValidateDifficultyProfileBindings(MapNavigationDocument document, List<TrafficValidationIssue> issues) {
+        if (document.difficultyProfileBindings == null || document.difficultyProfileBindings.Count == 0) return;
+        var difficultyIds = new HashSet<string>();
+        foreach (var binding in document.difficultyProfileBindings) {
+            if (binding == null || string.IsNullOrEmpty(binding.difficultyId)) {
+                issues.Add(new TrafficValidationIssue("InvalidDifficultyTrafficBinding", string.Empty, "Difficulty traffic binding has no difficulty id."));
+                continue;
+            }
+            if (!difficultyIds.Add(binding.difficultyId))
+                issues.Add(new TrafficValidationIssue("DuplicateDifficultyTrafficBinding", binding.difficultyId, "Duplicate difficulty traffic binding."));
+            if (string.IsNullOrEmpty(binding.civilianPopulationProfileId))
+                issues.Add(new TrafficValidationIssue("MissingCivilianPopulationProfile", binding.difficultyId, "Difficulty traffic binding has no civilian population profile."));
         }
     }
 

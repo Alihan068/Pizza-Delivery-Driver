@@ -35,9 +35,22 @@ public sealed class CrashRecoveryPolicy {
         public readonly float rejoinRetrySeconds;
         public readonly float reverseMaxSeconds;
         public readonly float maxRejoinDistance;
+        /// <summary>Minimum settling duration before a low-speed recovery may request rejoin.</summary>
+        public readonly float minimumSettleSeconds;
 
+        /// <summary>Creates bounded crash-recovery thresholds and durations.</summary>
+        /// <param name="lightImpactSpeed">Minimum closing speed that counts as contact.</param>
+        /// <param name="heavyImpactSpeed">Closing speed that starts full settling recovery.</param>
+        /// <param name="lightHoldSeconds">Duration of the light-contact brake hold.</param>
+        /// <param name="settleSpeed">Speed at or below which momentum is considered settled.</param>
+        /// <param name="settleTimeoutSeconds">Maximum settling duration before a rejoin decision.</param>
+        /// <param name="rejoinRetrySeconds">Delay between refused rejoin attempts.</param>
+        /// <param name="reverseMaxSeconds">Maximum duration of one recovery reverse.</param>
+        /// <param name="maxRejoinDistance">Maximum route distance eligible for rejoin.</param>
+        /// <param name="minimumSettleSeconds">Minimum settling duration before any rejoin decision.</param>
         public Parameters(float lightImpactSpeed, float heavyImpactSpeed, float lightHoldSeconds, float settleSpeed,
-            float settleTimeoutSeconds, float rejoinRetrySeconds, float reverseMaxSeconds, float maxRejoinDistance) {
+            float settleTimeoutSeconds, float rejoinRetrySeconds, float reverseMaxSeconds, float maxRejoinDistance,
+            float minimumSettleSeconds = 0f) {
             this.lightImpactSpeed = Mathf.Max(0f, lightImpactSpeed);
             this.heavyImpactSpeed = Mathf.Max(this.lightImpactSpeed, heavyImpactSpeed);
             this.lightHoldSeconds = Mathf.Max(0f, lightHoldSeconds);
@@ -46,6 +59,7 @@ public sealed class CrashRecoveryPolicy {
             this.rejoinRetrySeconds = Mathf.Max(0.01f, rejoinRetrySeconds);
             this.reverseMaxSeconds = Mathf.Max(0f, reverseMaxSeconds);
             this.maxRejoinDistance = Mathf.Max(0f, maxRejoinDistance);
+            this.minimumSettleSeconds = Mathf.Max(0f, minimumSettleSeconds);
         }
     }
 
@@ -136,7 +150,9 @@ public sealed class CrashRecoveryPolicy {
                 if (phaseTimer >= parameters.lightHoldSeconds) Enter(Phase.Driving);
                 return;
             case Phase.Settling:
-                if (forwardSpeed <= parameters.settleSpeed || phaseTimer >= parameters.settleTimeoutSeconds) DecideRejoin(observation);
+                if (phaseTimer >= parameters.minimumSettleSeconds &&
+                    (forwardSpeed <= parameters.settleSpeed || phaseTimer >= parameters.settleTimeoutSeconds))
+                    DecideRejoin(observation);
                 return;
             case Phase.WaitingForRejoin:
                 retryTimer -= deltaTime;

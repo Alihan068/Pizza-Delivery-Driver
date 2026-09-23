@@ -1,0 +1,25 @@
+--- Assets/Scripts/Traffic/CivilianVehicleBody.cs
++++ Assets/Scripts/Traffic/CivilianVehicleBody.cs
+@@
+ using UnityEngine;
++using UnityEngine.SceneManagement;
+@@
+ // Apply inside CivilianVehicleBody, before the final class brace.
+#if UNITY_EDITOR
+/// <summary>Initializes cached production collaborators only for a non-playing body already moved into a valid non-default 2D physics scene; calls the normal private Awake path directly and refuses every foreign scene.</summary>
+public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+    if (Application.isPlaying || !previewPhysicsScene.IsValid() ||
+        previewPhysicsScene == Physics2D.defaultPhysicsScene ||
+        gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) {
+        return false;
+    }
+
+    Awake();
+    if (motor == null || follower == null || !motor.InitializeEditorPreview(previewPhysicsScene) ||
+        !follower.InitializeEditorPreview(previewPhysicsScene)) {
+        return false;
+    }
+
+    return sensor == null || sensor.InitializeEditorPreview(previewPhysicsScene);
+}
+#endif

@@ -55,7 +55,8 @@ public class CareerData : ScriptableObject {
         new EndReasonMultiplier { reason = EndReason.Extracted, multiplier = 1.1f },
         new EndReasonMultiplier { reason = EndReason.Wrecked, multiplier = 0.5f },
         new EndReasonMultiplier { reason = EndReason.Abandoned, multiplier = 0.15f },
-        new EndReasonMultiplier { reason = EndReason.Interrupted, multiplier = 0.5f }
+        new EndReasonMultiplier { reason = EndReason.Interrupted, multiplier = 0.5f },
+        new EndReasonMultiplier { reason = EndReason.Arrested, multiplier = 1.0f }
     };
 
     [Header("Courier Rating")]
@@ -83,7 +84,8 @@ public class CareerData : ScriptableObject {
         new EndReasonRatingOffset { reason = EndReason.Extracted, offset = 0 },
         new EndReasonRatingOffset { reason = EndReason.Wrecked, offset = -5 },
         new EndReasonRatingOffset { reason = EndReason.Abandoned, offset = -8 },
-        new EndReasonRatingOffset { reason = EndReason.Interrupted, offset = -5 }
+        new EndReasonRatingOffset { reason = EndReason.Interrupted, offset = -5 },
+        new EndReasonRatingOffset { reason = EndReason.Arrested, offset = 0 }
     };
 
     [Header("Rent")]

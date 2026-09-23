@@ -38,6 +38,10 @@ public class GameplayOnboarding : MonoBehaviour {
     }
 
     void Start() {
+        if (S12BenchmarkGate.Requested) {
+            if (panel != null) panel.SetActive(false);
+            return;
+        }
         bool isFirstCareerShift = GameManager.Instance != null &&
             !GameManager.Instance.IsFreeplayMode && GameManager.Instance.totalShiftsSettled == 0;
         bool shouldShow = isFirstCareerShift && PlayerPrefs.GetInt(SeenKey, 0) == 0;
@@ -49,6 +53,7 @@ public class GameplayOnboarding : MonoBehaviour {
     }
 
     void Dismiss() {
+        if (S12BenchmarkGate.Requested) return;
         PlayerPrefs.SetInt(SeenKey, 1);
         PlayerPrefs.Save();
         if (panel != null) panel.SetActive(false);

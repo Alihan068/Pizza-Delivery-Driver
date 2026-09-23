@@ -22,6 +22,7 @@ public static class DisplaySettings {
     /// </summary>
     /// <param name="config">Project display defaults; null keeps the current display values.</param>
     public static void ApplySaved(GameConfig config) {
+        if (S12BenchmarkGate.Requested) return;
         int width = PlayerPrefs.GetInt(WidthKey, config != null ? config.defaultResolutionWidth : Screen.width);
         int height = PlayerPrefs.GetInt(HeightKey, config != null ? config.defaultResolutionHeight : Screen.height);
         int modeValue = PlayerPrefs.GetInt(FullscreenModeKey,
@@ -37,6 +38,7 @@ public static class DisplaySettings {
     /// <param name="height">Requested pixel height.</param>
     /// <param name="mode">Requested fullscreen mode.</param>
     public static void SetResolution(int width, int height, FullScreenMode mode) {
+        if (S12BenchmarkGate.Requested) return;
         if (width <= 0 || height <= 0) return;
         PlayerPrefs.SetInt(WidthKey, width);
         PlayerPrefs.SetInt(HeightKey, height);
@@ -65,6 +67,7 @@ public static class DisplaySettings {
     /// <param name="vSyncCount">Vertical sync count; zero enables the explicit target cap.</param>
     /// <param name="targetFrameRate">Target frame rate used when vertical sync is disabled.</param>
     public static void SetFrameRate(int vSyncCount, int targetFrameRate) {
+        if (S12BenchmarkGate.Requested) return;
         int safeVSync = Mathf.Max(0, vSyncCount);
         int safeTarget = Mathf.Max(0, targetFrameRate);
         PlayerPrefs.SetInt(VSyncKey, safeVSync);

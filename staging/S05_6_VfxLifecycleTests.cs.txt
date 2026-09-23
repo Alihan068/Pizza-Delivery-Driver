@@ -1,0 +1,103 @@
+// STAGING ONLY: do not move under Assets/ or run before the authoring helper is reviewed and invoked.
+// These are real editor tests, intentionally limited to authored VFX lifecycle and reset behavior.
+
+#if UNITY_EDITOR
+using System.Collections;
+using System.Reflection;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+
+internal sealed class S05_6_VfxLifecycleTests
+{
+    static readonly string[] NpcPrefabPaths =
+    {
+        "Assets/Prefabs/Traffic/NarrowDistrict/TrafficCompact_blue.prefab",
+        "Assets/Prefabs/Traffic/NarrowDistrict/TrafficCompact_green.prefab",
+        "Assets/Prefabs/Traffic/NarrowDistrict/TrafficCompact_red.prefab",
+        "Assets/Prefabs/Traffic/NarrowDistrict/TrafficCompact_yellow.prefab",
+        "Assets/Prefabs/Traffic/Police/PoliceStandard.prefab",
+        "Assets/Prefabs/Traffic/Police/PoliceHeavy.prefab",
+        "Assets/Prefabs/Traffic/Police/PoliceSport.prefab"
+    };
+
+    [Test]
+    public void AuthoredEffectsAndAllSevenNpcReferencesAreActiveAndOwned()
+    {
+        GameObject smoke = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Traffic/NarrowDistrict/DamageSmokeVisual.prefab");
+        GameObject critical = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Traffic/NarrowDistrict/DamageCriticalVisual.prefab");
+        GameObject explosion = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Traffic/NarrowDistrict/TrafficExplosionVisual.prefab");
+        Assert.NotNull(smoke); Assert.NotNull(critical); Assert.NotNull(explosion);
+        Assert.IsFalse(smoke.activeSelf); Assert.IsFalse(critical.activeSelf); Assert.IsTrue(explosion.activeSelf);
+        Assert.IsTrue(smoke.GetComponent<ParticleSystem>().main.playOnAwake);
+        Assert.IsTrue(critical.GetComponent<ParticleSystem>().main.playOnAwake);
+        Assert.IsFalse(explosion.GetComponent<ParticleSystem>().main.playOnAwake);
+        Assert.NotNull(smoke.GetComponent<ParticleSystemRenderer>().sharedMaterial);
+        Assert.NotNull(critical.GetComponent<ParticleSystemRenderer>().sharedMaterial);
+        Assert.NotNull(explosion.GetComponent<ParticleSystemRenderer>().sharedMaterial);
+
+        foreach (string path in NpcPrefabPaths)
+        {
+            GameObject npc = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            Assert.NotNull(npc, path);
+            NpcDamagePresentation presentation = npc.GetComponent<NpcDamagePresentation>();
+            Assert.NotNull(presentation, path);
+            SerializedObject serialized = new SerializedObject(presentation);
+            UnityEngine.Object smokeReference = serialized.FindProperty("smoke").objectReferenceValue;
+            UnityEngine.Object criticalReference = serialized.FindProperty("critical").objectReferenceValue;
+            Assert.NotNull(smokeReference, path);
+            Assert.NotNull(criticalReference, path);
+            Assert.AreEqual("DamageSmokeVisual", smokeReference.name, path);
+            Assert.AreEqual("DamageCriticalVisual", criticalReference.name, path);
+        }
+    }
+
+    [Test]
+    public void PresentationResetStopsAndClearsActiveParticleChildren()
+    {
+        GameObject root = new GameObject("S05_6_PresentationFixture");
+        GameObject smoke = new GameObject("Smoke", typeof(ParticleSystem));
+        GameObject critical = new GameObject("Critical", typeof(ParticleSystem));
+        smoke.transform.SetParent(root.transform); critical.transform.SetParent(root.transform);
+        NpcDamagePresentation presentation = root.AddComponent<NpcDamagePresentation>();
+        SerializedObject serialized = new SerializedObject(presentation);
+        serialized.FindProperty("smoke").objectReferenceValue = smoke;
+        serialized.FindProperty("critical").objectReferenceValue = critical;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+        smoke.SetActive(true); critical.SetActive(true);
+        smoke.GetComponent<ParticleSystem>().Play(true); critical.GetComponent<ParticleSystem>().Play(true);
+
+        presentation.ResetForLife();
+
+        Assert.IsFalse(smoke.activeSelf); Assert.IsFalse(critical.activeSelf);
+        Assert.IsFalse(smoke.GetComponent<ParticleSystem>().IsAlive(true));
+        Assert.IsFalse(critical.GetComponent<ParticleSystem>().IsAlive(true));
+        Assert.AreEqual(0, smoke.GetComponent<ParticleSystem>().GetParticles(new ParticleSystem.Particle[16]));
+        Assert.AreEqual(0, critical.GetComponent<ParticleSystem>().GetParticles(new ParticleSystem.Particle[16]));
+        Object.DestroyImmediate(root);
+    }
+
+    [Test]
+    public void ExplosionPoolUsesCapacityAndStopEffectsClearsEveryParticle()
+    {
+        GameObject worldObject = new GameObject("S05_6_WorldFixture");
+        GameObject poolObject = new GameObject("S05_6_PoolFixture");
+        TrafficDamageWorld world = worldObject.AddComponent<TrafficDamageWorld>();
+        TrafficExplosionVisualPool pool = poolObject.AddComponent<TrafficExplosionVisualPool>();
+        GameObject effectPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Traffic/NarrowDistrict/TrafficExplosionVisual.prefab");
+        Assert.NotNull(effectPrefab);
+
+        pool.Initialize(world, effectPrefab.GetComponent<ParticleSystem>(), 2);
+        IList effects = (IList)typeof(TrafficExplosionVisualPool).GetField("effects", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(pool);
+        Assert.AreEqual(2, effects.Count);
+        for (int i = 0; i < effects.Count; i++) ((ParticleSystem)effects[i]).Play(true);
+
+        typeof(TrafficExplosionVisualPool).GetMethod("StopEffects", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(pool, null);
+
+        for (int i = 0; i < effects.Count; i++)
+            Assert.IsFalse(((ParticleSystem)effects[i]).IsAlive(true));
+        Object.DestroyImmediate(poolObject); Object.DestroyImmediate(worldObject);
+    }
+
+}
+#endif

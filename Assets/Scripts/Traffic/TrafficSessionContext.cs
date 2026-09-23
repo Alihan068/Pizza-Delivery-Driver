@@ -10,6 +10,8 @@ public sealed class TrafficSessionContext {
     public SessionRulesSnapshot Snapshot { get; private set; }
     public SessionIntegrityState Integrity { get; } = new SessionIntegrityState();
     public TrafficSessionPhase Phase { get; private set; } = TrafficSessionPhase.NotStarted;
+    /// <summary>Detached content evidence captured before the rules snapshot is frozen.</summary>
+    public SessionContentEvidence ContentEvidence { get; private set; }
 
     /// <summary>Detached modifier values captured before prefab instantiation, even while navigation is pending.</summary>
     public FrozenModifierRules Modifiers { get; }
@@ -25,7 +27,28 @@ public sealed class TrafficSessionContext {
     /// <param name="snapshot">Detached, validated snapshot to adopt.</param>
     public void FreezeSnapshot(SessionRulesSnapshot snapshot) {
         if (Snapshot != null || Phase == TrafficSessionPhase.Ended || snapshot == null) return;
+        if (snapshot.ContentEvidence != null &&
+            (ContentEvidence == null || !ReferenceEquals(snapshot.ContentEvidence, ContentEvidence) ||
+             !snapshot.ContentEvidence.MatchesSessionIdentity(Draft, Modifiers) || Draft == null ||
+             snapshot.sessionId != Draft.sessionId || snapshot.mapId != Draft.mapId ||
+             snapshot.vehicleId != Draft.vehicleId || snapshot.difficultyId != Draft.difficultyId ||
+             snapshot.shiftDurationMinutes != Draft.shiftDurationMinutes ||
+             snapshot.isFreeplay != Draft.isFreeplay)) {
+            Integrity.MarkInvalid("Snapshot content evidence does not match the accepted session context.");
+            return;
+        }
         Snapshot = snapshot;
+    }
+
+    /// <summary>Captures evidence once; later replacement is rejected to preserve monotonic integrity.</summary>
+    public bool CaptureContentEvidence(SessionContentEvidence evidence) {
+        if (evidence == null || ContentEvidence != null || Snapshot != null || Phase == TrafficSessionPhase.Ended) return false;
+        if (!evidence.MatchesSessionIdentity(Draft, Modifiers)) {
+            Integrity.MarkInvalid("Captured content evidence does not match the session context.");
+            return false;
+        }
+        ContentEvidence = evidence;
+        return true;
     }
 
     /// <summary>Advances the session phase. Once <see cref="TrafficSessionPhase.Ended"/> is reached, further changes are ignored.</summary>

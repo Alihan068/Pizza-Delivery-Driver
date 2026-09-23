@@ -1,0 +1,362 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81fcb1c52fb0d9f4a8e4f30d59de11f3, type: 3}
+  m_Name: Navigation
+  m_EditorClassIdentifier: 
+  document:
+    schemaVersion: 1
+    mapId: 4c46aef37a1f4f468fc0915175730643
+    documentId: nd-civilian-pilot-v1
+    coordinateConvention: MapLocalUnits_XRight_YUp_YForward_HeadingCCWFromY
+    localBounds:
+      serializedVersion: 2
+      x: -76
+      y: -56
+      width: 152
+      height: 112
+    noSpawnRegions:
+    - area:
+        serializedVersion: 2
+        x: -63
+        y: -16
+        width: 10
+        height: 12
+      reason: Player and shop approach
+      anchorId: nd-player-shop
+    - area:
+        serializedVersion: 2
+        x: 51
+        y: 16
+        width: 12
+        height: 14
+      reason: Restock approach
+      anchorId: nd-restock-east
+    - area:
+        serializedVersion: 2
+        x: 35
+        y: -34
+        width: 12
+        height: 14
+      reason: Restock approach
+      anchorId: nd-restock-south
+    - area:
+        serializedVersion: 2
+        x: 49
+        y: -47
+        width: 8
+        height: 8
+      reason: Extraction approach
+      anchorId: nd-extraction
+    nodes:
+    - nodeId: nd-pilot-n0
+      x: 6
+      y: -22.5
+    - nodeId: nd-pilot-n1
+      x: 6
+      y: 5
+    - nodeId: nd-pilot-n2
+      x: 29.5
+      y: 5
+    - nodeId: nd-pilot-n3
+      x: 29.5
+      y: -22.5
+    - nodeId: nd-west-n0
+      x: 6
+      y: -30
+    - nodeId: nd-west-n1
+      x: 6
+      y: 26
+    - nodeId: nd-west-n2
+      x: -46
+      y: 26
+    - nodeId: nd-west-n3
+      x: -46
+      y: -30
+    edges:
+    - edgeId: nd-pilot-e0
+      fromNodeId: nd-pilot-n0
+      toNodeId: nd-pilot-n1
+      orderedPoints: []
+      usableWidth: 3
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: nd-junction-south
+      endJunctionId: nd-junction-north
+    - edgeId: nd-pilot-e1
+      fromNodeId: nd-pilot-n1
+      toNodeId: nd-pilot-n2
+      orderedPoints: []
+      usableWidth: 3
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: nd-junction-north
+      endJunctionId: 
+    - edgeId: nd-pilot-e2
+      fromNodeId: nd-pilot-n2
+      toNodeId: nd-pilot-n3
+      orderedPoints: []
+      usableWidth: 3
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: 
+      endJunctionId: 
+    - edgeId: nd-pilot-e3
+      fromNodeId: nd-pilot-n3
+      toNodeId: nd-pilot-n0
+      orderedPoints: []
+      usableWidth: 3
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: 
+      endJunctionId: nd-junction-south
+    - edgeId: nd-west-e0
+      fromNodeId: nd-west-n0
+      toNodeId: nd-pilot-n0
+      orderedPoints: []
+      usableWidth: 3
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: 
+      endJunctionId: nd-junction-south
+    - edgeId: nd-west-e1
+      fromNodeId: nd-pilot-n1
+      toNodeId: nd-west-n1
+      orderedPoints: []
+      usableWidth: 3
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: nd-junction-north
+      endJunctionId: 
+    - edgeId: nd-west-e2
+      fromNodeId: nd-west-n1
+      toNodeId: nd-west-n2
+      orderedPoints: []
+      usableWidth: 2
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: 
+      endJunctionId: 
+    - edgeId: nd-west-e3
+      fromNodeId: nd-west-n2
+      toNodeId: nd-west-n3
+      orderedPoints: []
+      usableWidth: 2
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: 
+      endJunctionId: 
+    - edgeId: nd-west-e4
+      fromNodeId: nd-west-n3
+      toNodeId: nd-west-n0
+      orderedPoints: []
+      usableWidth: 2
+      speedLimit: 3
+      allowedRoles: 
+      startJunctionId: 
+      endJunctionId: 
+    junctions:
+    - junctionId: nd-junction-south
+      conflictZone:
+        serializedVersion: 2
+        x: 4.9
+        y: -23.6
+        width: 2.2
+        height: 2.2
+      allowedTransitions:
+      - fromEdgeId: nd-pilot-e3
+        toEdgeId: nd-pilot-e0
+        priority: 1
+      - fromEdgeId: nd-west-e0
+        toEdgeId: nd-pilot-e0
+        priority: 0
+    - junctionId: nd-junction-north
+      conflictZone:
+        serializedVersion: 2
+        x: 4.9
+        y: 3.9
+        width: 2.2
+        height: 2.2
+      allowedTransitions:
+      - fromEdgeId: nd-pilot-e0
+        toEdgeId: nd-pilot-e1
+        priority: 1
+      - fromEdgeId: nd-pilot-e0
+        toEdgeId: nd-west-e1
+        priority: 0
+    vehiclePools:
+    - poolId: nd-pilot-cars
+      entries:
+      - vehicleProfileId: nd-compact-blue
+        weight: 1
+      - vehicleProfileId: nd-compact-red
+        weight: 1
+      - vehicleProfileId: nd-compact-green
+        weight: 1
+      - vehicleProfileId: nd-compact-yellow
+        weight: 1
+    civilianRoutes:
+    - routeId: nd-pilot-loop
+      edgeIds:
+      - nd-pilot-e0
+      - nd-pilot-e1
+      - nd-pilot-e2
+      - nd-pilot-e3
+      loop: 1
+      vehiclePoolId: nd-pilot-cars
+      targetCount: 4
+      respawnProfileId: 
+    - routeId: nd-west-loop
+      edgeIds:
+      - nd-west-e0
+      - nd-pilot-e0
+      - nd-west-e1
+      - nd-west-e2
+      - nd-west-e3
+      - nd-west-e4
+      loop: 1
+      vehiclePoolId: nd-pilot-cars
+      targetCount: 6
+      respawnProfileId: 
+    spawnPoints:
+    - spawnId: nd-pilot-s0
+      edgeId: nd-pilot-e0
+      distanceAlongEdge: 10
+      routeId: nd-pilot-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-pilot-s1
+      edgeId: nd-pilot-e1
+      distanceAlongEdge: 10
+      routeId: nd-pilot-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-pilot-s2
+      edgeId: nd-pilot-e2
+      distanceAlongEdge: 10
+      routeId: nd-pilot-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-pilot-s3
+      edgeId: nd-pilot-e3
+      distanceAlongEdge: 10
+      routeId: nd-pilot-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-west-s0
+      edgeId: nd-west-e2
+      distanceAlongEdge: 26
+      routeId: nd-west-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-west-s1
+      edgeId: nd-west-e3
+      distanceAlongEdge: 28
+      routeId: nd-west-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-west-s2
+      edgeId: nd-west-e4
+      distanceAlongEdge: 26
+      routeId: nd-west-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-west-s3
+      edgeId: nd-west-e2
+      distanceAlongEdge: 12
+      routeId: nd-west-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-west-s4
+      edgeId: nd-west-e3
+      distanceAlongEdge: 14
+      routeId: nd-west-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-west-s5
+      edgeId: nd-west-e4
+      distanceAlongEdge: 14
+      routeId: nd-west-loop
+      role: 1
+      clearanceWidth: 0.8
+      clearanceLength: 1.5
+    - spawnId: nd-police-s0
+      edgeId: nd-pilot-e0
+      distanceAlongEdge: 18
+      routeId: 
+      role: 2
+      clearanceWidth: 3
+      clearanceLength: 4
+    - spawnId: nd-police-s1
+      edgeId: nd-pilot-e2
+      distanceAlongEdge: 8
+      routeId: 
+      role: 2
+      clearanceWidth: 3
+      clearanceLength: 4
+    - spawnId: nd-police-s2
+      edgeId: nd-west-e2
+      distanceAlongEdge: 40
+      routeId: 
+      role: 2
+      clearanceWidth: 2
+      clearanceLength: 4
+    - spawnId: nd-police-s3
+      edgeId: nd-west-e4
+      distanceAlongEdge: 40
+      routeId: 
+      role: 2
+      clearanceWidth: 2
+      clearanceLength: 4
+    policeEntries:
+    - entryId: nd-police-entry-00
+      spawnId: nd-police-s0
+      allowedRoles:
+      - 2
+    - entryId: nd-police-entry-01
+      spawnId: nd-police-s1
+      allowedRoles:
+      - 2
+    - entryId: nd-police-entry-02
+      spawnId: nd-police-s2
+      allowedRoles:
+      - 2
+    - entryId: nd-police-entry-03
+      spawnId: nd-police-s3
+      allowedRoles:
+      - 2
+    difficultyProfileBindings:
+    - difficultyId: tier_01
+      civilianPopulationProfileId: nd-sparse-pilot
+      policeDirectorProfileId: nd-police-default
+    - difficultyId: tier_02
+      civilianPopulationProfileId: nd-sparse-pilot
+      policeDirectorProfileId: nd-police-default
+    - difficultyId: tier_03
+      civilianPopulationProfileId: nd-sparse-pilot
+      policeDirectorProfileId: nd-police-default
+    profileDependencies:
+    - nd-compact-blue
+    - nd-compact-red
+    - nd-compact-green
+    - nd-compact-yellow
+    - builtin:police-standard
+    - builtin:police-sport
+    - builtin:police-heavy

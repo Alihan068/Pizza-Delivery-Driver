@@ -1,0 +1,114 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d699350198a40258e54754b63fd37ee, type: 3}
+  m_Name: PoliceDirector_NarrowDistrict
+  m_EditorClassIdentifier: 
+  profileId: nd-police-default
+  baseHeatAtStart: 0
+  baseHeatPerActiveSecond: 0.1
+  maximumHeat: 100
+  earliestPoliceTime: 1
+  heatTiers:
+  - tierId: tier_01
+    minimumHeat: 0
+    targetCount: 4
+    reinforcementInterval: 1
+    destroyedReplacementDelay: 3
+    relocationCooldown: 15
+    compositions:
+    - vehicleProfileId: builtin:police-standard
+      behaviorProfileId: builtin:police-pursue
+      tacticalRole: 0
+      weight: 2
+      maximumCount: 0
+    - vehicleProfileId: builtin:police-sport
+      behaviorProfileId: builtin:police-ram
+      tacticalRole: 2
+      weight: 1
+      maximumCount: 1
+    - vehicleProfileId: builtin:police-heavy
+      behaviorProfileId: builtin:police-pursue
+      tacticalRole: 0
+      weight: 1
+      maximumCount: 1
+  - tierId: tier_02
+    minimumHeat: 25
+    targetCount: 2
+    reinforcementInterval: 10
+    destroyedReplacementDelay: 3
+    relocationCooldown: 12
+    compositions:
+    - vehicleProfileId: builtin:police-standard
+      behaviorProfileId: builtin:police-pursue
+      tacticalRole: 0
+      weight: 2
+      maximumCount: 0
+    - vehicleProfileId: builtin:police-sport
+      behaviorProfileId: builtin:police-intercept
+      tacticalRole: 1
+      weight: 1
+      maximumCount: 1
+  - tierId: tier_03
+    minimumHeat: 60
+    targetCount: 3
+    reinforcementInterval: 8
+    destroyedReplacementDelay: 3
+    relocationCooldown: 10
+    compositions:
+    - vehicleProfileId: builtin:police-standard
+      behaviorProfileId: builtin:police-pursue
+      tacticalRole: 0
+      weight: 2
+      maximumCount: 0
+    - vehicleProfileId: builtin:police-sport
+      behaviorProfileId: builtin:police-ram
+      tacticalRole: 2
+      weight: 1
+      maximumCount: 1
+    - vehicleProfileId: builtin:police-heavy
+      behaviorProfileId: builtin:police-pursue
+      tacticalRole: 0
+      weight: 1
+      maximumCount: 1
+  navigationMode: 1
+  freeChaseSettings:
+    recklessPursuit: 1
+    recklessRamConeDegrees: 45
+    recklessRamDistance: 6
+    goalRadius: 0.75
+    reactionSeconds: 0.3
+    decisionIntervalSeconds: 0.15
+    lateralAcceleration: 4
+    avoidanceHorizonSeconds: 0.75
+    avoidanceCommitmentSeconds: 0.5
+    progressWeight: 1
+    clearanceWeight: 1
+    headingWeight: 0.5
+    switchWeight: 0.25
+    numericalEpsilon: 0.0001
+    turnPenalty: 0.1
+    reverseDistance: 2
+    reverseDurationSeconds: 2
+    maximumReverseAttempts: 2
+    reverseCooldownSeconds: 1
+    stuckDurationSeconds: 2
+    roleCadenceSeconds: 0.5
+    minimumRoleHoldSeconds: 2
+    predictionSeconds: 0.75
+    maximumLeadDistance: 6
+    holdingTolerance: 0.1
+  unitVariationSettings:
+    reactionVariation: 0.1
+    predictionVariation: 0.1
+    followGapVariation: 0.1
+    sidePreferenceVariation: 0.1
+    riskBiasVariation: 0.1

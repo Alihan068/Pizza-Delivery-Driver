@@ -169,6 +169,7 @@ public static class SaveMigration {
             record.tunedDriftGrip = 0f;
             record.tunedDriftSteeringMultiplier = 0f;
             record.tunedGripEnterTime = 0f;
+            record.tunedGripRecoverTime = -1f;
         }
         notes.Add("Advanced Tuning save fields initialized");
     }

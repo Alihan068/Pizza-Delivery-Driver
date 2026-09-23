@@ -75,6 +75,10 @@ public class CivilianFollowerSettings {
     [Tooltip("Forward speed (world units/s) at or below which post-impact momentum counts as settled.")]
     public float settleSpeed = 1f;
 
+    /// <summary>Minimum seconds a heavy civilian crash remains settling before rejoin is considered.</summary>
+    [Tooltip("Minimum seconds a heavy crash remains in settling before a rejoin decision is allowed.")]
+    public float minimumCrashWaitSeconds = 3f;
+
     [Tooltip("Longest time (seconds) the car waits for momentum to settle before looking for a rejoin anyway.")]
     public float settleTimeoutSeconds = 2f;
 

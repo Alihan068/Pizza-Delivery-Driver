@@ -36,6 +36,8 @@ MonoBehaviour:
     multiplier: 0.15
   - reason: 4
     multiplier: 0.5
+  - reason: 5
+    multiplier: 1
   ratingPointsPerActiveMinute: 2
   ratingPointsPerCompletedOrder: 3
   ratingPenaltyPerMissedOrder: 4
@@ -53,6 +55,8 @@ MonoBehaviour:
     offset: -8
   - reason: 4
     offset: -5
+  - reason: 5
+    offset: 0
   rentBase: 400
   rentPerRankStep: 350
   repShortfallDivisorBase: 60

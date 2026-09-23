@@ -28,6 +28,22 @@ public sealed class VehicleDamageReceiver : MonoBehaviour {
     /// <summary>True only for a bound active session and a living vehicle.</summary>
     public bool CanTakeDamage => world != null && world.IsActive &&
         (player != null ? !player.IsDisabled : instance != null && health.CanReceiveDamage(Identity.lifeId) && instance.Identity.HasValue && instance.Identity.Value.lifeId == Identity.lifeId);
+
+    /// <summary>
+    /// Verifies that this receiver still owns the exact active session life expected by a caller.
+    /// This is intentionally a read-only authority check: it neither restores health nor changes
+    /// registration, and an optional NPC profile must be the exact profile bound to this life.
+    /// </summary>
+    /// <param name="owner">The active damage world expected to own this receiver.</param>
+    /// <param name="expected">The exact role and life identifier expected by the caller.</param>
+    /// <param name="expectedNpcProfile">Optional exact NPC profile; null is required for player bindings.</param>
+    /// <returns>True only while the private world, active life, identity, role, and optional profile all match.</returns>
+    public bool IsBoundTo(TrafficDamageWorld owner, VehicleIdentity expected, NpcVehicleProfile expectedNpcProfile = null) {
+        if (owner == null || world != owner || !CanTakeDamage || expected.lifeId <= 0 ||
+            Identity.lifeId != expected.lifeId || Identity.role != expected.role) return false;
+        if (expectedNpcProfile == null) return player != null;
+        return player == null && profile == expectedNpcProfile;
+    }
     /// <summary>Runtime health for diagnostics and lifecycle tests.</summary>
     public float CurrentHealth => player != null ? player.currentHealth : health.CurrentHealth;
     /// <summary>Frozen explosion resistance for this life.</summary>
@@ -83,6 +99,11 @@ public sealed class VehicleDamageReceiver : MonoBehaviour {
         Sample = new ContactParticipant(Identity.lifeId, kind, body.linearVelocity, body.angularVelocity * Mathf.Deg2Rad, body.worldCenterOfMass);
     }
 
+    /// <summary>Clears only transient collider-pair history before same-life relocation.</summary>
+    public void ClearContactHistoryForRelocation() {
+        contacts.Clear();
+    }
+
     void OnCollisionEnter2D(Collision2D collision) {
         if (!CanTakeDamage || player != null || collision.collider == null) return;
         var otherCollider = collision.collider;
@@ -122,7 +143,9 @@ public sealed class VehicleDamageReceiver : MonoBehaviour {
         lastImpactTime = world.SessionTime;
         ApplyNpcDamage(amount, context);
         if (!health.IsDestroyed && instance.TryEnterCrashRecovery()) {
-            recoverAt = world.SessionTime + world.Settings.recoverySeconds;
+            float recoverySeconds = Identity.role == VehicleRole.Police
+                ? Mathf.Min(world.Settings.recoverySeconds, 0.35f) : world.Settings.recoverySeconds;
+            recoverAt = world.SessionTime + recoverySeconds;
             if (motor != null) motor.SetCrashMode(true);
         }
     }

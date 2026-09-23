@@ -479,6 +479,21 @@ public sealed class CivilianRouteFollowerTests {
     }
 
     [Test]
+    public void RecoveryPolicy_MinimumCrashWaitKeepsStoppedHeavyCrashSettling() {
+        var policy = new CrashRecoveryPolicy(new CrashRecoveryPolicy.Parameters(
+            lightImpactSpeed: 1f, heavyImpactSpeed: 3f, lightHoldSeconds: 0.6f, settleSpeed: 1f,
+            settleTimeoutSeconds: 1f, rejoinRetrySeconds: 1f, reverseMaxSeconds: 0f,
+            maxRejoinDistance: 8f, minimumSettleSeconds: 3f));
+        var clear = new CrashRecoveryPolicy.RejoinObservation(0f, true, false, true);
+
+        policy.NotifyImpact(5f);
+        policy.Tick(2.9f, 0f, clear);
+        Assert.AreEqual(CrashRecoveryPolicy.Phase.Settling, policy.Current);
+        policy.Tick(0.1f, 0f, clear);
+        Assert.AreEqual(CrashRecoveryPolicy.Phase.Driving, policy.Current);
+    }
+
+    [Test]
     public void RecoveryPolicy_BlockedRejoinWaitsRetriesAndReversesOnlyWithRearClear() {
         var policy = new CrashRecoveryPolicy(RecoveryParameters());
         var blockedPath = new CrashRecoveryPolicy.RejoinObservation(2f, false, false, true);

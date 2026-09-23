@@ -59,16 +59,16 @@ public class VehicleData : ScriptableObject {
 
     [Header("Speed")]
     /// <summary>Speed with no upgrades bought.</summary>
-    public float baseSpeed = 4.4f;
+    public float baseSpeed = 5.5f;
 
     /// <summary>Amount each speed upgrade adds.</summary>
-    public float speedStep = 0.1f;
+    public float speedStep = 0.125f;
 
     /// <summary>Number of speed levels that can be bought.</summary>
     public int maxSpeedLevel = 25;
 
     /// <summary>Lowest speed the player may choose while Advanced Tuning is enabled.</summary>
-    [Min(0f)] public float minimumTuningSpeed = 2.5f;
+    [Min(0f)] public float minimumTuningSpeed = 3.125f;
 
     /// <summary>Base cost multiplier for speed upgrades.</summary>
     public float speedCostMult = 0.5f;

@@ -25,10 +25,10 @@ MonoBehaviour:
   armorDesc: stat.armor.description
   capacityDesc: stat.capacity.description
   protectionDesc: stat.protection.description
-  baseSpeed: 3.7
-  speedStep: 0.1
+  baseSpeed: 4.625
+  speedStep: 0.125
   maxSpeedLevel: 25
-  minimumTuningSpeed: 2.2
+  minimumTuningSpeed: 2.75
   speedCostMult: 0.5
   baseTurn: 160
   turnStep: 10
@@ -62,9 +62,9 @@ MonoBehaviour:
     steeringResponseTime: 0.15
     steeringHighSpeedScale: 0.6
     normalGrip: 10
-    driftGrip: 1.7
+    driftGrip: 1.3
     gripEnterTime: 0.08
-    gripRecoverTime: 0.22
+    gripRecoverTime: 0.7
     handbrakeDeceleration: 2
     handlingRecoveryAssist: 0.25
     driftSteeringMultiplier: 1.35
@@ -82,6 +82,6 @@ MonoBehaviour:
     driftExitDwell: 0.25
     driftRequiresHandbrake: 1
   bodySettings:
-    baseMass: 1
-    massByHealthLevel: []
+    baseMass: 1.4
+    massByHealthLevel: [1.4, 1.45, 1.5, 1.55, 1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2]
   explosionResistance: 0

@@ -101,6 +101,13 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] Button nextModifierButton;
     [SerializeField] Button closeButton;
 
+    [Header("Runtime Modifier Selection")]
+    [Tooltip("Optional authored scroll container. When absent, the picker is created at runtime from the legacy modifier field parent.")]
+    [SerializeField] ScrollRect modifierScroll;
+    [SerializeField] RectTransform modifierContent;
+    [SerializeField] TextMeshProUGUI modifierSummaryText;
+    [SerializeField] TextMeshProUGUI modifierStatusText;
+
     [Header("Localization Keys")]
     [SerializeField] string mapLockedKey = "garage.mapSelection.locked";
     [SerializeField] string mapAvailableKey = "garage.mapSelection.available";
@@ -121,6 +128,12 @@ public class MapSelectionPanel : MonoBehaviour {
     [SerializeField] string sessionDurationValueKey = "garage.mapSelection.durationValue";
     [SerializeField] string modifierNoneKey = "garage.modifier.none";
     [SerializeField] string modifierNoneDescriptionKey = "garage.modifier.noneDescription";
+    [SerializeField] string modifierSelectionSummaryKey = "garage.modifier.selectionSummary";
+    [SerializeField] string modifierMultiplierKey = "garage.modifier.multiplier";
+    [SerializeField] string modifierEffectsKey = "garage.modifier.effects";
+    [SerializeField] string modifierUnsupportedTrafficKey = "garage.modifier.unsupportedTraffic";
+    [SerializeField] string modifierUnsupportedPoliceKey = "garage.modifier.unsupportedPolice";
+    [SerializeField] string modifierConflictKey = "garage.modifier.conflict";
 
     int mapIndex;
     int modifierIndex;
@@ -133,6 +146,13 @@ public class MapSelectionPanel : MonoBehaviour {
     TextMeshProUGUI runtimeMapBrowserTitle;
     readonly List<Image> runtimeMapCardBackgrounds = new List<Image>();
     readonly List<TMP_Text> runtimeMapCardLabels = new List<TMP_Text>();
+    readonly List<Toggle> runtimeModifierToggles = new List<Toggle>();
+    readonly List<TMP_Text> runtimeModifierLabels = new List<TMP_Text>();
+    readonly List<TMP_Text> runtimeModifierDetails = new List<TMP_Text>();
+    readonly List<string> previewModifierIds = new List<string>();
+    RectTransform runtimeModifierRoot;
+    bool modifierLayoutBuilt;
+    bool ownsRuntimeModifierRoot;
 
     /// <summary>Raised when the previewed map or modifier changes, or when the active selection is applied.</summary>
     public event System.Action SelectionChanged;
@@ -145,8 +165,29 @@ public class MapSelectionPanel : MonoBehaviour {
         LocalizationManager.LanguageChanged -= RefreshUI;
     }
 
+    void OnDestroy() {
+        LocalizationManager.LanguageChanged -= RefreshUI;
+        ClearRuntimeModifierListeners();
+        if (!ownsRuntimeModifierRoot || runtimeModifierRoot == null) return;
+        GameObject ownedRoot = runtimeModifierRoot.gameObject;
+        runtimeModifierRoot = null;
+        modifierContent = null;
+        modifierScroll = null;
+        if (Application.isPlaying) Destroy(ownedRoot);
+        else DestroyImmediate(ownedRoot);
+    }
+
+    void ClearRuntimeModifierListeners() {
+        if (modifierContent == null) return;
+        for (int i = 0; i < modifierContent.childCount; i++) {
+            Toggle toggle = modifierContent.GetChild(i).GetComponent<Toggle>();
+            if (toggle != null) toggle.onValueChanged.RemoveAllListeners();
+        }
+    }
+
     void Start() {
         BuildRuntimeLayout();
+        BuildRuntimeModifierLayout();
         BindListeners();
         ResolveInitialSelection();
         RefreshUI();
@@ -162,8 +203,8 @@ public class MapSelectionPanel : MonoBehaviour {
         if (nextDifficultyButton != null) nextDifficultyButton.onClick.AddListener(() => ChangeDifficulty(1));
         if (previousSessionDurationButton != null) previousSessionDurationButton.onClick.AddListener(() => ChangeSessionDuration(-1));
         if (nextSessionDurationButton != null) nextSessionDurationButton.onClick.AddListener(() => ChangeSessionDuration(1));
-        if (previousModifierButton != null) previousModifierButton.onClick.AddListener(() => ChangeModifier(-1));
-        if (nextModifierButton != null) nextModifierButton.onClick.AddListener(() => ChangeModifier(1));
+        if (previousModifierButton != null) previousModifierButton.gameObject.SetActive(false);
+        if (nextModifierButton != null) nextModifierButton.gameObject.SetActive(false);
         if (closeButton != null) closeButton.onClick.AddListener(Close);
         listenersBound = true;
     }
@@ -186,6 +227,10 @@ public class MapSelectionPanel : MonoBehaviour {
 
         mapIndex = FindMapIndex(manager.Content.Maps, manager.currentMap);
         modifierIndex = FindModifierIndex(manager.allModifiers, manager.CurrentModifier);
+        previewModifierIds.Clear();
+        if (manager.SelectedModifierIds != null)
+            for (int i = 0; i < manager.SelectedModifierIds.Count; i++)
+                if (!previewModifierIds.Contains(manager.SelectedModifierIds[i])) previewModifierIds.Add(manager.SelectedModifierIds[i]);
         MapData map = GetSelectedMap(manager);
         difficultyIndex = FindDifficultyIndex(map != null ? map.levelData : null, manager.currentDifficultyId);
         if (difficultyIndex < 0) difficultyIndex = 0;
@@ -218,6 +263,13 @@ public class MapSelectionPanel : MonoBehaviour {
         RefreshUI();
     }
 
+    void ToggleModifier(string modifierId, bool selected) {
+        List<string> next = ModifierSelectionUiHelper.Toggle(previewModifierIds, modifierId, selected);
+        previewModifierIds.Clear();
+        previewModifierIds.AddRange(next);
+        RefreshUI();
+    }
+
     void ChangeSessionDuration(int direction) {
         if (sessionDurationOptionsMinutes == null || sessionDurationOptionsMinutes.Length == 0) return;
         sessionDurationIndex = WrapIndex(sessionDurationIndex + direction, sessionDurationOptionsMinutes.Length);
@@ -233,14 +285,16 @@ public class MapSelectionPanel : MonoBehaviour {
 
         MapDifficultyData difficulty = GetSelectedDifficulty(map);
         if (difficulty != null && !manager.IsDifficultyUnlocked(map, difficultyIndex)) return false;
-        if (!manager.IsMapOwned(map) && !manager.TryPurchaseMap(map)) return false;
+        if (!CanApplyModifiers(manager, map)) return false;
+        if (!TryGetPreviewDuration(out int selectedDuration)) return false;
+        if (!manager.IsMapOwned(map) && !manager.CanPurchaseMap(map)) return false;
 
+        if (!manager.IsMapOwned(map) && !manager.TryPurchaseMap(map)) return false;
         manager.SelectMap(map);
         if (difficulty != null)
             manager.SelectDifficulty(map, difficulty.difficultyId);
-        manager.SelectModifier(GetSelectedModifier(manager));
-        if (sessionDurationOptionsMinutes != null && sessionDurationOptionsMinutes.Length > 0)
-            manager.SelectShiftDuration(sessionDurationOptionsMinutes[sessionDurationIndex]);
+        manager.SelectModifiers(previewModifierIds);
+        manager.SelectShiftDuration(selectedDuration);
         ResolveInitialSelection();
         RefreshUI();
         return IsPreviewApplied();
@@ -254,7 +308,8 @@ public class MapSelectionPanel : MonoBehaviour {
         if (manager == null || map == null) return false;
         MapDifficultyData difficulty = GetSelectedDifficulty(map);
         bool difficultyAvailable = difficulty == null || manager.IsDifficultyUnlocked(map, difficultyIndex);
-        return difficultyAvailable && (manager.IsMapOwned(map) || manager.CanPurchaseMap(map));
+        return difficultyAvailable && CanApplyModifiers(manager, map) && TryGetPreviewDuration(out _) &&
+            (manager.IsMapOwned(map) || manager.CanPurchaseMap(map));
     }
 
     /// <summary>Returns whether the preview currently matches the owned map selected for the next shift.</summary>
@@ -263,26 +318,50 @@ public class MapSelectionPanel : MonoBehaviour {
         var manager = GameManager.Instance;
         if (manager == null) return false;
         var map = GetSelectedMap(manager);
-        var modifier = GetSelectedModifier(manager);
         MapDifficultyData difficulty = GetSelectedDifficulty(map);
         bool difficultyApplied = difficulty == null || manager.CurrentDifficulty == difficulty ||
             (manager.CurrentDifficulty != null && difficulty != null && manager.CurrentDifficulty.difficultyId == difficulty.difficultyId);
         bool durationApplied = sessionDurationOptionsMinutes != null && sessionDurationOptionsMinutes.Length > 0 &&
             manager.SelectedShiftDurationMinutes == Mathf.Max(1, sessionDurationOptionsMinutes[Mathf.Clamp(sessionDurationIndex, 0, sessionDurationOptionsMinutes.Length - 1)]);
         return map != null && manager.IsMapOwned(map) && manager.currentMap == map &&
-            IsSingleModifierSelectionApplied(manager, modifier) && difficultyApplied &&
+            AreModifierSelectionsApplied(manager) && difficultyApplied &&
             durationApplied &&
             (difficulty == null || manager.IsDifficultyUnlocked(map, difficultyIndex));
     }
 
-    // S01.7 bridge: this screen still previews at most one modifier, but the authoritative
-    // selection state is now GameManager's duplicate-free multi-select id set (S01.3/S01.4). Compare
-    // against that id set instead of the legacy CurrentModifier reference, so this single-selection
-    // screen and the future full multi-select UI (S10) can never silently disagree about what is applied.
-    static bool IsSingleModifierSelectionApplied(GameManager manager, ShiftModifierData previewedModifier) {
+    // The authoritative applied state remains GameManager's duplicate-free multi-select id set.
+    // Preview ids stay local until the Start Job action completes all validation.
+    bool AreModifierSelectionsApplied(GameManager manager) {
+        ModifierSelectionResult preview = ModifierSelectionResolver.Resolve(manager.allModifiers, previewModifierIds);
+        if (preview.rejectedIds.Count > 0) return false;
         var selectedIds = manager.SelectedModifierIds;
-        if (previewedModifier == null) return selectedIds == null || selectedIds.Count == 0;
-        return selectedIds != null && selectedIds.Count == 1 && selectedIds[0] == previewedModifier.modifierId;
+        if (selectedIds == null || selectedIds.Count != preview.resolvedModifiers.Count) return false;
+        for (int i = 0; i < selectedIds.Count; i++)
+            if (selectedIds[i] != preview.resolvedModifiers[i].modifierId) return false;
+        return true;
+    }
+
+    bool CanApplyModifiers(GameManager manager, MapData map) {
+        ModifierSelectionResult resolved = ModifierSelectionResolver.Resolve(manager.allModifiers, previewModifierIds);
+        if (resolved.rejectedIds.Count > 0) {
+            RefreshModifierUI(manager, map, resolved);
+            return false;
+        }
+        for (int i = 0; i < resolved.resolvedModifiers.Count; i++) {
+            if (!ModifierSelectionUiHelper.IsSupported(resolved.resolvedModifiers[i], map)) {
+                RefreshModifierUI(manager, map, resolved);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool TryGetPreviewDuration(out int duration) {
+        duration = 0;
+        if (sessionDurationOptionsMinutes == null || sessionDurationOptionsMinutes.Length == 0) return false;
+        int index = Mathf.Clamp(sessionDurationIndex, 0, sessionDurationOptionsMinutes.Length - 1);
+        duration = sessionDurationOptionsMinutes[index];
+        return duration > 0;
     }
 
     void RefreshUI() {
@@ -323,9 +402,7 @@ public class MapSelectionPanel : MonoBehaviour {
         RefreshSessionDurationUI();
         RefreshRuntimeMapCards(manager);
 
-        var modifier = GetSelectedModifier(manager);
-        if (modifierNameText != null) modifierNameText.text = modifier != null ? modifier.GetDisplayName() : LocalizationManager.Get(modifierNoneKey);
-        if (modifierDescriptionText != null) modifierDescriptionText.text = modifier != null ? modifier.GetDescription() : LocalizationManager.Get(modifierNoneDescriptionKey);
+        RefreshModifierUI(manager, map, null);
 
         if (SelectionChanged != null) SelectionChanged.Invoke();
     }
@@ -496,6 +573,193 @@ public class MapSelectionPanel : MonoBehaviour {
             new Vector2(0.25f, 0.01f), new Vector2(0.75f, 0.06f));
     }
 
+    void BuildRuntimeModifierLayout() {
+        if (modifierLayoutBuilt || modifierNameText == null) return;
+        RectTransform parent = modifierNameText.transform.parent as RectTransform;
+        if (parent == null) return;
+
+        if (modifierTitleText != null) modifierTitleText.gameObject.SetActive(false);
+        if (modifierNameText != null) modifierNameText.gameObject.SetActive(false);
+        if (modifierDescriptionText != null) modifierDescriptionText.gameObject.SetActive(false);
+        if (previousModifierButton != null) previousModifierButton.gameObject.SetActive(false);
+        if (nextModifierButton != null) nextModifierButton.gameObject.SetActive(false);
+
+        if (modifierScroll != null && modifierContent != null) {
+            runtimeModifierRoot = modifierScroll.transform as RectTransform;
+            ownsRuntimeModifierRoot = false;
+        }
+        else {
+            GameObject scrollObject = new GameObject("ModifierSelectionScroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+            scrollObject.transform.SetParent(parent, false);
+            runtimeModifierRoot = scrollObject.transform as RectTransform;
+            ownsRuntimeModifierRoot = true;
+            SetResponsiveRect(runtimeModifierRoot, new Vector2(0.04f, 0.06f), new Vector2(0.96f, 0.15f));
+            Image background = scrollObject.GetComponent<Image>();
+            background.sprite = MapCardPreview.GetFallbackSprite();
+            background.type = Image.Type.Simple;
+            background.color = runtimePanelColor;
+            GameObject viewportObject = new GameObject("ModifierSelectionViewport", typeof(RectTransform), typeof(RectMask2D));
+            viewportObject.transform.SetParent(scrollObject.transform, false);
+            RectTransform viewport = viewportObject.transform as RectTransform;
+            SetResponsiveRect(viewport, Vector2.zero, Vector2.one);
+            GameObject contentObject = new GameObject("ModifierSelectionContent", typeof(RectTransform));
+            contentObject.transform.SetParent(viewportObject.transform, false);
+            modifierContent = contentObject.transform as RectTransform;
+            modifierContent.anchorMin = new Vector2(0f, 1f);
+            modifierContent.anchorMax = new Vector2(1f, 1f);
+            modifierContent.pivot = new Vector2(0f, 1f);
+            modifierContent.anchoredPosition = Vector2.zero;
+            ScrollRect scroll = scrollObject.GetComponent<ScrollRect>();
+            scroll.viewport = viewport;
+            scroll.content = modifierContent;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            modifierScroll = scroll;
+        }
+
+        if (modifierSummaryText == null)
+            modifierSummaryText = CreateRuntimeText(parent, modifierNameText, new Vector2(0.04f, 0.15f), new Vector2(0.96f, 0.19f));
+        else SetResponsiveText(modifierSummaryText, new Vector2(0.04f, 0.15f), new Vector2(0.96f, 0.19f));
+        SetRuntimeTextStyle(modifierSummaryText, modifierTitleFontSize, FontStyles.Bold);
+        modifierSummaryText.gameObject.name = "ModifierSelectionSummary";
+        modifierLayoutBuilt = true;
+    }
+
+    void RefreshModifierUI(GameManager manager, MapData map, ModifierSelectionResult resolved) {
+        if (!modifierLayoutBuilt || modifierContent == null || manager == null) return;
+        float previousScroll = modifierScroll != null ? modifierScroll.verticalNormalizedPosition : 1f;
+        while (modifierContent.childCount < (manager.allModifiers != null ? manager.allModifiers.Length : 0))
+            CreateRuntimeModifierRow(modifierContent, modifierContent.childCount);
+        int targetCount = manager.allModifiers != null ? manager.allModifiers.Length : 0;
+        int excessCount = Mathf.Max(0, modifierContent.childCount - targetCount);
+        for (int i = 0; i < excessCount; i++) {
+            Transform child = modifierContent.GetChild(modifierContent.childCount - 1);
+            Toggle toggle = child.GetComponent<Toggle>();
+            if (toggle != null) toggle.onValueChanged.RemoveAllListeners();
+            child.SetParent(null);
+            if (Application.isPlaying) Destroy(child.gameObject);
+            else DestroyImmediate(child.gameObject);
+        }
+
+        runtimeModifierToggles.Clear();
+        runtimeModifierLabels.Clear();
+        runtimeModifierDetails.Clear();
+        int count = manager.allModifiers != null ? manager.allModifiers.Length : 0;
+        float rowHeight = 70f;
+        modifierContent.sizeDelta = new Vector2(0f, Mathf.Max(rowHeight, count * rowHeight));
+        ModifierSelectionResult previewResult = resolved ?? ModifierSelectionResolver.Resolve(manager.allModifiers, previewModifierIds);
+        for (int i = 0; i < count; i++) {
+            ShiftModifierData modifier = manager.allModifiers[i];
+            Transform row = modifierContent.GetChild(i);
+            Toggle toggle = row.GetComponent<Toggle>();
+            TMP_Text label = row.GetChild(0).GetComponent<TMP_Text>();
+            TMP_Text detail = row.GetChild(1).GetComponent<TMP_Text>();
+            runtimeModifierToggles.Add(toggle);
+            runtimeModifierLabels.Add(label);
+            runtimeModifierDetails.Add(detail);
+            RectTransform rowRect = row as RectTransform;
+            rowRect.anchorMin = new Vector2(0f, 1f);
+            rowRect.anchorMax = new Vector2(1f, 1f);
+            rowRect.pivot = new Vector2(0f, 1f);
+            rowRect.sizeDelta = new Vector2(0f, rowHeight);
+            rowRect.anchoredPosition = new Vector2(0f, -i * rowHeight);
+            bool supported = ModifierSelectionUiHelper.IsSupported(modifier, map);
+            bool selected = ContainsId(previewModifierIds, modifier != null ? modifier.modifierId : string.Empty);
+            toggle.onValueChanged.RemoveAllListeners();
+            toggle.isOn = selected;
+            toggle.interactable = modifier != null && (supported || selected);
+            toggle.navigation = new Navigation { mode = Navigation.Mode.Automatic };
+            Image rowBackground = row.GetComponent<Image>();
+            if (rowBackground != null)
+                rowBackground.color = selected ? runtimeSelectedCardColor : runtimeCardColor;
+            string capturedModifierId = modifier != null ? modifier.modifierId : string.Empty;
+            toggle.onValueChanged.AddListener(value => {
+                if (!string.IsNullOrEmpty(capturedModifierId)) ToggleModifier(capturedModifierId, value);
+            });
+            label.text = modifier != null ? modifier.GetDisplayName() : string.Empty;
+            detail.text = modifier == null ? string.Empty : modifier.GetDescription() + "\n" +
+                LocalizationManager.Get(modifierMultiplierKey, modifier.scoreMultiplier) + " | " +
+                LocalizationManager.Get(modifierEffectsKey, modifier.speedDelta, modifier.turnDelta, modifier.healthDelta,
+                    modifier.capacityDelta) +
+                (supported ? string.Empty : "\n" + GetUnsupportedModifierText(modifier));
+            label.raycastTarget = false;
+            detail.raycastTarget = false;
+        }
+        if (modifierScroll != null) {
+            modifierScroll.verticalNormalizedPosition = previousScroll;
+            EnsureFocusedModifierVisible();
+        }
+
+        var supportedPreview = new List<ShiftModifierData>();
+        for (int i = 0; i < previewResult.resolvedModifiers.Count; i++)
+            if (ModifierSelectionUiHelper.IsSupported(previewResult.resolvedModifiers[i], map))
+                supportedPreview.Add(previewResult.resolvedModifiers[i]);
+        float product = ModifierSelectionUiHelper.GetPreviewScoreMultiplier(supportedPreview);
+        string summary = LocalizationManager.Get(modifierSelectionSummaryKey, supportedPreview.Count, product,
+            ModifierEffectResolver.GetCombinedStatDelta(supportedPreview, VehicleStatId.Speed),
+            ModifierEffectResolver.GetCombinedStatDelta(supportedPreview, VehicleStatId.Turn),
+            ModifierEffectResolver.GetCombinedStatDelta(supportedPreview, VehicleStatId.Health),
+            ModifierEffectResolver.GetCombinedStatDelta(supportedPreview, VehicleStatId.Armor),
+            ModifierEffectResolver.GetCombinedStatDelta(supportedPreview, VehicleStatId.Capacity),
+            ModifierEffectResolver.GetCombinedStatDelta(supportedPreview, VehicleStatId.Protection));
+        if (previewResult.rejectedIds.Count > 0) summary += "\n" + LocalizationManager.Get(modifierConflictKey);
+        if (modifierSummaryText != null) modifierSummaryText.text = summary;
+        if (modifierStatusText != null) modifierStatusText.text = string.Empty;
+    }
+
+    void CreateRuntimeModifierRow(RectTransform parent, int index) {
+        GameObject rowObject = new GameObject("ModifierToggleRow", typeof(RectTransform), typeof(Image), typeof(Toggle));
+        rowObject.transform.SetParent(parent, false);
+        Image background = rowObject.GetComponent<Image>();
+        background.sprite = MapCardPreview.GetFallbackSprite();
+        background.type = Image.Type.Simple;
+        background.color = runtimeCardColor;
+        Toggle toggle = rowObject.GetComponent<Toggle>();
+        toggle.targetGraphic = background;
+        TextMeshProUGUI label = CreateRuntimeText(rowObject.transform as RectTransform, modifierNameText,
+            new Vector2(0.02f, 0.52f), new Vector2(0.34f, 0.98f));
+        TextMeshProUGUI detail = CreateRuntimeText(rowObject.transform as RectTransform, modifierDescriptionText,
+            new Vector2(0.36f, 0.05f), new Vector2(0.98f, 0.98f));
+        SetRuntimeTextStyle(label, modifierNameFontSize, FontStyles.Bold);
+        SetRuntimeTextStyle(detail, modifierDescriptionFontSize, FontStyles.Normal);
+    }
+
+    void EnsureFocusedModifierVisible() {
+        if (modifierScroll == null || modifierContent == null || modifierContent.childCount == 0) return;
+        GameObject focused = UnityEngine.EventSystems.EventSystem.current != null
+            ? UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject : null;
+        if (focused == null || !focused.transform.IsChildOf(modifierContent)) return;
+        Transform focusedRow = focused.transform;
+        while (focusedRow.parent != modifierContent && focusedRow.parent != null) focusedRow = focusedRow.parent;
+        if (focusedRow.parent != modifierContent) return;
+        int index = focusedRow.GetSiblingIndex();
+        float contentHeight = modifierContent.rect.height;
+        float viewportHeight = modifierScroll.viewport != null ? modifierScroll.viewport.rect.height : 0f;
+        float maxScroll = Mathf.Max(0f, contentHeight - viewportHeight);
+        if (maxScroll <= 0f) return;
+        float scroll = (1f - modifierScroll.verticalNormalizedPosition) * maxScroll;
+        RectTransform focusedRowRect = modifierContent.GetChild(index) as RectTransform;
+        float rowHeight = focusedRowRect != null ? focusedRowRect.rect.height : 0f;
+        float rowTop = index * rowHeight;
+        float rowBottom = rowTop + rowHeight;
+        if (rowTop < scroll) scroll = rowTop;
+        else if (rowBottom > scroll + viewportHeight) scroll = rowBottom - viewportHeight;
+        modifierScroll.verticalNormalizedPosition = 1f - Mathf.Clamp(scroll, 0f, maxScroll) / maxScroll;
+    }
+
+    string GetUnsupportedModifierText(ShiftModifierData modifier) {
+        return modifier.disablesPolice
+            ? LocalizationManager.Get(modifierUnsupportedPoliceKey)
+            : LocalizationManager.Get(modifierUnsupportedTrafficKey);
+    }
+
+    static bool ContainsId(IReadOnlyList<string> ids, string id) {
+        if (ids == null || string.IsNullOrEmpty(id)) return false;
+        for (int i = 0; i < ids.Count; i++) if (ids[i] == id) return true;
+        return false;
+    }
+
     TextMeshProUGUI ConfigureRuntimeText(TextMeshProUGUI existing, RectTransform parent, TMP_Text template,
         Vector2 anchorMin, Vector2 anchorMax, string objectName) {
         if (existing == null) existing = CreateRuntimeText(parent, template, anchorMin, anchorMax);
@@ -578,6 +842,7 @@ public class MapSelectionPanel : MonoBehaviour {
     TextMeshProUGUI CreateRuntimeText(RectTransform parent, TMP_Text template, Vector2 anchorMin, Vector2 anchorMax) {
         GameObject textObject = template != null ? Instantiate(template.gameObject, parent) : new GameObject("RuntimeText", typeof(RectTransform), typeof(TextMeshProUGUI));
         textObject.transform.SetParent(parent, false);
+        textObject.SetActive(true);
         TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
         LocalizedText localizedText = textObject.GetComponent<LocalizedText>();
         if (localizedText != null) localizedText.enabled = false;
@@ -625,8 +890,13 @@ public class MapSelectionPanel : MonoBehaviour {
 
         while (runtimeMapContent.childCount < manager.Content.Maps.Count)
             CreateRuntimeMapCard(runtimeMapContent, runtimeMapContent.childCount);
-        while (runtimeMapContent.childCount > manager.Content.Maps.Count)
-            Destroy(runtimeMapContent.GetChild(runtimeMapContent.childCount - 1).gameObject);
+        while (runtimeMapContent.childCount > manager.Content.Maps.Count) {
+            Transform surplus = runtimeMapContent.GetChild(runtimeMapContent.childCount - 1);
+            surplus.SetParent(null, false);
+            surplus.gameObject.SetActive(false);
+            if (Application.isPlaying) Destroy(surplus.gameObject);
+            else DestroyImmediate(surplus.gameObject);
+        }
 
         int columnCount = Mathf.Max(1, mapGridColumnCount);
         int rowCount = (manager.Content.Maps.Count + columnCount - 1) / columnCount;

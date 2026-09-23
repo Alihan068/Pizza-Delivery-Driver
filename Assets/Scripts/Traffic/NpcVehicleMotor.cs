@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// The single force/torque-based physics writer for one NPC's Rigidbody2D. Every civilian/police
@@ -155,4 +156,20 @@ public sealed class NpcVehicleMotor : MonoBehaviour {
         float turnThisStep = turnRateThisStep * command.steering * deltaTime;
         rb.MoveRotation(rb.rotation + turnThisStep);
     }
+
+#if UNITY_EDITOR
+    /// <summary>Initializes Rigidbody caching through the normal private Awake path only in a non-playing isolated 2D physics scene.</summary>
+    public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+        if (Application.isPlaying || !previewPhysicsScene.IsValid() || previewPhysicsScene == Physics2D.defaultPhysicsScene || gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) return false;
+        Awake();
+        return rb != null;
+    }
+
+    /// <summary>Runs the normal private motor step for one finite editor delta without reflection, rejecting Play Mode, default physics, foreign scenes, or an unresolved Rigidbody2D.</summary>
+    public bool TickEditorPreview(float deltaTime, PhysicsScene2D previewPhysicsScene) {
+        if (Application.isPlaying || deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime) || !previewPhysicsScene.IsValid() || previewPhysicsScene == Physics2D.defaultPhysicsScene || gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene || rb == null) return false;
+        SimulateStep(deltaTime);
+        return true;
+    }
+#endif
 }

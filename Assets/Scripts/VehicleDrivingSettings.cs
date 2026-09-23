@@ -30,9 +30,9 @@ public class VehicleDrivingSettings {
 
     [Header("Grip and handbrake")]
     [Min(0f)] public float normalGrip = 10f;
-    [Min(0f)] public float driftGrip = 1.7f;
+    [Min(0f)] public float driftGrip = 1.3f;
     [Min(0f)] public float gripEnterTime = 0.08f;
-    [Min(0f)] public float gripRecoverTime = 0.22f;
+    [Min(0f)] public float gripRecoverTime = 0.7f;
     [Min(0f)] public float handbrakeDeceleration = 2f;
     [Range(0f, 0.5f)] public float handlingRecoveryAssist = 0.25f;
     /// <summary>Steering multiplier while the handbrake is held during a drift attempt.</summary>
@@ -56,6 +56,10 @@ public class VehicleDrivingSettings {
 
     /// <summary>Slowest grip-entry response time available to the player in Advanced Tuning.</summary>
     [Min(0f)] public float playerGripEnterTimeMax = 0.5f;
+    /// <summary>Shortest grip-recovery time (snappiest slide exit) available to the player in Advanced Tuning.</summary>
+    [Min(0f)] public float playerGripRecoverTimeMin = 0.2f;
+    /// <summary>Longest grip-recovery time (longest-lasting slide) available to the player in Advanced Tuning.</summary>
+    [Min(0f)] public float playerGripRecoverTimeMax = 1.5f;
 
     [Header("Drift detection")]
     [Range(0f, 1f)] public float driftMinimumSpeedFraction = 0.25f;
@@ -66,6 +70,27 @@ public class VehicleDrivingSettings {
     [Min(0f)] public float driftExitDwell = 0.25f;
     /// <summary>Requires the authored handbrake command before normal cornering can enter drift.</summary>
     public bool driftRequiresHandbrake = true;
+    /// <summary>Slip angle (degrees) at or above which a drifting car keeps its drift grip after the handbrake is released; grip returns as the angle closes toward the exit angle.</summary>
+    [Range(1f, 90f)] public float driftHoldAngle = 30f;
+    /// <summary>How strongly held throttle keeps a released drift loose (0 = throttle has no effect, 1 = full throttle stops grip from returning).</summary>
+    [Range(0f, 1f)] public float driftThrottleHold = 0.6f;
+    /// <summary>Seconds after the handbrake is released by which a drift fully regains grip, whatever the angle or throttle (0 disables the limit).</summary>
+    [Min(0f)] public float driftReleaseRecoverySeconds = 0.5f;
+    [Header("Momentum boost")]
+    /// <summary>Seconds of straight, full-commitment driving before top speed starts to climb.</summary>
+    [Min(0f)] public float momentumWarmupSeconds = 0f;
+    /// <summary>Highest top-speed multiplier the momentum boost can reach; 1 disables it.</summary>
+    [Min(1f)] public float momentumMaximumMultiplier = 1.5f;
+    /// <summary>Seconds to climb from normal to maximum top speed once warmed up.</summary>
+    [Min(0.01f)] public float momentumRiseSeconds = 4f;
+    /// <summary>Seconds to fall from maximum back to normal after braking, drifting, lifting off or hard steering.</summary>
+    [Min(0.01f)] public float momentumFallSeconds = 1.5f;
+    /// <summary>Seconds to fall from maximum back to normal after a crash.</summary>
+    [Min(0.01f)] public float momentumCrashFallSeconds = 0.5f;
+    /// <summary>Minimum throttle input that counts as keeping the foot down.</summary>
+    [Range(0f, 1f)] public float momentumMinimumThrottle = 0.5f;
+    /// <summary>Largest steering input that still counts as driving straight.</summary>
+    [Range(0f, 1f)] public float momentumStraightSteeringLimit = 0.5f;
 
     /// <summary>Returns a safe copy of these settings for runtime use.</summary>
     /// <returns>A detached settings object with the same authored values.</returns>
@@ -94,13 +119,24 @@ public class VehicleDrivingSettings {
             playerDriftSteeringMultiplierMax = playerDriftSteeringMultiplierMax,
             playerGripEnterTimeMin = playerGripEnterTimeMin,
             playerGripEnterTimeMax = playerGripEnterTimeMax,
+            playerGripRecoverTimeMin = playerGripRecoverTimeMin,
+            playerGripRecoverTimeMax = playerGripRecoverTimeMax,
             driftMinimumSpeedFraction = driftMinimumSpeedFraction,
             driftEnterAngle = driftEnterAngle,
             driftExitAngle = driftExitAngle,
             driftMaximumAngle = driftMaximumAngle,
             driftEnterDwell = driftEnterDwell,
             driftExitDwell = driftExitDwell,
-            driftRequiresHandbrake = driftRequiresHandbrake
+            driftRequiresHandbrake = driftRequiresHandbrake,
+            driftHoldAngle = driftHoldAngle,
+            driftThrottleHold = driftThrottleHold,
+            driftReleaseRecoverySeconds = driftReleaseRecoverySeconds,            momentumWarmupSeconds = momentumWarmupSeconds,
+            momentumMaximumMultiplier = momentumMaximumMultiplier,
+            momentumRiseSeconds = momentumRiseSeconds,
+            momentumFallSeconds = momentumFallSeconds,
+            momentumCrashFallSeconds = momentumCrashFallSeconds,
+            momentumMinimumThrottle = momentumMinimumThrottle,
+            momentumStraightSteeringLimit = momentumStraightSteeringLimit
         };
     }
 }

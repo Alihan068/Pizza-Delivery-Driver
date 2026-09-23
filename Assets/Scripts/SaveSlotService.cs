@@ -23,6 +23,8 @@ public class SaveSlotService {
 
     readonly GameConfig config;
     readonly Func<string, string> resolveVehicleIdFromName;
+    readonly string rootPath;
+    readonly bool isolatedProfile;
 
     /// <summary>Creates the service.</summary>
     /// <param name="config">Supplies slot count and file naming. Required.</param>
@@ -30,6 +32,36 @@ public class SaveSlotService {
     public SaveSlotService(GameConfig config, Func<string, string> resolveVehicleIdFromName) {
         this.config = config;
         this.resolveVehicleIdFromName = resolveVehicleIdFromName;
+        rootPath = Application.persistentDataPath;
+    }
+
+    /// <summary>Creates a save service scoped to one validated S12 development profile.</summary>
+    /// <param name="config">Supplies slot count and file naming. Required.</param>
+    /// <param name="resolveVehicleIdFromName">Maps legacy display names during migration.</param>
+    /// <param name="profile">Validated profile resolution; inactive means production storage.</param>
+    public SaveSlotService(GameConfig config, Func<string, string> resolveVehicleIdFromName,
+                           DevelopmentTestProfile profile)
+        : this(config, resolveVehicleIdFromName, profile, null) {
+    }
+
+    /// <summary>Test-scoped overload allowing a temporary containment root without global state.</summary>
+    /// <param name="config">Supplies slot count and file naming. Required.</param>
+    /// <param name="resolveVehicleIdFromName">Maps legacy display names during migration.</param>
+    /// <param name="profile">Validated profile resolution; it must be active and valid.</param>
+    /// <param name="validationRootOverride">Temporary root used only to validate the injected profile.</param>
+    public SaveSlotService(GameConfig config, Func<string, string> resolveVehicleIdFromName,
+                           DevelopmentTestProfile profile, string validationRootOverride) {
+        this.config = config;
+        this.resolveVehicleIdFromName = resolveVehicleIdFromName;
+        isolatedProfile = profile.IsRequested && profile.IsValid;
+        if (profile.IsRequested && !profile.IsValid)
+            throw new InvalidOperationException("Requested S12 profile is invalid.");
+
+        rootPath = isolatedProfile ? profile.RootPath : Application.persistentDataPath;
+        string containmentRoot = string.IsNullOrEmpty(validationRootOverride)
+            ? Application.persistentDataPath : validationRootOverride;
+        if (isolatedProfile && !DevelopmentTestProfile.IsContainedPath(containmentRoot, rootPath))
+            throw new InvalidOperationException("S12 profile root escaped its containment root.");
     }
 
     /// <summary>How many profile slots exist. Comes from configuration, never assumed.</summary>
@@ -39,7 +71,19 @@ public class SaveSlotService {
     /// <param name="slotIndex">Zero-based slot index.</param>
     /// <returns>An absolute path inside the persistent data folder.</returns>
     public string GetPath(int slotIndex) {
-        return Path.Combine(Application.persistentDataPath, config.GetSaveFileName(slotIndex));
+        if (!isolatedProfile)
+            return Path.Combine(Application.persistentDataPath, config.GetSaveFileName(slotIndex));
+
+        if (config == null) throw new InvalidOperationException("Save configuration is missing.");
+        string fileName = config.GetSaveFileName(slotIndex);
+        if (string.IsNullOrEmpty(fileName) || Path.IsPathRooted(fileName) ||
+            !string.Equals(Path.GetFileName(fileName), fileName, StringComparison.Ordinal))
+            throw new InvalidOperationException("S12 save file name must be a leaf file name.");
+
+        string path = Path.GetFullPath(Path.Combine(rootPath, fileName));
+        if (!DevelopmentTestProfile.IsContainedPath(rootPath, path))
+            throw new InvalidOperationException("S12 save path escaped its scoped root.");
+        return path;
     }
 
     string GetBackupPath(int slotIndex) {
@@ -155,6 +199,10 @@ public class SaveSlotService {
         string path = GetPath(slotIndex);
         string temp = path + ".tmp";
         try {
+            if (isolatedProfile) {
+                Directory.CreateDirectory(rootPath);
+                if (!DevelopmentTestProfile.IsContainedPath(rootPath, temp)) return false;
+            }
             File.WriteAllText(temp, JsonUtility.ToJson(data, true));
 
             // File.Replace is atomic on NTFS and produces the backup in the same operation, but it
@@ -247,6 +295,7 @@ public class SaveSlotService {
     /// <param name="targetSlot">Slot the old save becomes.</param>
     /// <returns>True when a legacy save was adopted.</returns>
     public bool AdoptLegacySave(string legacyFileName, int targetSlot) {
+        if (isolatedProfile) return false;
         string legacy = Path.Combine(Application.persistentDataPath, legacyFileName);
         if (!File.Exists(legacy)) return false;
         if (Exists(targetSlot)) return false;

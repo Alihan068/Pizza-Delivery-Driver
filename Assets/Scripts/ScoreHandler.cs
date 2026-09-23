@@ -55,9 +55,12 @@ public class ScoreHandler : MonoBehaviour {
 
     GameUIManager gameUIManager;
     SessionResultPanel resultPanel;
+    PoliceDirector policeDirector;
 
     void Start() {
         sessionManager = GameManager.Instance;
+        policeDirector = SessionSceneRules.ResolveComponent<PoliceDirector>(gameObject.scene);
+        if (policeDirector != null) policeDirector.ArrestRequested += HandleArrestRequested;
         if (sessionHost == null) sessionHost = SessionSceneRules.ResolveHost(gameObject.scene);
         if (sessionHost != null) {
             sessionHost.PrepareSession(sessionManager);
@@ -92,7 +95,12 @@ public class ScoreHandler : MonoBehaviour {
 
     void StopSession() { isGameActive = false; }
 
+    void HandleArrestRequested() {
+        if (isGameActive) EndLevel(EndReason.Arrested);
+    }
+
     void OnDestroy() {
+        if (policeDirector != null) policeDirector.ArrestRequested -= HandleArrestRequested;
         if (sessionHost != null) {
             sessionHost.Activated -= BeginSession;
             sessionHost.Ended -= StopSession;

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3fba9bb284b3ef846ada1edfaec7b63e, type: 3}
+  m_Name: Damage
+  m_EditorClassIdentifier: 
+  profiles:
+  - profileId: nd-civilian
+    collision:
+      minimumImpactSpeed: 1.5
+      damageCooldownSeconds: 0.5
+      damageBase: 3
+      damageFactor: 0.85
+      damageExponent: 2
+    blastDamage: 35
+    blastRadius: 3
+  attribution:
+    minimumApproachThreshold: 0.5
+    attributionDeltaTolerance: 0.5
+  roles:
+    civilianMultiplier: 1
+    policeMultiplier: 1
+    playerMultiplier: 0.3
+  heat:
+    civilianVictimHeat: 10
+    policeVictimHeat: 25
+  blastsPerTick: 8
+  initialQueryCapacity: 32
+  maxQueryCapacity: 4096
+  queriesPerTick: 32
+  maxSessionBlasts: 65536
+  wreckLifetimeSeconds: 8
+  recoverySeconds: 2.5
+  receiverLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295

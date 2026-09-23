@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Drives one civilian NPC around a closed route by issuing <see cref="NpcDriveCommand"/>s to its
@@ -151,7 +152,7 @@ public sealed class CivilianRouteFollower : MonoBehaviour {
         footprintSize = new Vector2(Mathf.Max(0.01f, footprint.x), Mathf.Max(0.01f, footprint.y));
         recovery = new CrashRecoveryPolicy(new CrashRecoveryPolicy.Parameters(settings.lightImpactSpeed, settings.heavyImpactSpeed,
             settings.lightContactHoldSeconds, settings.settleSpeed, settings.settleTimeoutSeconds, settings.rejoinRetrySeconds,
-            settings.reverseMaxSeconds, settings.maxRejoinDistance));
+            settings.reverseMaxSeconds, settings.maxRejoinDistance, settings.minimumCrashWaitSeconds));
         stuck = new StuckMonitor(new StuckMonitor.Parameters(settings.stuckProgressThreshold, settings.stuckSeconds,
             settings.maxStuckSeconds, settings.stuckRecycleCooldownSeconds, settings.stuckRecycleMinPlayerDistance));
         SubscribeReceiver();
@@ -544,4 +545,20 @@ public sealed class CivilianRouteFollower : MonoBehaviour {
     static float AllowedSpeedAtDistance(float targetSpeed, float distance, float deceleration) {
         return Mathf.Sqrt(targetSpeed * targetSpeed + 2f * deceleration * Mathf.Max(0f, distance));
     }
+
+#if UNITY_EDITOR
+    /// <summary>Initializes production follower references through private Awake only for a non-playing object contained by the supplied non-default 2D physics scene.</summary>
+    public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+        if (Application.isPlaying || !previewPhysicsScene.IsValid() || previewPhysicsScene == Physics2D.defaultPhysicsScene || gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) return false;
+        Awake();
+        return motor != null && rb != null;
+    }
+
+    /// <summary>Runs the normal private route-following tick directly for a finite editor delta, preserving the production command seam and rejecting every non-isolated invocation.</summary>
+    public bool TickEditorPreview(float deltaTime, PhysicsScene2D previewPhysicsScene) {
+        if (Application.isPlaying || deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime) || !previewPhysicsScene.IsValid() || previewPhysicsScene == Physics2D.defaultPhysicsScene || gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) return false;
+        Tick(deltaTime);
+        return true;
+    }
+#endif
 }

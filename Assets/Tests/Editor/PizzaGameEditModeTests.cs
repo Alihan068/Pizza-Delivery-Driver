@@ -2559,10 +2559,14 @@ public class PizzaGameEditModeTests {
         return new HeatAwardRules { civilianVictimHeat = 10f, policeVictimHeat = 25f };
     }
 
-    /// <summary>Verifies the full contracts §6 heat truth table: only a Player-attributed kill ever awards heat, scaled by the victim's own authored role amount — a Police-caused, civilian-self, or Environment-attributed kill never does.</summary>
+    /// <summary>Verifies the heat truth table: every police victim awards heat, while civilian victims require a Player root attribution.</summary>
     [Test]
     public void HeatPayloadResolver_MatchesContractTruthTable() {
         var rules = MakeHeatRules();
+
+        var nullRulesEvent = new VehicleDestroyedEvent(0, VehicleRole.Police, MakeDamageContext(0, InstigatorKind.Environment, -1), 0f);
+        Assert.IsFalse(HeatPayloadResolver.TryResolveHeat(nullRulesEvent, null, out float nullRulesHeat));
+        Assert.AreEqual(0f, nullRulesHeat);
 
         var playerKilledCivilian = new VehicleDestroyedEvent(1, VehicleRole.Civilian, MakeDamageContext(1, InstigatorKind.Player, 99), 0f);
         Assert.IsTrue(HeatPayloadResolver.TryResolveHeat(playerKilledCivilian, rules, out float civilianHeat));
@@ -2581,6 +2585,73 @@ public class PizzaGameEditModeTests {
 
         var environmentCause = new VehicleDestroyedEvent(5, VehicleRole.Civilian, MakeDamageContext(5, InstigatorKind.Environment, -1), 0f);
         Assert.IsFalse(HeatPayloadResolver.TryResolveHeat(environmentCause, rules, out _));
+
+        var policeKilledByPolice = new VehicleDestroyedEvent(6, VehicleRole.Police, MakeDamageContext(6, InstigatorKind.Police, 50), 0f);
+        Assert.IsTrue(HeatPayloadResolver.TryResolveHeat(policeKilledByPolice, rules, out float policeCauseHeat));
+        Assert.AreEqual(25f, policeCauseHeat);
+
+        var policeKilledByEnvironment = new VehicleDestroyedEvent(7, VehicleRole.Police, MakeDamageContext(7, InstigatorKind.Environment, -1), 0f);
+        Assert.IsTrue(HeatPayloadResolver.TryResolveHeat(policeKilledByEnvironment, rules, out float environmentHeat));
+        Assert.AreEqual(25f, environmentHeat);
+
+        var policeKilledByCivilian = new VehicleDestroyedEvent(8, VehicleRole.Police, MakeDamageContext(8, InstigatorKind.Civilian, 60), 0f);
+        Assert.IsTrue(HeatPayloadResolver.TryResolveHeat(policeKilledByCivilian, rules, out float civilianCauseHeat));
+        Assert.AreEqual(25f, civilianCauseHeat);
+
+        var playerVictim = new VehicleDestroyedEvent(9, VehicleRole.Player, MakeDamageContext(9, InstigatorKind.Player, 99), 0f);
+        Assert.IsFalse(HeatPayloadResolver.TryResolveHeat(playerVictim, rules, out _));
+    }
+
+    /// <summary>Verifies one victim life is deduplicated even when its first destruction cause carries no heat.</summary>
+    [Test]
+    public void PoliceIncidentLedger_DeduplicatesEveryVictimLifeIncludingZeroHeatEvents() {
+        var ledger = new PoliceIncidentLedger();
+        var rules = MakeHeatRules();
+        var first = new VehicleDestroyedEvent(301, VehicleRole.Civilian, MakeDamageContext(301, InstigatorKind.Environment, -1), 0f);
+        var duplicateWithPlayerCause = new VehicleDestroyedEvent(301, VehicleRole.Civilian, MakeDamageContext(301, InstigatorKind.Player, 99), 1f);
+
+        Assert.IsFalse(ledger.TryRecord(first, rules, out float firstHeat));
+        Assert.AreEqual(0f, firstHeat);
+        Assert.IsFalse(ledger.TryRecord(duplicateWithPlayerCause, rules, out float duplicateHeat));
+        Assert.AreEqual(0f, duplicateHeat);
+        Assert.AreEqual(1, ledger.RecordedIncidentCount);
+
+        var policeDeath = new VehicleDestroyedEvent(302, VehicleRole.Police, MakeDamageContext(302, InstigatorKind.Environment, -1), 2f);
+        Assert.IsTrue(ledger.TryRecord(policeDeath, rules, out float policeHeat));
+        Assert.AreEqual(25f, policeHeat);
+        Assert.IsFalse(ledger.TryRecord(policeDeath, rules, out float duplicatePoliceHeat));
+        Assert.AreEqual(0f, duplicatePoliceHeat);
+        Assert.AreEqual(2, ledger.RecordedIncidentCount);
+    }
+
+    /// <summary>Verifies NarrowDistrict keeps small active-time heat growth and the first request remains gated at 15 seconds.</summary>
+    [Test]
+    public void PoliceDirectorRuntime_NarrowDistrictKeepsTimeGrowthAndSafeFirstSpawnGate() {
+        var data = UnityEditor.AssetDatabase.LoadAssetAtPath<PoliceDirectorData>("Assets/ScriptableObjects/Police/PoliceDirector_NarrowDistrict.asset");
+        Assert.IsNotNull(data);
+        Assert.AreEqual(0.1f, data.baseHeatPerActiveSecond, 0.0001f);
+        var runtime = new PoliceDirectorRuntime(data, policeIsEnabled: true, seed: 17);
+
+        runtime.Tick(14.9f);
+        Assert.AreEqual(1.49f, runtime.BaseHeat, 0.0001f);
+        Assert.AreEqual(0, runtime.PendingCount);
+        runtime.Tick(15f);
+        Assert.AreEqual(1, runtime.PendingCount);
+        Assert.IsTrue(runtime.TryDequeue(out var request));
+        Assert.AreEqual(15f, request.requestedAtSeconds, 0.0001f);
+    }
+
+    /// <summary>Verifies the retained pursuit-loss compatibility API never reports relief or decays heat.</summary>
+    [Test]
+    public void PolicePursuitLossRules_RetainedReliefScaffoldNeverChangesPersistentHeat() {
+        var settings = new PolicePursuitLossSettings {
+            minimumLostDistance = 1f,
+            lostDurationSeconds = 1f,
+            incidentHeatDecayPerSecond = 100f
+        };
+
+        Assert.IsFalse(PolicePursuitLossRules.IsReliefReady(PolicePursuitLossPolicy.ReliefAfterEscape, settings, 100f, 100f));
+        Assert.AreEqual(25f, PolicePursuitLossRules.DecayIncidentHeat(25f, settings, 100f), 0.0001f);
     }
 
     /// <summary>Verifies a Player→Police→Civilian chain keeps its Player root through every hop (DamageContextFactory propagation) and awards heat for every new victim — the headline "player chain" scenario from S05.7's own doğrula text.</summary>
@@ -2618,9 +2689,9 @@ public class PizzaGameEditModeTests {
         Assert.AreEqual(10f, civilianHeat);
     }
 
-    /// <summary>Verifies a Police→Civilian→Police chain keeps its Police root through every hop and never awards heat for either victim — the headline "police chain" scenario from S05.7's own doğrula text.</summary>
+    /// <summary>Verifies a Police→Civilian→Police chain keeps its Police root: the civilian is ignored but every police victim awards heat.</summary>
     [Test]
-    public void HeatPayloadResolver_PoliceToCivilianToPoliceChainKeepsPoliceRootAndNeverAwardsHeat() {
+    public void HeatPayloadResolver_PoliceToCivilianToPoliceChainKeepsPoliceRootAndAwardsPoliceHeat() {
         var rules = MakeHeatRules();
         var attributionRules = MakeAttributionRules();
 
@@ -2644,7 +2715,8 @@ public class PizzaGameEditModeTests {
         secondPoliceHealth.InitializeForNewLife(50f, newLifeId: 202);
         secondPoliceHealth.ApplyDamage(202, 999f, context2, VehicleRole.Police, 1f, out var secondPoliceDestroyed);
         Assert.AreEqual(InstigatorKind.Police, secondPoliceDestroyed.killingContext.instigatorKind, "the chain's root cause (Police) must still be traceable two hops later");
-        Assert.IsFalse(HeatPayloadResolver.TryResolveHeat(secondPoliceDestroyed, rules, out _));
+        Assert.IsTrue(HeatPayloadResolver.TryResolveHeat(secondPoliceDestroyed, rules, out float secondPoliceHeat));
+        Assert.AreEqual(25f, secondPoliceHeat);
     }
 
     /// <summary>Verifies ending the session mid-queue cancels every still-pending blast — nothing queued before end resolves after it, and nothing new can be queued once inactive.</summary>
@@ -3025,6 +3097,29 @@ public class PizzaGameEditModeTests {
         Assert.AreEqual(60, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Wrecked, 0.5f));
         Assert.AreEqual(0, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Abandoned, 0.5f));
         Assert.AreEqual(0, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Interrupted, 0.5f));
+    }
+
+    /// <summary>Arrest retains the authored 75 percent share and charges repair from actual remaining health.</summary>
+    [Test]
+    public void SessionSettlement_ArrestedKeepsQ05ShareAndUsesRemainingHealth() {
+        Assert.AreEqual(90, SessionSettlementMath.CalculateKeptEarnings(120, EndReason.Arrested, 0.5f, 0.75f));
+        int repair = SessionSettlementMath.CalculateRepairCost(75f, 100f, false, 1000, 0.7f, 0.03f);
+        Assert.AreEqual(25, repair);
+        Assert.AreEqual(90, SessionSettlementMath.ClampRepairCost(200, 90, 0, 0.5f));
+        Assert.AreEqual(0, SessionSettlementMath.CalculateBankAfter(0, 90, 90));
+    }
+
+    /// <summary>Arrest is appended without changing legacy ordinals and cannot qualify for the standard board.</summary>
+    [Test]
+    public void Arrested_EndReasonPreservesOrdinalsAndCompetitiveRulesRejectIt() {
+        Assert.AreEqual(0, (int)EndReason.TimeUp);
+        Assert.AreEqual(1, (int)EndReason.Extracted);
+        Assert.AreEqual(2, (int)EndReason.Wrecked);
+        Assert.AreEqual(3, (int)EndReason.Abandoned);
+        Assert.AreEqual(4, (int)EndReason.Interrupted);
+        Assert.AreEqual(5, (int)EndReason.Arrested);
+        Assert.AreEqual(CompetitiveEligibilityStatus.Unfinished,
+            CompetitiveRunRules.Evaluate(false, true, true, false, 5, 5, EndReason.Arrested));
     }
 
     /// <summary>Verifies that repair cost is linear in health loss and bills full health after death.</summary>

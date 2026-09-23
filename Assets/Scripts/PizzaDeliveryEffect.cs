@@ -14,12 +14,13 @@ using UnityEngine;
 public class PizzaDeliveryEffect : MonoBehaviour {
 
     [Header("Flight")]
-    [Min(0.01f)] [SerializeField] float flightDuration = 0.22f;
-    [Min(0f)] [SerializeField] float arcHeight = 0.35f;
-    [Min(0.01f)] [SerializeField] float startScale = 0.85f;
-    [Min(0.01f)] [SerializeField] float endScale = 1f;
-    [Min(0f)] [SerializeField] float launchStagger = 0.035f;
-    [Min(1)] [SerializeField] int maximumVisualPizzas = 3;
+    [Min(0.01f)] [SerializeField] float flightDuration = 0.32f;
+    [Min(0f)] [SerializeField] float arcHeight = 0.85f;
+    [Min(0.01f)] [SerializeField] float startScale = 1.7f;
+    [Min(0.01f)] [SerializeField] float endScale = 1.4f;
+    [Min(0f)] [SerializeField] float launchStagger = 0.12f;
+    [Min(0f)] [SerializeField] float pizzaFanSpacing = 0.45f;
+    [HideInInspector] [SerializeField] int maximumVisualPizzas = 3;
     [SerializeField] int sortingOrderOffset = 2;
 
     SpriteRenderer sourceRenderer;
@@ -30,7 +31,7 @@ public class PizzaDeliveryEffect : MonoBehaviour {
         sourceRenderer = source;
     }
 
-    /// <summary>Launches one short visual arc for each accepted pizza up to the authored visual cap.</summary>
+    /// <summary>Launches one short visual arc for every accepted pizza.</summary>
     /// <param name="start">World position where the pizza leaves the vehicle.</param>
     /// <param name="target">World position where the pizza arrives.</param>
     /// <param name="pizzaCount">Number of accepted pizzas represented by the effect.</param>
@@ -58,19 +59,30 @@ public class PizzaDeliveryEffect : MonoBehaviour {
 
     void PlayInternal(Vector3 start, Vector3 target, Transform targetTransform, int pizzaCount,
         Action onComplete) {
+        if (pizzaCount <= 0) {
+            onComplete?.Invoke();
+            return;
+        }
+
         if (sourceRenderer == null || sourceRenderer.sprite == null) {
             onComplete?.Invoke();
             return;
         }
 
-        int visualCount = Mathf.Clamp(pizzaCount, 1, Mathf.Max(1, maximumVisualPizzas));
+        int visualCount = pizzaCount;
+        Vector2 travel = (Vector2)(target - start);
+        Vector3 lateral = travel.sqrMagnitude > 0.0001f
+            ? new Vector3(-travel.normalized.y, travel.normalized.x, 0f)
+            : Vector3.right;
         FlightBatch batch = new FlightBatch(visualCount, onComplete);
         for (int i = 0; i < visualCount; i++) {
             GameObject visualObject = new GameObject();
             SpriteRenderer visualRenderer = visualObject.AddComponent<SpriteRenderer>();
             CopySourceRenderer(visualRenderer);
+            float centeredIndex = i - (visualCount - 1) * 0.5f;
             StartCoroutine(AnimatePizza(visualObject.transform, visualRenderer, start, target,
-                targetTransform, Mathf.Max(0f, launchStagger) * i, batch));
+                targetTransform, lateral, centeredIndex * Mathf.Max(0f, pizzaFanSpacing),
+                Mathf.Max(0f, launchStagger) * i, batch));
         }
     }
 
@@ -85,7 +97,8 @@ public class PizzaDeliveryEffect : MonoBehaviour {
     }
 
     IEnumerator AnimatePizza(Transform visualTransform, SpriteRenderer visualRenderer, Vector3 start,
-        Vector3 target, Transform targetTransform, float delay, FlightBatch batch) {
+        Vector3 target, Transform targetTransform, Vector3 lateral, float lateralOffset,
+        float delay, FlightBatch batch) {
         float elapsed = 0f;
         float duration = Mathf.Max(0.01f, flightDuration);
         float sourceScale = Mathf.Abs(sourceRenderer.transform.lossyScale.x);
@@ -107,8 +120,9 @@ public class PizzaDeliveryEffect : MonoBehaviour {
             }
             float normalized = Mathf.Clamp01(elapsed / duration);
             Vector3 currentTarget = targetTransform != null ? targetTransform.position : target;
-            Vector3 position = Vector3.Lerp(start, currentTarget, normalized);
+            Vector3 position = Vector3.Lerp(start, currentTarget, Mathf.SmoothStep(0f, 1f, normalized));
             position += Vector3.up * (Mathf.Sin(normalized * Mathf.PI) * Mathf.Max(0f, arcHeight));
+            position += lateral * (Mathf.Sin(normalized * Mathf.PI) * lateralOffset);
             visualTransform.position = position;
 
             float scale = Mathf.Lerp(startScale, endScale, normalized) * sourceScale;

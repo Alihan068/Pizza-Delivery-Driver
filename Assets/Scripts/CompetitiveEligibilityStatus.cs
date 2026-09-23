@@ -21,6 +21,12 @@ public enum CompetitiveEligibilityStatus {
     /// <summary>The vehicle used temporary custom performance tuning.</summary>
     CustomVehicleTuning,
 
+    /// <summary>No trusted creator manifest expected hash was available for verification.</summary>
+    MissingTrustedManifest,
+
+    /// <summary>Detached content evidence or trusted manifest verification failed.</summary>
+    ContentIntegrityFailure,
+
     /// <summary>The run ended before a competitive result could be finalized.</summary>
     Unfinished
 }

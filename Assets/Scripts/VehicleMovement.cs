@@ -27,6 +27,8 @@ public class VehicleMovement : MonoBehaviour {
     bool initialized;
     bool stopped;
     bool isDrifting;
+    float driftReleasedSeconds;
+    MomentumBoost momentum;
 
     /// <summary>Whether actual velocity currently satisfies the drift detector.</summary>
     public bool IsDrifting => isDrifting;
@@ -39,6 +41,9 @@ public class VehicleMovement : MonoBehaviour {
 
     /// <summary>Current effective forward speed used by the motor and UI.</summary>
     public float ForwardSpeed { get; private set; }
+
+    /// <summary>Current momentum top-speed multiplier (1 when not boosting).</summary>
+    public float MomentumMultiplier => momentum != null ? momentum.Multiplier : 1f;
 
     /// <summary>Initializes this motor once the spawned Driver has resolved its effective stats.</summary>
     /// <param name="input">The single gameplay input source.</param>
@@ -55,6 +60,8 @@ public class VehicleMovement : MonoBehaviour {
         effectiveMaximumSpeed = Mathf.Max(0.01f, maximumSpeed);
         effectiveTurnRate = Mathf.Max(0f, turnRate);
         currentGrip = Mathf.Max(0f, settings.normalGrip);
+        momentum = new MomentumBoost(settings.momentumWarmupSeconds, settings.momentumMaximumMultiplier,
+            settings.momentumRiseSeconds, settings.momentumFallSeconds, settings.momentumCrashFallSeconds);
         if (rb != null) rb.linearDamping = Mathf.Max(0f, settings.linearDamping);
         initialized = rb != null;
         stopped = false;
@@ -69,12 +76,18 @@ public class VehicleMovement : MonoBehaviour {
     /// <summary>Returns the speed currently available after temporary effects.</summary>
     /// <returns>The effective maximum speed.</returns>
     public float GetEffectiveMaximumSpeed() {
-        return effectiveMaximumSpeed * speedMultiplier;
+        return effectiveMaximumSpeed * speedMultiplier * MomentumMultiplier;
+    }
+
+    /// <summary>Reports a crash so the momentum boost drains back to normal top speed.</summary>
+    public void NotifyCrash() {
+        momentum?.NotifyCrash();
     }
 
     /// <summary>Stops all movement and clears the current input after death or session close.</summary>
     public void StopMovement() {
         stopped = true;
+        momentum?.Reset();
         currentAngularRate = 0f;
         if (vehicleInput != null) vehicleInput.ClearInput();
         if (rb != null) {
@@ -93,11 +106,16 @@ public class VehicleMovement : MonoBehaviour {
         Vector2 velocity = rb.linearVelocity;
         float forwardSpeed = Vector2.Dot(velocity, forward);
         float lateralSpeed = Vector2.Dot(velocity, right);
+        // Foot down, straight ahead, no brake/handbrake/drift: top speed climbs after the warm-up.
+        bool keepsMomentum = command.throttle >= settings.momentumMinimumThrottle && command.brake <= 0.01f &&
+            !command.handbrake && !isDrifting && forwardSpeed > 0.1f &&
+            Mathf.Abs(command.steering) <= settings.momentumStraightSteeringLimit;
+        momentum?.Step(deltaTime, keepsMomentum);
         float maximumSpeed = GetEffectiveMaximumSpeed();
         float maximumReverseSpeed = maximumSpeed * Mathf.Clamp(settings.reverseSpeedFraction, 0.05f, 0.8f);
 
         ApplyLongitudinalForces(command, forward, forwardSpeed, maximumSpeed, maximumReverseSpeed, deltaTime);
-        ApplyLateralGrip(command, right, lateralSpeed, deltaTime);
+        ApplyLateralGrip(command, right, lateralSpeed, forwardSpeed, maximumSpeed, deltaTime);
         ApplySteering(command, forwardSpeed, maximumSpeed, deltaTime);
         UpdateDriftState(forwardSpeed, lateralSpeed, maximumSpeed, command.steering, command.handbrake, deltaTime);
         ForwardSpeed = forwardSpeed;
@@ -161,9 +179,29 @@ public class VehicleMovement : MonoBehaviour {
         rb.AddForce(acceleration * Mathf.Max(0.01f, rb.mass), ForceMode2D.Force);
     }
 
-    void ApplyLateralGrip(VehicleInputSnapshot command, Vector2 right, float lateralSpeed, float deltaTime) {
-        float targetGrip = command.handbrake ? settings.driftGrip : settings.normalGrip;
-        float transitionTime = command.handbrake ? settings.gripEnterTime : settings.gripRecoverTime;
+    void ApplyLateralGrip(VehicleInputSnapshot command, Vector2 right, float lateralSpeed, float forwardSpeed,
+        float maximumSpeed, float deltaTime) {
+        float targetGrip;
+        float transitionTime;
+        if (command.handbrake) {
+            driftReleasedSeconds = 0f;
+            targetGrip = settings.driftGrip;
+            transitionTime = settings.gripEnterTime;
+        }
+        else if (isDrifting) {
+            driftReleasedSeconds += deltaTime;
+            // Released slide: grip returns with the slip angle and speed, and held throttle keeps it loose,
+            // instead of snapping back the instant the handbrake is released.
+            targetGrip = VehicleDrivingMath.DriftTargetGrip(SlipAngle, settings.driftHoldAngle, settings.driftExitAngle,
+                forwardSpeed, maximumSpeed * Mathf.Clamp01(settings.driftMinimumSpeedFraction), command.throttle,
+                settings.driftThrottleHold, settings.driftGrip, settings.normalGrip,
+                driftReleasedSeconds, settings.driftReleaseRecoverySeconds);
+            transitionTime = settings.gripRecoverTime;
+        }
+        else {
+            targetGrip = settings.normalGrip;
+            transitionTime = settings.gripRecoverTime;
+        }
         currentGrip = Mathf.MoveTowards(currentGrip, targetGrip,
             Mathf.Abs(settings.normalGrip - settings.driftGrip) * deltaTime / Mathf.Max(0.01f, transitionTime));
 
@@ -182,7 +220,7 @@ public class VehicleMovement : MonoBehaviour {
 
         float normalizedSpeed = maximumSpeed > 0.01f ? Mathf.Clamp01(absoluteSpeed / maximumSpeed) : 0f;
         float speedScale = VehicleDrivingMath.SteeringSpeedScale(normalizedSpeed, settings.steeringHighSpeedScale);
-        float driftSteeringScale = command.handbrake ? Mathf.Max(1f, settings.driftSteeringMultiplier) : 1f;
+        float driftSteeringScale = command.handbrake || isDrifting ? Mathf.Max(1f, settings.driftSteeringMultiplier) : 1f;
         float targetRate = -command.steering * effectiveTurnRate * settings.steeringGain * speedScale * driftSteeringScale;
         if (forwardSpeed < 0f) targetRate *= -1f;
         float response = effectiveTurnRate * deltaTime / Mathf.Max(0.02f, settings.steeringResponseTime);
@@ -208,7 +246,9 @@ public class VehicleMovement : MonoBehaviour {
         bool handbrakeTurnIntent = handbrake && Mathf.Abs(steering) > 0.01f;
         bool shouldEnter = forwardSpeed >= minimumSpeed && handbrakeAllowsDrift &&
                            (handbrakeTurnIntent || (angleAllowsDrift && Mathf.Abs(lateralSpeed) > 0.01f));
-        bool shouldExit = !handbrakeAllowsDrift || forwardSpeed < minimumSpeed ||
+        // The handbrake is only needed to start a drift; releasing it lets the slide carry on until the
+        // slip angle closes or the speed drops, which the slip-angle grip model makes happen gradually.
+        bool shouldExit = forwardSpeed < minimumSpeed ||
                           SlipAngle <= settings.driftExitAngle || SlipAngle > settings.driftMaximumAngle;
 
         if (!isDrifting) {
@@ -217,6 +257,7 @@ public class VehicleMovement : MonoBehaviour {
             if (shouldEnter && driftEnterTimer >= settings.driftEnterDwell) {
                 isDrifting = true;
                 driftEnterTimer = 0f;
+                driftReleasedSeconds = 0f;
             }
         }
         else {

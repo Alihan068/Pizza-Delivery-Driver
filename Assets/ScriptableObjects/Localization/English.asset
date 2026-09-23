@@ -52,6 +52,8 @@ MonoBehaviour:
     text: Paused
   - key: pause.resume
     text: Resume
+  - key: pause.restart
+    text: Restart Shift
   - key: settings.title
     text: Settings
   - key: settings.open
@@ -170,6 +172,10 @@ MonoBehaviour:
     text: Deliver pizzas through the city streets.
   - key: result.interrupted
     text: SHIFT INTERRUPTED - your vehicle was towed
+  - key: result.arrested
+    text: Arrested
+  - key: result.bail
+    text: 
   - key: menu.newGame
     text: New Game
   - key: menu.loadGame
@@ -334,6 +340,21 @@ MonoBehaviour:
     text: No Modifier
   - key: garage.modifier.noneDescription
     text: Play with standard shift rules.
+  - key: garage.modifier.selectionSummary
+    text: 'Selected: {0} | Score x{1:0.##} | Effects: speed {2:+0.##;-0.##;0}, handling
+      {3:+0.##;-0.##;0}, health {4:+0.##;-0.##;0}, armor {5:+0.##;-0.##;0}, capacity
+      {6:+0;-0;0}, protection {7:+0.##;-0.##;0}'
+  - key: garage.modifier.multiplier
+    text: 'Score multiplier: x{0:0.##}'
+  - key: garage.modifier.effects
+    text: 'Effects: speed {0:+0.##;-0.##;0}, handling {1:+0.##;-0.##;0}, health {2:+0.##;-0.##;0},
+      capacity {3:+0;-0;0}'
+  - key: garage.modifier.unsupportedTraffic
+    text: 'Unavailable: this map has no traffic capability.'
+  - key: garage.modifier.unsupportedPolice
+    text: 'Unavailable: this map has no police capability.'
+  - key: garage.modifier.conflict
+    text: 'Selection conflict: choose one modifier from each exclusive group.'
   - key: garage.mapSelection.title
     text: Map Selection
   - key: garage.mapSelection.modifier
@@ -481,6 +502,10 @@ MonoBehaviour:
     text: Grip Entry (lower = faster)
   - key: garage.advancedTuning.gripEntryValue
     text: '{0:0.00}s'
+  - key: garage.advancedTuning.gripRecover
+    text: Slide Recovery (higher = longer slides)
+  - key: garage.advancedTuning.gripRecoverValue
+    text: '{0:0.00}s'
   - key: garage.advancedTuning.reset
     text: Reset to Classic
   - key: garage.advancedTuning.presetGrip
@@ -502,3 +527,25 @@ MonoBehaviour:
     text: Peaceful
   - key: modifier.peaceful.description
     text: Police pursuit is disabled for this shift. Lowers the final score.
+  - key: police.heat.raw
+    text: 'Heat: {0:0.0}'
+  - key: police.pursuit
+    text: 'Pursuit: {0}'
+  - key: police.capture
+    text: CAPTURE {0:0}%
+  - key: police.heat.star
+    text: "\u2605"
+  - key: police.heat.empty
+    text: "\u2606"
+  - key: result.score.raw
+    text: 'Raw score: {0}'
+  - key: result.score.multiplier
+    text: 'Modifier multiplier: x{0:0.00}'
+  - key: result.score.final
+    text: 'Final score: {0}'
+  - key: result.modifiers
+    text: 'Modifiers: {0}'
+  - key: result.modifiers.none
+    text: 'Modifiers: None'
+  - key: result.replay
+    text: Play Again

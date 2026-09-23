@@ -140,6 +140,8 @@ public class VehicleDataEditor : Editor {
             DrawDrivingRelativeProperty("playerDriftSteeringMultiplierMax", "Maximum drift steering", "Higher values rotate the vehicle more sharply while drifting.");
             DrawDrivingRelativeProperty("playerGripEnterTimeMin", "Fastest grip entry", "Lower values transition into drift grip faster.");
             DrawDrivingRelativeProperty("playerGripEnterTimeMax", "Slowest grip entry", "Higher values make the grip transition gentler.");
+            DrawDrivingRelativeProperty("playerGripRecoverTimeMin", "Shortest slide recovery", "Lower values let a released slide regrip faster.");
+            DrawDrivingRelativeProperty("playerGripRecoverTimeMax", "Longest slide recovery", "Higher values let a released slide last longer.");
         }
         EditorGUILayout.EndFoldoutHeaderGroup();
     }

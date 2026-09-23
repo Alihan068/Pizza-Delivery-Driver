@@ -173,7 +173,8 @@ public class Delivery : MonoBehaviour {
         if (gameUIManager != null) gameUIManager.UpdatePizzaText(pizzaDelivered);
         TryPlayAudioClip(pizzaDeliverClip);
         if (deliveryEffect != null)
-            deliveryEffect.Play(transform.position, customer.PizzaDeliveryTarget.position, accepted,
+            deliveryEffect.Play(pizzaObject != null ? pizzaObject.transform.position : transform.position,
+                customer.PizzaDeliveryTarget.position, accepted,
                 customer.ShowDeliveredPizza);
         else
             customer.ShowDeliveredPizza();

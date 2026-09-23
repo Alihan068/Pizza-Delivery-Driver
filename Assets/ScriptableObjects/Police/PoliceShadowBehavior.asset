@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6168c19aba819b4da433c7fbf596db3, type: 3}
+  m_Name: PoliceShadowBehavior
+  m_EditorClassIdentifier: 
+  behaviorProfileId: builtin:police-shadow
+  tacticalRole: 4
+  driving:
+    lateralAcceleration: 4
+    avoidanceHorizon: 0.75
+    avoidanceCommitment: 0.5
+    avoidanceProgressWeight: 1
+    avoidanceClearanceWeight: 1
+    avoidanceHeadingWeight: 0.5
+    avoidanceSwitchWeight: 0.25
+    stuckDuration: 2
+    reverseMaxDistance: 2
+    reverseMaxDuration: 2
+    reverseMaxAttempts: 2
+    reverseCooldown: 1
+    lookaheadMin: 2.5
+    lookaheadMax: 8
+    lookaheadTime: 0.5
+    planningDistance: 20
+    comfort: 0.7
+    stopGap: 1.2
+    cornerSpeed: 2
+    fullSlowdownAngle: 90
+    brakeBand: 1.5
+    stoppedSpeedThreshold: 0.1
+    connectorAlignmentDegrees: 5
+    maxSweepDistance: 64
+    sensorBuffer: 16
+    cursorWork: 64
+    bindWork: 4096
+    cursorWindow: 6
+    maxDeviation: 2
+    displacementSlack: 1.5
+    acquisitionTolerance: 0.05
+    turnExitDistance: 1.5
+    turnExitAlignmentDegrees: 8
+    maximumTurnTravel: 16
+    maximumTurnActiveSeconds: 8
+    ramConeDegrees: 12
+    ramMaximumSurfaceGap: 4
+    ramMaximumActiveSeconds: 1
+    ramCooldownSeconds: 2
+    recovery:
+      lightImpactSpeed: 1
+      heavyImpactSpeed: 3
+      lightHoldSeconds: 0.6
+      settleSpeed: 1
+      settleTimeoutSeconds: 2
+      settleBrake: 0.3
+      rejoinRetrySeconds: 1
+      maxRejoinDistance: 8
+      reverseMaxSeconds: 1.5
+      maneuverSpeed: 1.5
+      maximumReverseTravel: 3
+      maximumActiveSeconds: 8
+  intercept:
+    predictionSeconds: 2
+    minimumSpeed: 0.5
+    maxCandidates: 4
+  shadow:
+    leadSeconds: 0.9
+    minimumLead: 3
+    maximumLead: 9
+    sideOffset: 1.5
+    searchBeyondLead: 4
+    minimumOpeningAhead: 2.5
+    sampleSpacing: 1
+    openingProbeDistance: 4
+    wallBeforeOpening: 2
+    mouthDepth: 2
+    slowPlayerSpeed: 1
+    slowStandoff: 3

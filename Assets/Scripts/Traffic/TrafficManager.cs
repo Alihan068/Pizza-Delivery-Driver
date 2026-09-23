@@ -20,12 +20,16 @@ public sealed class TrafficManager : MonoBehaviour {
         public ITrafficProfileCatalog catalog;
         public ICivilianVehicleBodyProvider bodies;
         public PopulationBudgetData budget;
+        /// <summary>Optional shared session services. When supplied, graph/pool/population are injected instead of rebuilt.</summary>
+        public TrafficSessionServices services;
         public RespawnTimingRules respawnRules;
         public VehicleIdentityRegistry identityRegistry;
         /// <summary>Optional damage world; null means NPCs take no damage this session.</summary>
         public TrafficDamageWorld damageWorld;
-        /// <summary>Optional static-geometry clearance query for spawn footprints and rejoin paths.</summary>
+        /// <summary>World-space occupancy query for spawn footprints, including moving actors.</summary>
         public IAreaClearanceQuery clearance;
+        /// <summary>Map-local static-geometry query for rejoin paths, ignoring the recovering body's own collider.</summary>
+        public IAreaClearanceQuery rejoinClearance;
         public Vector2 mapOriginWorld;
         public int seed;
         /// <summary>False when the frozen session rules disable civilian traffic (No Traffic).</summary>
@@ -106,9 +110,21 @@ public sealed class TrafficManager : MonoBehaviour {
             diagnostics.Add("TrafficManager: missing navigation/catalog/bodies/budget/identity registry.");
             return false;
         }
-        graph = new RoadGraphRuntime(config.navigation);
-        pool = new NpcVehiclePool(config.budget, config.catalog, config.identityRegistry);
-        population = new VehiclePopulationService(config.budget);
+        if (config.services != null) {
+            if (config.services.Graph == null || config.services.Catalog == null || config.services.Pool == null ||
+                config.services.Population == null || config.services.Budget == null || config.services.IdentityRegistry == null) {
+                diagnostics.Add("TrafficManager: shared session services are incomplete.");
+                return false;
+            }
+            graph = config.services.Graph;
+            pool = config.services.Pool;
+            population = config.services.Population;
+        }
+        else {
+            graph = new RoadGraphRuntime(config.navigation);
+            pool = new NpcVehiclePool(config.budget, config.catalog, config.identityRegistry);
+            population = new VehiclePopulationService(config.budget);
+        }
         respawns = new TrafficRespawnScheduler();
         var random = new System.Random(config.seed);
         planner = new CivilianPopulationPlanner(config.navigation, graph, config.catalog, random, config.civilianTrafficEnabled, config.budget.maxCivilianMoving);
@@ -143,7 +159,9 @@ public sealed class TrafficManager : MonoBehaviour {
         for (int i = records.Count - 1; i >= 0; i--) Retire(records[i]);
         records.Clear();
         recordsByLife.Clear();
-        population.ResetAll();
+        ReleaseOwnedWrecksAtEnd();
+        if (config.services != null) config.services.MarkRoleOwnerCleaned(VehicleRole.Civilian);
+        else population.ResetAll();
     }
 
     void FixedUpdate() {
@@ -238,9 +256,30 @@ public sealed class TrafficManager : MonoBehaviour {
     void LateUpdate() {
         for (int i = wrecks.Count - 1; i >= 0; i--) {
             var record = wrecks[i];
-            if (record.instance.State != VehicleLifeState.Pooled && !ended) continue;
+            // The slot may already belong to a replacement by LateUpdate. Only the original
+            // life can keep this wreck body pending; a reused slot must not retain the old body.
+            var identity = record.instance.Identity;
+            if (!ended && record.instance.State != VehicleLifeState.Pooled &&
+                identity.HasValue && identity.Value.lifeId == record.lifeId) continue;
             wrecks.RemoveAt(i);
             record.body.Follower.ResetForNewLife();
+            config.bodies.Release(record.body);
+        }
+    }
+
+    void ReleaseOwnedWrecksAtEnd() {
+        for (int i = wrecks.Count - 1; i >= 0; i--) {
+            var record = wrecks[i];
+            var identity = record.instance.Identity;
+            bool ownsSlot = identity.HasValue && identity.Value.lifeId == record.lifeId && record.instance.State == VehicleLifeState.Wreck;
+            wrecks.RemoveAt(i);
+            if (!ownsSlot) continue;
+            record.body.Follower.ResetForNewLife();
+            record.body.Motor.StopMovement();
+            if (record.body.Receiver != null) record.body.Receiver.Unbind();
+            record.body.gameObject.SetActive(false);
+            population.ReleaseWreck();
+            pool.Release(record.instance);
             config.bodies.Release(record.body);
         }
     }
@@ -301,7 +340,7 @@ public sealed class TrafficManager : MonoBehaviour {
         var route = FindRoute(request.routeId);
         var follower = body.Follower;
         follower.Configure(followerSettings);
-        follower.SetRejoinClearance(config.clearance, config.navigation.localBounds);
+        follower.SetRejoinClearance(config.rejoinClearance ?? config.clearance, config.navigation.localBounds);
         follower.SetJunctionArbiter(junctions, instance.Identity.Value.lifeId);
         if (!follower.TryBeginRoute(graph, route, profile.motorSettings, profile.colliderSize, config.mapOriginWorld, out string issue)) {
             if (body.Receiver != null) body.Receiver.Unbind();

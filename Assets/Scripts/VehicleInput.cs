@@ -25,6 +25,7 @@ public class VehicleInput : MonoBehaviour {
     bool hasHandbrakeAction;
 
     void Update() {
+        if (S12BenchmarkGate.Requested) { ClearInput(); return; }
         bool keyboardHeld = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
         bool gamepadHeld = Gamepad.current != null && Gamepad.current.buttonSouth.isPressed;
         if (keyboardHeld || gamepadHeld) {
@@ -39,6 +40,7 @@ public class VehicleInput : MonoBehaviour {
     /// <summary>Current normalized steering, throttle, brake and handbrake command.</summary>
     public VehicleInputSnapshot Snapshot {
         get {
+            if (S12BenchmarkGate.Requested) return default;
             float steering = ApplyDeadzone(moveInput.x);
             float fallbackThrottle = Mathf.Max(0f, moveInput.y);
             float fallbackBrake = Mathf.Max(0f, -moveInput.y);

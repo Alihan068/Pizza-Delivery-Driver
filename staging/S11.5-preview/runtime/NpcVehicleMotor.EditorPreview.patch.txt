@@ -1,0 +1,32 @@
+--- Assets/Scripts/Traffic/NpcVehicleMotor.cs
++++ Assets/Scripts/Traffic/NpcVehicleMotor.cs
+@@
+ using UnityEngine;
++using UnityEngine.SceneManagement;
+@@
+ // Apply inside NpcVehicleMotor, before the final class brace.
+#if UNITY_EDITOR
+/// <summary>Initializes Rigidbody caching through the normal private Awake path only when this motor belongs to a non-playing isolated 2D physics scene.</summary>
+public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+    if (Application.isPlaying || !previewPhysicsScene.IsValid() ||
+        previewPhysicsScene == Physics2D.defaultPhysicsScene ||
+        gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) {
+        return false;
+    }
+
+    Awake();
+    return rb != null;
+}
+
+/// <summary>Runs the normal private motor step directly for one finite editor delta without reflection, refusing Play Mode, default physics, foreign scenes, or an unresolved Rigidbody2D.</summary>
+public bool TickEditorPreview(float deltaTime, PhysicsScene2D previewPhysicsScene) {
+    if (Application.isPlaying || deltaTime <= 0f || !previewPhysicsScene.IsValid() ||
+        previewPhysicsScene == Physics2D.defaultPhysicsScene ||
+        gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene || rb == null) {
+        return false;
+    }
+
+    SimulateStep(deltaTime);
+    return true;
+}
+#endif

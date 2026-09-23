@@ -1,0 +1,121 @@
+--- Assets/Editor/PizzaGame/TrafficRouteAuthoringWindow.cs
++++ Assets/Editor/PizzaGame/TrafficRouteAuthoringWindow.cs
+@@
+     sealed class PendingPoliceEdit { public string spawnId; }
++    sealed class PendingEdgeEdit { public float width; public float speed; }
+@@
+     [SerializeField] Vector2 mapOrigin;
++    [SerializeField] NpcVehicleProfile[] previewProfiles = Array.Empty<NpcVehicleProfile>();
++    [SerializeField] TrafficEditorPreviewSession.ProfilePrefabBinding[] previewPrefabCatalog = Array.Empty<TrafficEditorPreviewSession.ProfilePrefabBinding>();
++    [SerializeField] PopulationBudgetData previewBudget;
++    [SerializeField] RespawnTimingRules previewRespawnRules;
++    [SerializeField] string previewPoolId;
+@@
+     [NonSerialized] readonly Dictionary<string, PendingPoliceEdit> pendingPoliceEntries = new Dictionary<string, PendingPoliceEdit>();
++    [NonSerialized] readonly Dictionary<string, PendingEdgeEdit> pendingEdges = new Dictionary<string, PendingEdgeEdit>();
+     string pendingNewPoliceEntryId, pendingNewPoliceSpawnId;
++    TrafficEditorPreviewSession previewSession;
+@@
+-    void OnEnable() { SceneView.duringSceneGui += DrawScene; Undo.undoRedoPerformed += Reload; Reload(); }
+-    void OnDisable() { SceneView.duringSceneGui -= DrawScene; Undo.undoRedoPerformed -= Reload; }
++    void OnEnable() {
++        SceneView.duringSceneGui += DrawScene;
++        Undo.undoRedoPerformed += Reload;
++        EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
++        Reload();
++    }
++
++    void OnDisable() {
++        StopPreview();
++        SceneView.duringSceneGui -= DrawScene;
++        Undo.undoRedoPerformed -= Reload;
++        EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
++    }
+@@
+     void Reload() {
++        StopPreview();
+         draft = asset != null ? asset.ResolveDocument() : null;
+@@
+         pendingPoliceEntries.Clear();
++        pendingEdges.Clear();
+@@
+             DrawPreviewBoundaryMessage();
+             DrawValidationIssues();
++            DrawPreviewPanel();
+@@
+     void DrawPreviewBoundaryMessage() {
+-        EditorGUILayout.HelpBox("Bounded preview is unavailable in this adapter: TrafficManager.Initialize requires a scene-bound body provider, population budget, identity registry, clearance query and session coordinator. No point-animation or player-career scene clone is used.", MessageType.Info);
++        EditorGUILayout.HelpBox("Preview uses an isolated scene and 2D physics only. It snapshots this detached draft and never changes the asset, Undo history, GameManager, player state, or save data.", MessageType.Info);
+     }
+@@
+-            EditorGUILayout.LabelField("Width / speed", edge.usableWidth + " / " + edge.speedLimit);
++            PendingEdgeEdit pending = GetPendingEdge(edge);
++            pending.width = EditorGUILayout.FloatField("Usable width", pending.width);
++            pending.speed = EditorGUILayout.FloatField("Speed limit", pending.speed);
++            if (edge.edgeId == selectedEdge && GUILayout.Button("Apply edge settings")) {
++                MapNavigationDocument candidate = Clone(draft);
++                if (!MapNavigationEditCommands.TryEditEdgeSettings(candidate, edge.edgeId, pending.width, pending.speed, out string issue)) Reject(issue);
++                else { draft = candidate; Commit("Edit traffic edge settings"); GUIUtility.ExitGUI(); }
++            }
+@@
+     }
++
++    void DrawPreviewPanel() {
++        EditorGUILayout.Space();
++        EditorGUILayout.LabelField("Bounded civilian preview", EditorStyles.boldLabel);
++        var poolIds = new List<string>();
++        if (draft.vehiclePools != null) foreach (VehiclePoolRecord pool in draft.vehiclePools) if (pool != null && !string.IsNullOrWhiteSpace(pool.poolId)) poolIds.Add(pool.poolId);
++        if (poolIds.Count == 0) { EditorGUILayout.HelpBox("Create a valid civilian pool before previewing.", MessageType.Error); return; }
++        previewPoolId = poolIds[EditorGUILayout.Popup("Approved pool", Mathf.Max(0, poolIds.IndexOf(previewPoolId)), poolIds.ToArray())];
++        previewBudget = (PopulationBudgetData)EditorGUILayout.ObjectField("Population budget", previewBudget, typeof(PopulationBudgetData), false);
++        previewRespawnRules = (RespawnTimingRules)EditorGUILayout.ObjectField("Respawn rules", previewRespawnRules, typeof(RespawnTimingRules), false);
++        DrawPreviewProfiles();
++        DrawPreviewPrefabBindings();
++        using (new EditorGUILayout.HorizontalScope()) {
++            using (new EditorGUI.DisabledScope(previewSession != null && previewSession.IsRunning)) if (GUILayout.Button("Start bounded real preview")) StartPreview();
++            using (new EditorGUI.DisabledScope(previewSession == null || !previewSession.IsRunning)) if (GUILayout.Button("Stop preview")) StopPreview();
++        }
++        if (previewSession != null && !string.IsNullOrEmpty(previewSession.FailureReason)) EditorGUILayout.HelpBox(previewSession.FailureReason, MessageType.Error);
++        if (previewSession != null && previewSession.PreviewTexture != null) {
++            Rect rect = GUILayoutUtility.GetRect(previewSession.PreviewTexture.width, previewSession.PreviewTexture.height, GUILayout.ExpandWidth(true));
++            EditorGUI.DrawPreviewTexture(rect, previewSession.PreviewTexture, null, ScaleMode.ScaleToFit);
++            Repaint();
++        }
++    }
++
++    void DrawPreviewProfiles() {
++        EditorGUILayout.LabelField("Approved profile catalog", EditorStyles.miniBoldLabel);
++        for (int i = 0; i < previewProfiles.Length; i++) previewProfiles[i] = (NpcVehicleProfile)EditorGUILayout.ObjectField(previewProfiles[i], typeof(NpcVehicleProfile), false);
++        if (GUILayout.Button("Add profile binding")) Array.Resize(ref previewProfiles, previewProfiles.Length + 1);
++    }
++
++    void DrawPreviewPrefabBindings() {
++        EditorGUILayout.LabelField("Explicit prefab catalog", EditorStyles.miniBoldLabel);
++        for (int i = 0; i < previewPrefabCatalog.Length; i++) {
++            if (previewPrefabCatalog[i] == null) previewPrefabCatalog[i] = new TrafficEditorPreviewSession.ProfilePrefabBinding();
++            previewPrefabCatalog[i].visualCatalogId = EditorGUILayout.TextField("Visual catalog ID", previewPrefabCatalog[i].visualCatalogId);
++            previewPrefabCatalog[i].prefab = (CivilianVehicleBody)EditorGUILayout.ObjectField("Production body prefab", previewPrefabCatalog[i].prefab, typeof(CivilianVehicleBody), false);
++        }
++        if (GUILayout.Button("Add prefab binding")) Array.Resize(ref previewPrefabCatalog, previewPrefabCatalog.Length + 1);
++    }
++
++    void StartPreview() {
++        StopPreview();
++        previewSession = new TrafficEditorPreviewSession();
++        var input = new TrafficEditorPreviewSession.Configuration {
++            draft = Clone(draft), profiles = (NpcVehicleProfile[])previewProfiles.Clone(), prefabCatalog = (TrafficEditorPreviewSession.ProfilePrefabBinding[])previewPrefabCatalog.Clone(),
++            budget = previewBudget, respawnRules = previewRespawnRules, limits = new TrafficValidationLimits(), selectedPoolId = previewPoolId, mapOriginWorld = mapOrigin, seed = 0x534E3131
++        };
++        if (!previewSession.Start(input, out string issue)) Reject(issue);
++    }
++
++    void StopPreview() { if (previewSession == null) return; previewSession.Stop(); previewSession = null; Repaint(); }
++    void HandlePlayModeStateChanged(PlayModeStateChange state) { if (state == PlayModeStateChange.ExitingEditMode) StopPreview(); }
++
++    PendingEdgeEdit GetPendingEdge(RoadEdgeRecord edge) {
++        if (!pendingEdges.TryGetValue(edge.edgeId, out PendingEdgeEdit pending)) {
++            pending = new PendingEdgeEdit { width = edge.usableWidth, speed = edge.speedLimit };
++            pendingEdges.Add(edge.edgeId, pending);
++        }
++        return pending;
++    }

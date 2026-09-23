@@ -15,6 +15,7 @@ public class DisplaySettingsBootstrap : MonoBehaviour {
     [SerializeField] GameConfig config;
 
     void Awake() {
+        if (S12BenchmarkGate.Requested) return;
         DisplaySettings.ApplySaved(config);
     }
 }

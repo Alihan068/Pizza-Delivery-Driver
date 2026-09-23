@@ -1,0 +1,32 @@
+--- Assets/Scripts/Traffic/CivilianRouteFollower.cs
++++ Assets/Scripts/Traffic/CivilianRouteFollower.cs
+@@
+ using UnityEngine;
++using UnityEngine.SceneManagement;
+@@
+ // Apply inside CivilianRouteFollower, before the final class brace.
+#if UNITY_EDITOR
+/// <summary>Initializes production follower references through private Awake only for a non-playing object contained by the supplied non-default 2D physics scene.</summary>
+public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+    if (Application.isPlaying || !previewPhysicsScene.IsValid() ||
+        previewPhysicsScene == Physics2D.defaultPhysicsScene ||
+        gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) {
+        return false;
+    }
+
+    Awake();
+    return motor != null;
+}
+
+/// <summary>Runs the normal private route-following tick directly for a finite editor delta, preserving the production command seam and rejecting every non-isolated invocation.</summary>
+public bool TickEditorPreview(float deltaTime, PhysicsScene2D previewPhysicsScene) {
+    if (Application.isPlaying || deltaTime <= 0f || !previewPhysicsScene.IsValid() ||
+        previewPhysicsScene == Physics2D.defaultPhysicsScene ||
+        gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) {
+        return false;
+    }
+
+    Tick(deltaTime);
+    return true;
+}
+#endif

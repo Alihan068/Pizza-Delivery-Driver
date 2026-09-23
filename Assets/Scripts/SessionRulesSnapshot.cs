@@ -33,9 +33,13 @@ public sealed class SessionRulesSnapshot {
     /// <summary>Identifier of the bound map navigation document. Empty typed slot until S02 defines real navigation data.</summary>
     public readonly string navigationDocumentId;
 
+    /// <summary>Detached content evidence captured at the validation boundary.</summary>
+    public SessionContentEvidence ContentEvidence { get; }
+
     public SessionRulesSnapshot(string sessionId, string mapId, string vehicleId, string difficultyId,
         int shiftDurationMinutes, bool isFreeplay, int seed, IReadOnlyList<string> resolvedModifierIds,
-        float combinedScoreMultiplier, bool trafficEnabled, bool policeEnabled, string navigationDocumentId, FrozenModifierRules modifiers = null) {
+        float combinedScoreMultiplier, bool trafficEnabled, bool policeEnabled, string navigationDocumentId,
+        FrozenModifierRules modifiers = null, SessionContentEvidence contentEvidence = null) {
         this.sessionId = sessionId;
         this.mapId = mapId;
         this.vehicleId = vehicleId;
@@ -49,6 +53,7 @@ public sealed class SessionRulesSnapshot {
         this.trafficEnabled = trafficEnabled;
         this.policeEnabled = policeEnabled;
         this.navigationDocumentId = navigationDocumentId ?? string.Empty;
+        ContentEvidence = contentEvidence;
     }
 
     static IReadOnlyList<string> CopySafe(IReadOnlyList<string> source) {

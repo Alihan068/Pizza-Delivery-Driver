@@ -23,6 +23,7 @@ public static class GameSettings {
     /// <param name="key">Stable PlayerPrefs key supplied by the localization catalog.</param>
     /// <param name="code">Installed language code selected by the player.</param>
     public static void SetLanguagePreference(string key, string code) {
+        if (S12BenchmarkGate.Requested) return;
         PlayerPrefs.SetString(key, code);
         PlayerPrefs.Save();
     }
@@ -68,6 +69,7 @@ public static class GameSettings {
             return musicVolume;
         }
         set {
+            if (S12BenchmarkGate.Requested) return;
             Load();
             int clamped = Mathf.Clamp(value, 0, 100);
             if (clamped == musicVolume) return;
@@ -88,6 +90,7 @@ public static class GameSettings {
             return masterVolume;
         }
         set {
+            if (S12BenchmarkGate.Requested) return;
             Load();
             int clamped = Mathf.Clamp(value, 0, 100);
             if (clamped == masterVolume) return;
@@ -108,6 +111,7 @@ public static class GameSettings {
             return sfxVolume;
         }
         set {
+            if (S12BenchmarkGate.Requested) return;
             Load();
             int clamped = Mathf.Clamp(value, 0, 100);
             if (clamped == sfxVolume) return;
@@ -128,6 +132,7 @@ public static class GameSettings {
             return advancedTuningEnabled;
         }
         set {
+            if (S12BenchmarkGate.Requested) return;
             Load();
             if (value == advancedTuningEnabled) return;
             advancedTuningEnabled = value;

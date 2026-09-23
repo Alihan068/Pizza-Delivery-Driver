@@ -4,13 +4,10 @@ using UnityEngine;
 
 /// <summary>
 /// Fixed-size, profile-agnostic pool of reusable <see cref="NpcVehicleInstance"/> slots. Total
-/// capacity is computed once from <see cref="PopulationBudgetData.maxWreckSlots"/> — the tightest
-/// possible bound on simultaneous physical NPC objects, since every accepted spawn's moving slot and
-/// its eventual wreck slot share the same wreck-token budget in <see cref="VehiclePopulationService"/>
-/// (reservedFutureWrecks + occupiedWrecks never exceeds maxWreckSlots, and that sum equals the total
-/// count of physical objects currently on loan from this pool). Acquiring a slot here grants no
-/// spawn permission by itself; that decision belongs to <see cref="VehiclePopulationService"/> and
-/// whatever director calls both.
+/// capacity is computed once from the minimum of the authored wreck and global physics caps. This
+/// is the tightest possible bound on simultaneous physical NPC objects. Acquiring a slot here
+/// grants no spawn permission by itself; that decision belongs to <see cref="VehiclePopulationService"/>
+/// and whatever director calls both.
 /// </summary>
 public sealed class NpcVehiclePool {
     readonly List<NpcVehicleInstance> instances;
@@ -31,13 +28,13 @@ public sealed class NpcVehiclePool {
     }
 
     /// <summary>Builds a pool pre-warmed to its full, budget-capped size.</summary>
-    /// <param name="budget">Supplies the total instance cap via maxWreckSlots. Null yields an empty pool.</param>
+    /// <param name="budget">Supplies the minimum wreck/physics instance cap. Null yields an empty pool.</param>
     /// <param name="catalog">Catalog used to reject unknown/disallowed profile ids atomically at acquire time.</param>
     /// <param name="identityRegistry">Registry every reservation draws a fresh lifeId from.</param>
     public NpcVehiclePool(PopulationBudgetData budget, ITrafficProfileCatalog catalog, VehicleIdentityRegistry identityRegistry) {
         this.catalog = catalog;
         this.identityRegistry = identityRegistry;
-        int capacity = budget != null ? Mathf.Max(0, budget.maxWreckSlots) : 0;
+        int capacity = budget != null ? Mathf.Max(0, Mathf.Min(budget.maxWreckSlots, budget.maxTotalPhysicsObjects)) : 0;
         instances = new List<NpcVehicleInstance>(capacity);
         for (int i = 0; i < capacity; i++) instances.Add(new NpcVehicleInstance());
     }

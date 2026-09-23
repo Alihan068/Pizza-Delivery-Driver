@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb74191736b27334694a032ce586993d, type: 3}
+  m_Name: PoliceHeavy
+  m_EditorClassIdentifier: 
+  sharedNpc: {fileID: 11400000, guid: 8fc7672b56df9d24380d79e017ec8916, type: 2}
+  supportedTacticalRoles: 00000000010000000200000003000000
+  roleWeights:
+  - role: 0
+    weight: 0.3
+  - role: 1
+    weight: 0.1
+  - role: 2
+    weight: 0.6
+  variationSettings:
+    reactionVariation: 0.1
+    predictionVariation: 0.1
+    followGapVariation: 0.1
+    sidePreferenceVariation: 0.1
+    riskBiasVariation: 0.1

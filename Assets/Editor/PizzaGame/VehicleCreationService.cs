@@ -241,6 +241,17 @@ public static class VehicleCreationService {
                 outcome.steps.Add(colliderMessage);
             }
 
+            // Every player vehicle shares the low-friction, slightly bouncy contact material, whatever template it came from.
+            var contactMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(VehicleValidator.PlayerContactMaterialPath);
+            if (contactMaterial != null) {
+                foreach (var body in root.GetComponentsInChildren<Rigidbody2D>(true)) body.sharedMaterial = contactMaterial;
+                outcome.steps.Add("Assigned contact physics material: " + contactMaterial.name);
+            }
+            else {
+                outcome.issues.Add(VehicleIssue.Warning("Contact physics material not found at " +
+                    VehicleValidator.PlayerContactMaterialPath + "; the vehicle uses Unity's default friction.", null));
+            }
+
             PrefabUtility.SaveAsPrefabAsset(root, prefabPath, out bool saved);
             if (!saved) return null;
         }

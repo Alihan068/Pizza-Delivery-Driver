@@ -59,8 +59,15 @@ public class PizzaCollectPoint : MonoBehaviour {
 
         if (!delivery.CollectPizza(this)) return;
 
-        delivery.PlayPizzaCollectionEffect(transform.position);
+        delivery.PlayPizzaCollectionEffect(GetCollectionVisualSourcePosition());
         TryPlayAudioClip(collectClip);
+    }
+
+    Vector3 GetCollectionVisualSourcePosition() {
+        SpriteRenderer serviceRenderer = GetComponentInParent<SpriteRenderer>();
+        return serviceRenderer != null
+            ? serviceRenderer.bounds.ClosestPoint(transform.position)
+            : transform.position;
     }
 
     void OnTriggerExit2D(Collider2D other) {

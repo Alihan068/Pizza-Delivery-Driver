@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Root bundle of one civilian NPC prefab: the physical body plus the motor, route follower,
@@ -66,4 +67,14 @@ public sealed class CivilianVehicleBody : MonoBehaviour {
         }
         return true;
     }
+
+#if UNITY_EDITOR
+    /// <summary>Initializes cached production collaborators only for a non-playing body in a valid non-default 2D physics scene, directly using the normal Awake path.</summary>
+    public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+        if (Application.isPlaying || !previewPhysicsScene.IsValid() || previewPhysicsScene == Physics2D.defaultPhysicsScene || gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) return false;
+        Awake();
+        if (motor == null || follower == null || !motor.InitializeEditorPreview(previewPhysicsScene) || !follower.InitializeEditorPreview(previewPhysicsScene)) return false;
+        return sensor == null || sensor.InitializeEditorPreview(previewPhysicsScene);
+    }
+#endif
 }

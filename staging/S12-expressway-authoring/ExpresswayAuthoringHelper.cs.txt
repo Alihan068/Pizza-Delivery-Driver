@@ -1,0 +1,240 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+/// <summary>
+/// Bounded, non-mutating Expressway authoring gate. It consumes a main-owned world survey and
+/// returns a detached navigation document only after the actual Tilemap inventory, reachability,
+/// safe-turn witnesses, native-clearance evidence, asset paths, profile paths, and scene binding
+/// all agree. It never writes an asset or scene and never falls back to NarrowDistrict data.
+/// </summary>
+public static class ExpresswayAuthoringHelper {
+    /// <summary>Actual built-in Expressway map asset path verified from the repository.</summary>
+    public const string MapAssetPath = "Assets/ScriptableObjects/Map_Expressway.asset";
+
+    /// <summary>Actual gameplay scene path used by the map asset.</summary>
+    public const string ScenePath = "Assets/Scenes/Expressway.unity";
+
+    /// <summary>Actual gameplay scene name used by the map asset.</summary>
+    public const string SceneName = "Expressway";
+
+    /// <summary>Stable map id read from the actual Map_Expressway asset.</summary>
+    public const string MapId = "8f350d4ea56b4fe4bccd87dd90ba7cc1";
+
+    /// <summary>Expected future map-specific navigation asset path; no file is created here.</summary>
+    public const string NavigationAssetPath = "Assets/ScriptableObjects/Traffic/Expressway/Navigation.asset";
+
+    /// <summary>Expected future map-specific population asset path; no file is created here.</summary>
+    public const string PopulationAssetPath = "Assets/ScriptableObjects/Traffic/Expressway/Population.asset";
+
+    /// <summary>Expected future map-specific respawn asset path; no file is created here.</summary>
+    public const string RespawnAssetPath = "Assets/ScriptableObjects/Traffic/Expressway/Respawn.asset";
+
+    /// <summary>Expected future map-specific damage asset path; no file is created here.</summary>
+    public const string DamageAssetPath = "Assets/ScriptableObjects/Traffic/Expressway/Damage.asset";
+
+    /// <summary>Expected future map-specific police director profile path; no file is created here.</summary>
+    public const string PoliceDirectorAssetPath = "Assets/ScriptableObjects/Police/PoliceDirector_Expressway.asset";
+
+    /// <summary>Horizontal and vertical bands found in the read-only Expressway inventory.</summary>
+    public static readonly ExpresswayRoadBand[] InventoryBands = {
+        new ExpresswayRoadBand("horizontal.y-75..-69", ExpresswayRoadBandOrientation.Horizontal, -107, 107, -75, -69),
+        new ExpresswayRoadBand("horizontal.y-27..-21", ExpresswayRoadBandOrientation.Horizontal, -152, 151, -27, -21),
+        new ExpresswayRoadBand("horizontal.y31..37", ExpresswayRoadBandOrientation.Horizontal, -107, 107, 31, 37),
+        new ExpresswayRoadBand("horizontal.y69..75", ExpresswayRoadBandOrientation.Horizontal, -107, 107, 69, 75),
+        new ExpresswayRoadBand("vertical.x-107..-101", ExpresswayRoadBandOrientation.Vertical, -107, -101, -75, 75),
+        new ExpresswayRoadBand("vertical.x-25..-19", ExpresswayRoadBandOrientation.Vertical, -25, -19, -120, 119),
+        new ExpresswayRoadBand("vertical.x43..49", ExpresswayRoadBandOrientation.Vertical, 43, 49, -75, 75),
+        new ExpresswayRoadBand("vertical.x101..107", ExpresswayRoadBandOrientation.Vertical, 101, 107, -75, 75),
+        new ExpresswayRoadBand("outer.horizontal.y-102..-99", ExpresswayRoadBandOrientation.Horizontal, -134, 134, -102, -99),
+        new ExpresswayRoadBand("outer.horizontal.y99..102", ExpresswayRoadBandOrientation.Horizontal, -134, 134, 99, 102),
+        new ExpresswayRoadBand("outer.vertical.x-134..-131", ExpresswayRoadBandOrientation.Vertical, -134, -131, -102, 102),
+        new ExpresswayRoadBand("outer.vertical.x131..134", ExpresswayRoadBandOrientation.Vertical, 131, 134, -102, 102)
+    };
+
+    /// <summary>
+    /// Validates a main-owned survey and detaches its exact measured graph. The survey is the only
+    /// source of node positions, edge widths, roles, turns, default target, and local bounds.
+    /// </summary>
+    /// <param name="survey">World-geometry survey captured from the actual Expressway scene.</param>
+    /// <param name="document">Detached copy of the surveyed navigation graph when accepted.</param>
+    /// <param name="reason">Concrete rejection reason when any pilot gate is missing.</param>
+    /// <returns>True only when the detached graph is safe to pass to the later application step.</returns>
+    public static bool TryPrepareDetachedDocument(ExpresswayGeometrySurvey survey,
+        out MapNavigationDocument document, out string reason) {
+        document = null;
+        if (!ValidateSurvey(survey, out reason)) return false;
+        document = JsonUtility.FromJson<MapNavigationDocument>(JsonUtility.ToJson(survey.navigation));
+        if (!ValidateDocumentIdentity(document, out reason)) {
+            document = null;
+            return false;
+        }
+        List<TrafficValidationIssue> issues = TrafficMapValidator.Validate(document, new TrafficValidationLimits());
+        if (issues.Count != 0) {
+            document = null;
+            reason = "Expressway navigation failed structural validation: " + issues[0].code + ".";
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Checks read-only asset paths and the currently loaded Expressway scene without opening any
+    /// other gameplay scene. Missing future assets are reported rather than silently substituted.
+    /// </summary>
+    /// <param name="paths">Map-specific navigation, profile, budget, and police asset paths.</param>
+    /// <param name="scene">Already loaded Expressway scene; the helper never opens it.</param>
+    /// <param name="reason">Concrete missing-path or binding reason.</param>
+    /// <returns>True only when every supplied dependency and typed scene binding resolves.</returns>
+    public static bool TryValidateAssetAndSceneBinding(ExpresswayAssetPaths paths, Scene scene, out string reason) {
+        reason = null;
+        if (paths == null) return Reject("Expressway asset-path manifest is missing.", out reason);
+        MapData map = AssetDatabase.LoadAssetAtPath<MapData>(MapAssetPath);
+        if (map == null || map.mapId != MapId || map.sceneName != SceneName)
+            return Reject("Map_Expressway identity or scene binding is not the authored value.", out reason);
+        if (!RequireAsset<TrafficMapData>(paths.navigationAssetPath, "navigation", out reason) ||
+            !RequireAsset<PopulationBudgetData>(paths.populationAssetPath, "population", out reason) ||
+            !RequireAsset<RespawnTimingRules>(paths.respawnAssetPath, "respawn", out reason) ||
+            !RequireAsset<TrafficDamageSettings>(paths.damageAssetPath, "damage", out reason) ||
+            !RequireAsset<PoliceDirectorData>(paths.policeDirectorAssetPath, "police director", out reason)) return false;
+        if (paths.civilianProfileAssetPaths == null || paths.civilianProfileAssetPaths.Count == 0)
+            return Reject("Expressway civilian profile paths are missing; NarrowDistrict profiles are not a fallback.", out reason);
+        for (int i = 0; i < paths.civilianProfileAssetPaths.Count; i++)
+            if (!RequireAsset<NpcVehicleProfile>(paths.civilianProfileAssetPaths[i], "civilian profile", out reason)) return false;
+        if (!scene.IsValid() || !scene.isLoaded || scene.path != ScenePath)
+            return Reject("The supplied scene is not the loaded Expressway scene.", out reason);
+        SceneTrafficBinding binding = SessionSceneRules.ResolveComponent<SceneTrafficBinding>(scene, true);
+        if (binding == null) return Reject("Expressway SceneTrafficBinding is not authored yet.", out reason);
+        if (binding.Map == null || binding.Map.mapId != MapId || binding.Map.sceneName != SceneName)
+            return Reject("Expressway SceneTrafficBinding does not reference Map_Expressway.", out reason);
+        return true;
+    }
+
+    static bool ValidateSurvey(ExpresswayGeometrySurvey survey, out string reason) {
+        reason = null;
+        if (survey == null) return Reject("World geometry survey is missing; authoring is blocked.", out reason);
+        if (!survey.gridParentWorldTransformVerified)
+            return Reject("Grid parent world transform is not verified; cell coordinates cannot become world coordinates.", out reason);
+        if (!IsValidRect(survey.localBounds)) return Reject("Expressway local bounds are missing or invalid.", out reason);
+        if (survey.navigation == null) return Reject("Survey navigation graph is missing.", out reason);
+        if (survey.navigation.mapId != MapId) return Reject("Survey navigation mapId is not Map_Expressway.", out reason);
+        if (survey.playerDefaultTarget == null || !survey.playerDefaultTarget.reachable)
+            return Reject("Player default target reachability witness is missing or failed.", out reason);
+        if (!survey.playerDefaultTarget.targetMatchesDeliveryArea)
+            return Reject("Player default target is not the surveyed delivery-area target.", out reason);
+        if (survey.bandCoverage == null || survey.bandCoverage.Count < InventoryBands.Length)
+            return Reject("Survey does not cover every serialized Expressway road band.", out reason);
+        for (int i = 0; i < InventoryBands.Length; i++)
+            if (!ContainsBandCoverage(survey.bandCoverage, InventoryBands[i].id))
+                return Reject("Missing survey coverage for road band " + InventoryBands[i].id + ".", out reason);
+        if (survey.safe90Turns == null || survey.safe90Turns.Count == 0)
+            return Reject("No surveyed safe 90-degree turn exists; turn geometry must come from the world survey.", out reason);
+        for (int i = 0; i < survey.safe90Turns.Count; i++) {
+            ExpresswaySafe90Turn turn = survey.safe90Turns[i];
+            if (turn == null || !turn.approvedByWorldSurvey || string.IsNullOrEmpty(turn.clearanceEvidenceId) ||
+                string.IsNullOrEmpty(turn.incomingBandId) || string.IsNullOrEmpty(turn.outgoingBandId))
+                return Reject("A safe 90-degree turn lacks world-survey approval or clearance evidence.", out reason);
+        }
+        if (survey.colliderClearance == null || survey.colliderClearance.Count == 0)
+            return Reject("Native collider-clearance survey is missing; no clearance proof is invented.", out reason);
+        if (survey.approvedDensity == null)
+            return Reject("Approved Expressway density profile is missing; NarrowDistrict density is not copied.", out reason);
+        return true;
+    }
+
+    static bool ValidateDocumentIdentity(MapNavigationDocument document, out string reason) {
+        reason = null;
+        if (document == null || document.mapId != MapId || !IsValidRect(document.localBounds))
+            return Reject("Detached Expressway document identity or bounds are invalid.", out reason);
+        return true;
+    }
+
+    static bool ContainsBandCoverage(List<ExpresswayBandCoverage> values, string id) {
+        for (int i = 0; i < values.Count; i++)
+            if (values[i] != null && values[i].inventoryBandId == id && values[i].edgeIds != null && values[i].edgeIds.Count > 0) return true;
+        return false;
+    }
+
+    static bool RequireAsset<T>(string path, string kind, out string reason) where T : UnityEngine.Object {
+        reason = null;
+        if (string.IsNullOrWhiteSpace(path)) return Reject("Expressway " + kind + " asset path is empty.", out reason);
+        if (AssetDatabase.LoadAssetAtPath<T>(path) == null)
+            return Reject("Missing Expressway " + kind + " asset at " + path + ".", out reason);
+        return true;
+    }
+
+    static bool Reject(string message, out string reason) { reason = message; return false; }
+    static bool IsValidRect(Rect value) => value.width > 0f && value.height > 0f &&
+        !float.IsNaN(value.x) && !float.IsInfinity(value.x) && !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+        !float.IsNaN(value.width) && !float.IsInfinity(value.width) && !float.IsNaN(value.height) && !float.IsInfinity(value.height);
+}
+
+/// <summary>Orientation of one serialized Tilemap road band from the Expressway inventory.</summary>
+public enum ExpresswayRoadBandOrientation { Horizontal, Vertical }
+
+/// <summary>Read-only cell extent copied from the actual Expressway inventory document.</summary>
+public sealed class ExpresswayRoadBand {
+    public readonly string id;
+    public readonly ExpresswayRoadBandOrientation orientation;
+    public readonly int minX;
+    public readonly int maxX;
+    public readonly int minY;
+    public readonly int maxY;
+
+    public ExpresswayRoadBand(string id, ExpresswayRoadBandOrientation orientation, int minX, int maxX, int minY, int maxY) {
+        this.id = id; this.orientation = orientation; this.minX = minX; this.maxX = maxX; this.minY = minY; this.maxY = maxY;
+    }
+}
+
+/// <summary>Map-specific profile and scene asset paths supplied by the owner after authoring.</summary>
+public sealed class ExpresswayAssetPaths {
+    public string navigationAssetPath;
+    public string populationAssetPath;
+    public string respawnAssetPath;
+    public string damageAssetPath;
+    public string policeDirectorAssetPath;
+    public List<string> civilianProfileAssetPaths = new List<string>();
+}
+
+/// <summary>Survey-owned geometry and acceptance witnesses; no field has a guessed default.</summary>
+public sealed class ExpresswayGeometrySurvey {
+    public bool gridParentWorldTransformVerified;
+    public Rect localBounds;
+    public MapNavigationDocument navigation;
+    public ExpresswayDefaultTargetWitness playerDefaultTarget;
+    public List<ExpresswayBandCoverage> bandCoverage = new List<ExpresswayBandCoverage>();
+    public List<ExpresswaySafe90Turn> safe90Turns = new List<ExpresswaySafe90Turn>();
+    public List<ExpresswayColliderClearanceWitness> colliderClearance = new List<ExpresswayColliderClearanceWitness>();
+    public PopulationBudgetData approvedDensity;
+}
+
+/// <summary>Evidence that the player default position reaches the surveyed delivery target.</summary>
+public sealed class ExpresswayDefaultTargetWitness {
+    public bool reachable;
+    public bool targetMatchesDeliveryArea;
+}
+
+/// <summary>Maps one real inventory band to the exact surveyed navigation edge ids.</summary>
+public sealed class ExpresswayBandCoverage {
+    public string inventoryBandId;
+    public List<string> edgeIds = new List<string>();
+}
+
+/// <summary>World-survey approval for one safe 90-degree movement and its native evidence id.</summary>
+public sealed class ExpresswaySafe90Turn {
+    public string incomingBandId;
+    public string outgoingBandId;
+    public bool approvedByWorldSurvey;
+    public string clearanceEvidenceId;
+}
+
+/// <summary>Native collider-clearance evidence supplied by the main world survey.</summary>
+public sealed class ExpresswayColliderClearanceWitness {
+    public string evidenceId;
+    public bool measuredAgainstNativeColliders;
+}
+#endif

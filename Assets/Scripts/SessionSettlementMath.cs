@@ -14,10 +14,22 @@ public static class SessionSettlementMath {
     /// <param name="deathEarningsKeep">Fraction retained after a wreck.</param>
     /// <returns>A non-negative amount to add to the bank before repairs.</returns>
     public static int CalculateKeptEarnings(int sessionEarnings, EndReason reason, float deathEarningsKeep) {
+        return CalculateKeptEarnings(sessionEarnings, reason, deathEarningsKeep, 0f);
+    }
+
+    /// <summary>Calculates retained earnings using separate wreck and arrest policies.</summary>
+    /// <param name="sessionEarnings">Unbanked earnings accumulated during the session.</param>
+    /// <param name="reason">Ending reason that determines the retention rule.</param>
+    /// <param name="deathEarningsKeep">Authored fraction retained after a wreck.</param>
+    /// <param name="arrestEarningsKeep">Authored fraction retained after an arrest.</param>
+    /// <returns>A non-negative amount to add to the bank before repairs.</returns>
+    public static int CalculateKeptEarnings(int sessionEarnings, EndReason reason, float deathEarningsKeep, float arrestEarningsKeep) {
         int safeEarnings = Mathf.Max(0, sessionEarnings);
         switch (reason) {
             case EndReason.Wrecked:
                 return Mathf.FloorToInt(safeEarnings * Mathf.Clamp01(deathEarningsKeep));
+            case EndReason.Arrested:
+                return Mathf.FloorToInt(safeEarnings * Mathf.Clamp01(arrestEarningsKeep));
             case EndReason.Abandoned:
             case EndReason.Interrupted:
                 return 0;

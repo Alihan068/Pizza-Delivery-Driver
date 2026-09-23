@@ -31,6 +31,17 @@ public sealed class PrefabCivilianVehicleBodyProvider : MonoBehaviour, ICivilian
         }
     }
 
+    /// <summary>Resolves one unambiguous serialized prefab for preflight validation, including before Awake.</summary>
+    public bool TryGetAuthoredPrefab(string visualCatalogId, out CivilianVehicleBody prefab) {
+        prefab = null;
+        foreach (var entry in entries) {
+            if (entry == null || entry.visualCatalogId != visualCatalogId) continue;
+            if (prefab != null || entry.prefab == null) return false;
+            prefab = entry.prefab;
+        }
+        return prefab != null;
+    }
+
     /// <summary>Registers an entry at runtime (tests, generated content). Later entries with the same id replace earlier ones.</summary>
     public void Register(string visualCatalogId, CivilianVehicleBody prefab) {
         if (string.IsNullOrEmpty(visualCatalogId) || prefab == null) return;

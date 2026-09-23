@@ -22,3 +22,4 @@ MonoBehaviour:
   requiredRank: 0
   regionTier: 2
   unlockPrice: 1200
+  trafficMapData: {fileID: 11400000, guid: 5315dbcbc79ba24428418a23a9856c2a, type: 2}

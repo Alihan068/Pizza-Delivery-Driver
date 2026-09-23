@@ -28,6 +28,10 @@ public class Driver : MonoBehaviour {
     [SerializeField] float damageBase = 3f;
     [SerializeField] float damageFactor = 0.85f;
     [SerializeField] float damageExponent = 2f;
+    [Tooltip("Closing speed at or below which a contact is ignored: no damage, pizza drop, momentum loss or flash.")]
+    [SerializeField] float damageDeadZoneSpeed = 1.5f;
+    [Tooltip("Closing speed from which the full original damage applies; it fades in from zero above the dead zone.")]
+    [SerializeField] float damageBaseFullSpeed = 3f;
     [SerializeField] float invulnerabilityWindow = 0.7f;
     float lastDamageTime = -999f;
 
@@ -135,6 +139,7 @@ public class Driver : MonoBehaviour {
         if (isDisabled) return;
         if (Time.time - lastDamageTime < invulnerabilityWindow) return;
         lastDamageTime = Time.time;
+        if (vehicleMovement != null) vehicleMovement.NotifyCrash();
         if (scoreHandler != null) scoreHandler.RegisterCollisionDamageEvent();
 
         float finalDamage = obstacleDamage * (1f - armorPercent);
@@ -178,8 +183,6 @@ public class Driver : MonoBehaviour {
         if (isDisabled) return;
         if (other.gameObject.CompareTag("Border")) return;
         if (Time.time - lastDamageTime < invulnerabilityWindow) return;
-        lastDamageTime = Time.time;
-        if (scoreHandler != null) scoreHandler.RegisterCollisionDamageEvent();
 
         Vector2 relativeVelocity = other.relativeVelocity;
         float impactSpeed = 0f;
@@ -194,11 +197,19 @@ public class Driver : MonoBehaviour {
             impactSpeed = relativeVelocity.magnitude;
         }
 
+        // A light touch or scrape is not a crash: it must not cost health, pizza, momentum or the
+        // invulnerability window a real crash right after it would need.
+        if (impactSpeed <= damageDeadZoneSpeed) return;
+        lastDamageTime = Time.time;
+        if (scoreHandler != null) scoreHandler.RegisterCollisionDamageEvent();
         ApplyCollisionDamage(impactSpeed);
     }
 
     void ApplyCollisionDamage(float impactSpeed) {
-        float rawDamage = damageBase + damageFactor * Mathf.Pow(impactSpeed, damageExponent);
+        // Any crash drains the momentum boost back to normal top speed.
+        if (vehicleMovement != null) vehicleMovement.NotifyCrash();
+        float rawDamage = VehicleDrivingMath.CollisionDamage(impactSpeed, damageDeadZoneSpeed, damageBaseFullSpeed,
+            damageBase, damageFactor, damageExponent);
         float finalDamage = rawDamage * (1f - armorPercent);
         float severity = baseMoveSpeed > 0.01f ? Mathf.Clamp01(impactSpeed / baseMoveSpeed) : 0f;
 

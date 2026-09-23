@@ -20,6 +20,8 @@ public static class VehicleValidator {
 
     /// <summary>Project path of the GameManager prefab that holds the vehicle registry.</summary>
     public const string GameManagerPrefabPath = "Assets/Prefabs/GameManager.prefab";
+    /// <summary>Contact physics material every player vehicle Rigidbody2D uses (low friction, slight bounce).</summary>
+    public const string PlayerContactMaterialPath = "Assets/PhysicsMaterials/PlayerVehicleContact.physicsMaterial2D";
 
     // ---------------------------------------------------------------- prefab
 
@@ -51,6 +53,11 @@ public static class VehicleValidator {
         }
 
         RequireComponent<Rigidbody2D>(root, issues, "movement physics");
+        var body = root.GetComponent<Rigidbody2D>();
+        if (body != null && body.sharedMaterial == null) {
+            issues.Add(VehicleIssue.Warning(id + " Rigidbody2D has no physics material; assign " + PlayerContactMaterialPath +
+                " so it slides and bounces like the other player vehicles instead of sticking to walls.", root));
+        }
         RequireComponent<VehicleInput>(root, issues, "cached driving input");
         RequireComponent<VehicleMovement>(root, issues, "force-based vehicle motor");
         RequireComponent<VehicleDriftFeedback>(root, issues, "drift feedback");
@@ -391,6 +398,8 @@ public static class VehicleValidator {
             settings.driftSteeringMultiplier);
         ValidateTuningRange(issues, data, id, "playerGripEnterTime", settings.playerGripEnterTimeMin,
             settings.playerGripEnterTimeMax, settings.gripEnterTime);
+        ValidateTuningRange(issues, data, id, "playerGripRecoverTime", settings.playerGripRecoverTimeMin,
+            settings.playerGripRecoverTimeMax, settings.gripRecoverTime);
     }
 
     static void ValidateBodySettings(VehicleData data, List<VehicleIssue> issues) {

@@ -53,10 +53,21 @@ public class GameUIManager : MonoBehaviour {
 
     ScoreHandler scoreHandler;
     int shownRepairCost;
+    TrafficSessionHost sessionHost;
+    PoliceDirector policeDirector;
+    PoliceStatusView policeStatusView;
 
     private void Start() {
         audioSource = GetComponent<AudioSource>();
         scoreHandler = FindFirstObjectByType<ScoreHandler>();
+        sessionHost = SessionSceneRules.ResolveHost(gameObject.scene);
+        policeDirector = SessionSceneRules.ResolveComponent<PoliceDirector>(gameObject.scene);
+        if (sessionHost != null) {
+            sessionHost.Activated += AttachPoliceStatusView;
+            sessionHost.Ended += HidePoliceStatusView;
+            sessionHost.PlayerReady += BindPoliceStatusPlayer;
+            if (sessionHost.IsActive) AttachPoliceStatusView();
+        }
 
         scoreText.text = "= 0";
         pizzaCountText.text = "= 0";
@@ -69,6 +80,32 @@ public class GameUIManager : MonoBehaviour {
             healthbarFillImage = healthbar.fillRect.GetComponent<Image>();
             if (healthbarFillImage != null) healthbarBaseColor = healthbarFillImage.color;
         }
+    }
+
+    void AttachPoliceStatusView() {
+        if (sessionHost == null || policeDirector == null) return;
+        if (policeStatusView == null) {
+            GameObject viewObject = new GameObject("PoliceStatusView", typeof(RectTransform));
+            viewObject.transform.SetParent(transform, false);
+            policeStatusView = viewObject.AddComponent<PoliceStatusView>();
+        }
+        policeStatusView.Configure(sessionHost, policeDirector);
+        if (sessionHost.Player != null) policeStatusView.BindPlayer(sessionHost.Player);
+    }
+
+    void BindPoliceStatusPlayer(GameObject player) {
+        if (policeStatusView != null) policeStatusView.BindPlayer(player);
+    }
+
+    void HidePoliceStatusView() {
+        if (policeStatusView != null) policeStatusView.SetSessionActive(false);
+    }
+
+    void OnDestroy() {
+        if (sessionHost == null) return;
+        sessionHost.Activated -= AttachPoliceStatusView;
+        sessionHost.Ended -= HidePoliceStatusView;
+        sessionHost.PlayerReady -= BindPoliceStatusPlayer;
     }
 
     public void UpdateScoreDisplays() {

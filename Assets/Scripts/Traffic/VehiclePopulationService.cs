@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// Owns every moving/wreck slot counter against an authored <see cref="PopulationBudgetData"/>.
 /// A spawn request reserves its moving slot AND its eventual wreck token together, atomically,
@@ -37,7 +39,8 @@ public sealed class VehiclePopulationService {
         if (role == VehicleRole.Civilian && civilianTotal >= budget.maxCivilianMoving) return false;
         if (role == VehicleRole.Police && policeTotal >= budget.maxPoliceMoving) return false;
         if (civilianTotal + policeTotal >= budget.maxTotalMoving) return false;
-        if (occupiedWrecks + reservedFutureWrecks >= budget.maxWreckSlots) return false;
+        int physicsCapacity = Mathf.Max(0, Mathf.Min(budget.maxWreckSlots, budget.maxTotalPhysicsObjects));
+        if (occupiedWrecks + reservedFutureWrecks >= physicsCapacity) return false;
 
         if (role == VehicleRole.Civilian) reservedCivilian++;
         else reservedPolice++;

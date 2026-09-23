@@ -20,18 +20,25 @@ public static class SessionSceneRules {
         return result;
     }
 
-    /// <summary>Captures setup and actual resolved values; explicit null maps deliberately stay null.</summary>
-    public static TrafficSessionContext Create(GameManager manager, MapData map, bool explicitBinding, string sceneName) {
+    /// <summary>Captures resolved values; an explicitly supplied editor-test difficulty is validated and always makes the run ineligible.</summary>
+    public static TrafficSessionContext Create(GameManager manager, MapData map, bool explicitBinding, string sceneName, string editorTestDifficultyId = null) {
         if (!explicitBinding && manager != null) map = manager.currentMap;
         var resolution = ModifierSelectionResolver.Resolve(manager != null ? manager.allModifiers : null,
             manager != null ? manager.SelectedModifierIds : null);
         var modifiers = new FrozenModifierRules(resolution.resolvedModifiers);
+        bool testContext = !string.IsNullOrEmpty(editorTestDifficultyId);
+        string difficultyId = manager != null && map == manager.currentMap && manager.CurrentDifficulty != null ? manager.CurrentDifficulty.difficultyId : string.Empty;
+        if (testContext) difficultyId = map != null && map.sceneName == sceneName && map.levelData != null &&
+            map.levelData.GetDifficulty(editorTestDifficultyId) != null ? editorTestDifficultyId : string.Empty;
         var draft = new SessionSetupDraft(Guid.NewGuid().ToString(), map != null ? map.mapId : string.Empty,
             manager != null && manager.currentVehicle != null ? manager.currentVehicle.vehicleId : string.Empty,
-            manager != null && map == manager.currentMap && manager.CurrentDifficulty != null ? manager.CurrentDifficulty.difficultyId : string.Empty,
+            difficultyId,
             manager != null ? manager.SelectedShiftDurationMinutes : 1, manager != null && manager.IsFreeplayMode,
             manager != null ? manager.SelectedModifierIds : null);
         var context = new TrafficSessionContext(draft, modifiers);
+        if (S12BenchmarkGate.Requested)
+            context.Integrity.MarkInvalid("S12 stationary benchmark; not a competitive career run.");
+        if (testContext) context.Integrity.MarkInvalid("Authored editor traffic test context; not a career run.");
         if (resolution.rejectedIds.Count > 0) context.Integrity.MarkInvalid("Modifier selection contains unresolved identities.");
         foreach (var modifier in resolution.resolvedModifiers)
             if (!modifier.HasValidScoreMultiplier()) context.Integrity.MarkInvalid("Modifier score multiplier is invalid.");
@@ -57,12 +64,27 @@ public static class SessionSceneRules {
     }
 
     /// <summary>Freezes capability flags only after validation; missing traffic data never enables traffic.</summary>
-    public static void Freeze(TrafficSessionContext context, bool navigationReady, string documentId = null) {
+    public static void Freeze(TrafficSessionContext context, bool navigationReady, string documentId = null,
+        SessionContentEvidence contentEvidence = null) {
+        if (context == null) return;
         var draft = context.Draft;
         var modifiers = context.Modifiers;
+        SessionContentEvidence acceptedEvidence = context.ContentEvidence;
+        if (acceptedEvidence != null && contentEvidence != null &&
+            !ReferenceEquals(acceptedEvidence, contentEvidence)) {
+            context.Integrity.MarkInvalid("Rejected content evidence did not match the accepted session evidence.");
+        }
+        if (acceptedEvidence == null) {
+            SessionContentEvidence candidate = contentEvidence ?? SessionContentEvidence.CreateMinimal(draft, modifiers);
+            if (!context.CaptureContentEvidence(candidate)) {
+                context.CaptureContentEvidence(SessionContentEvidence.CreateMinimal(draft, modifiers));
+            }
+            acceptedEvidence = context.ContentEvidence;
+        }
+        if (acceptedEvidence == null) return;
         context.FreezeSnapshot(new SessionRulesSnapshot(draft.sessionId, draft.mapId, draft.vehicleId,
             draft.difficultyId, draft.shiftDurationMinutes, draft.isFreeplay, 0, modifiers.Ids,
             modifiers.ScoreMultiplier, navigationReady && !modifiers.DisablesCivilianTraffic,
-            navigationReady && !modifiers.DisablesPolice, documentId, modifiers));
+            navigationReady && !modifiers.DisablesPolice, documentId, modifiers, acceptedEvidence));
     }
 }

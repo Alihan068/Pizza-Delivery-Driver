@@ -1,0 +1,20 @@
+--- Assets/Scripts/Traffic/VehicleObstacleSensor.cs
++++ Assets/Scripts/Traffic/VehicleObstacleSensor.cs
+@@
+ using UnityEngine;
++using UnityEngine.SceneManagement;
+@@
+ // Apply inside VehicleObstacleSensor, before the final class brace.
+#if UNITY_EDITOR
+/// <summary>Initializes cached sensor references through private Awake only for a non-playing object in the supplied valid non-default 2D physics scene.</summary>
+public bool InitializeEditorPreview(PhysicsScene2D previewPhysicsScene) {
+    if (Application.isPlaying || !previewPhysicsScene.IsValid() ||
+        previewPhysicsScene == Physics2D.defaultPhysicsScene ||
+        gameObject.scene.GetPhysicsScene2D() != previewPhysicsScene) {
+        return false;
+    }
+
+    Awake();
+    return true;
+}
+#endif

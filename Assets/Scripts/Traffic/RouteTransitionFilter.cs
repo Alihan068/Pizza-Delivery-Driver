@@ -88,12 +88,34 @@ public static class RouteTransitionFilter {
         out float turnAngleDegrees, out float tangentNeeded, out float tangentAvailable) {
         Vector2 incoming = vertex - before;
         Vector2 outgoing = after - vertex;
+        return TransitionFits(incoming, incoming.magnitude, outgoing, outgoing.magnitude, constraints,
+            out turnAngleDegrees, out tangentNeeded, out tangentAvailable);
+    }
+
+    /// <summary>
+    /// Checks a transition using full segment directions and separately supplied available
+    /// approach lengths. This keeps partial anchored spans from hiding a required turn radius.
+    /// </summary>
+    /// <param name="incomingDirection">Full incoming segment direction toward the junction.</param>
+    /// <param name="incomingAvailableLength">Usable incoming span length before the turn.</param>
+    /// <param name="outgoingDirection">Full outgoing segment direction after the junction.</param>
+    /// <param name="outgoingAvailableLength">Usable outgoing span length after the turn.</param>
+    /// <param name="constraints">Vehicle turn constraints.</param>
+    /// <param name="turnAngleDegrees">Direction-change angle in degrees.</param>
+    /// <param name="tangentNeeded">Required tangent length on each side.</param>
+    /// <param name="tangentAvailable">Shorter supplied available side length.</param>
+    /// <returns>True when the direction and available lengths satisfy the constraints.</returns>
+    public static bool TransitionFits(Vector2 incomingDirection, float incomingAvailableLength,
+        Vector2 outgoingDirection, float outgoingAvailableLength, VehicleConstraints constraints,
+        out float turnAngleDegrees, out float tangentNeeded, out float tangentAvailable) {
         turnAngleDegrees = 0f;
         tangentNeeded = 0f;
-        tangentAvailable = Mathf.Min(incoming.magnitude, outgoing.magnitude);
-        if (incoming.sqrMagnitude <= 0.0001f || outgoing.sqrMagnitude <= 0.0001f) return true;
+        tangentAvailable = Mathf.Min(incomingAvailableLength, outgoingAvailableLength);
+        if (!IsFinite(incomingAvailableLength) || !IsFinite(outgoingAvailableLength) || incomingAvailableLength < 0f || outgoingAvailableLength < 0f ||
+            !IsFinite(incomingDirection.x) || !IsFinite(incomingDirection.y) || !IsFinite(outgoingDirection.x) || !IsFinite(outgoingDirection.y)) return false;
+        if (incomingDirection.sqrMagnitude <= 0f || outgoingDirection.sqrMagnitude <= 0f) return true;
 
-        turnAngleDegrees = Vector2.Angle(incoming, outgoing);
+        turnAngleDegrees = Vector2.Angle(incomingDirection, outgoingDirection);
         if (turnAngleDegrees < 0.5f) return true;
         if (turnAngleDegrees > constraints.maxTurnAngleDegrees) return false;
 

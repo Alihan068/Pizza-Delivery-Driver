@@ -642,7 +642,7 @@ Rigidbody2D:
   m_LinearDamping: 0.15
   m_AngularDamping: 0.05
   m_GravityScale: 0
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: e47860a974c5ea84385e76f9cf9a71d6, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -673,7 +673,10 @@ MonoBehaviour:
   damageBase: 3
   damageFactor: 0.85
   damageExponent: 2
+  damageDeadZoneSpeed: 1.5
+  damageBaseFullSpeed: 3
   invulnerabilityWindow: 0.7
+  blastCooldownSeconds: 1
   obstacleDamage: 6
   obstacleSlowMult: 0.6
   obstacleSlowDuration: 2

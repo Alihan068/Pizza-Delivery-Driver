@@ -20,6 +20,7 @@ public class ExtractionZone : MonoBehaviour {
     }
 
     private void Update() {
+        if (S12BenchmarkGate.Requested) return;
         if (!playerInRange) return;
 
         bool keyboardHeld = Keyboard.current != null && Keyboard.current[interactKey].isPressed;

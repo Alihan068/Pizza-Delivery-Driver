@@ -52,6 +52,8 @@ MonoBehaviour:
     text: "Duraklat\u0131ld\u0131"
   - key: pause.resume
     text: Devam Et
+  - key: pause.restart
+    text: "Vardiyayı Yeniden Başlat"
   - key: settings.title
     text: Ayarlar
   - key: settings.open
@@ -165,6 +167,10 @@ MonoBehaviour:
     text: "\u015Eehir sokaklar\u0131nda pizza teslim et."
   - key: result.interrupted
     text: "VARD\u0130YA YARIDA KALDI - arac\u0131n \xE7ekildi"
+  - key: result.arrested
+    text: Yakaland\u0131n
+  - key: result.bail
+    text: 'Kefalet: -${0}'
   - key: menu.newGame
     text: Yeni Oyun
   - key: menu.loadGame
@@ -331,6 +337,22 @@ MonoBehaviour:
     text: Modifier Yok
   - key: garage.modifier.noneDescription
     text: "Standart vardiya kurallar\u0131yla oyna."
+  - key: garage.modifier.selectionSummary
+    text: "Se\xE7ilen: {0} | Skor x{1:0.##} | Etkiler: h\x131z {2:+0.##;-0.##;0},
+      yol tutu\x15F {3:+0.##;-0.##;0}, can {4:+0.##;-0.##;0}, z\x131rh {5:+0.##;-0.##;0},
+      kapasite {6:+0;-0;0}, koruma {7:+0.##;-0.##;0}"
+  - key: garage.modifier.multiplier
+    text: "Skor \xE7arpan\x131: x{0:0.##}"
+  - key: garage.modifier.effects
+    text: "Etkiler: h\x131z {0:+0.##;-0.##;0}, yol tutu\x15F {1:+0.##;-0.##;0}, can
+      {2:+0.##;-0.##;0}, kapasite {3:+0;-0;0}"
+  - key: garage.modifier.unsupportedTraffic
+    text: "Kullan\x131lamaz: bu haritada trafik yetene\u011Fi yok."
+  - key: garage.modifier.unsupportedPolice
+    text: "Kullan\x131lamaz: bu haritada polis yetene\u011Fi yok."
+  - key: garage.modifier.conflict
+    text: "Se\xE7im \xE7ak\x131\u015Fmas\x131: her exclusive gruptan yaln\x131zca
+      bir modifier se\xE7ilebilir."
   - key: garage.mapSelection.title
     text: "Harita Se\xE7imi"
   - key: garage.mapSelection.modifier
@@ -473,6 +495,10 @@ MonoBehaviour:
     text: "Tutu\u015F Ge\xE7i\u015Fi (d\xFC\u015F\xFCk = daha h\u0131zl\u0131)"
   - key: garage.advancedTuning.gripEntryValue
     text: '{0:0.00}sn'
+  - key: garage.advancedTuning.gripRecover
+    text: "Kayma Toparlanması (y\xFCksek = daha uzun kayma)"
+  - key: garage.advancedTuning.gripRecoverValue
+    text: '{0:0.00}sn'
   - key: garage.advancedTuning.reset
     text: "Klasi\u011Fe S\u0131f\u0131rla"
   - key: garage.advancedTuning.presetGrip
@@ -494,3 +520,25 @@ MonoBehaviour:
     text: Sakin
   - key: modifier.peaceful.description
     text: "Bu vardiyada polis takibi kapal\u0131. Nihai skoru d\xFC\u015F\xFCr\xFCr."
+  - key: police.heat.raw
+    text: 'Is\u0131: {0:0.0}'
+  - key: police.pursuit
+    text: 'Takip: {0}'
+  - key: police.capture
+    text: YAKALANMA {0:0}%
+  - key: police.heat.star
+    text: "\u2605"
+  - key: police.heat.empty
+    text: "\u2606"
+  - key: result.score.raw
+    text: 'Ham skor: {0}'
+  - key: result.score.multiplier
+    text: 'Modifiyer \u00E7arpan\u0131: x{0:0.00}'
+  - key: result.score.final
+    text: 'Nihai skor: {0}'
+  - key: result.modifiers
+    text: 'Modifiyerler: {0}'
+  - key: result.modifiers.none
+    text: 'Modifiyerler: Yok'
+  - key: result.replay
+    text: Tekrar Oyna

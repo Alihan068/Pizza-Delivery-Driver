@@ -72,4 +72,7 @@ public struct SessionResult {
 
     /// <summary>Permanent ids of the modifiers applied to this shift, in canonical order. Empty when none were selected.</summary>
     public string[] appliedModifierIds;
+
+    /// <summary>Immutable eligibility and identity record carrying the same final score to future sinks.</summary>
+    public CompetitiveSubmissionRecord competitiveSubmission;
 }

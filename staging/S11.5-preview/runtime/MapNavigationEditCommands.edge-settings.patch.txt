@@ -1,0 +1,34 @@
+// Apply inside MapNavigationEditCommands, before the final class brace.
+/// <summary>Atomically edits the bounded width and speed settings of one edge.</summary>
+public static bool TryEditEdgeSettings(
+    MapNavigationDocument document,
+    string edgeId,
+    float usableWidth,
+    float speedLimit,
+    out string issue)
+{
+    issue = null;
+    if (document == null || string.IsNullOrEmpty(edgeId))
+    {
+        issue = "Document and edge ID are required.";
+        return false;
+    }
+
+    if (!Finite(usableWidth) || usableWidth <= 0f || !Finite(speedLimit) || speedLimit <= 0f)
+    {
+        issue = "Width and speed limit must be finite and positive.";
+        return false;
+    }
+
+    RoadEdgeRecord edge = FindEdge(document, edgeId);
+    if (edge == null)
+    {
+        issue = "Edge was not found.";
+        return false;
+    }
+
+    edge.usableWidth = usableWidth;
+    edge.speedLimit = speedLimit;
+    Changed(document);
+    return true;
+}

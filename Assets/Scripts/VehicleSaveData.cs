@@ -52,6 +52,9 @@ public class VehicleSaveData {
     /// <summary>Saved grip-entry response time selected through Advanced Tuning.</summary>
     public float tunedGripEnterTime;
 
+    /// <summary>Saved grip-recovery time (how long a released slide lasts). Negative means never tuned, including every save written before this field existed, and resolves to the vehicle default.</summary>
+    public float tunedGripRecoverTime = -1f;
+
     /// <summary>Legacy version 0 field: the display name this record was keyed by. Migration input only.</summary>
     public string vehicleName;
 
@@ -73,6 +76,7 @@ public class VehicleSaveData {
         tunedDriftGrip = 0f;
         tunedDriftSteeringMultiplier = 0f;
         tunedGripEnterTime = 0f;
+        tunedGripRecoverTime = -1f;
     }
 
     /// <summary>Reads the purchased level of one vehicle-bound stat.</summary>

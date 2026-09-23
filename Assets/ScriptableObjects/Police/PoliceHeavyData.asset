@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7f921559eee5e2438f31799b88cf8a5, type: 3}
+  m_Name: PoliceHeavyData
+  m_EditorClassIdentifier: 
+  vehicleProfileId: builtin:police-heavy
+  allowedRoles: 02000000
+  visualCatalogId: builtin:police-heavy-visual
+  motorSettings:
+    cruiseSpeed: 4.5
+    maxSpeed: 5.2
+    reverseSpeed: 1.4
+    acceleration: 4.5
+    brakeDeceleration: 8
+    maxEngineForce: 24
+    maxBrakeForce: 48
+    turnRate: 100
+    minimumTurningRadius: 2.5
+    lateralGrip: 0.9
+    sensorInterval: 0.2
+    reactionTime: 0.26
+    minimumGap: 1.2
+  colliderSize: {x: 1.8, y: 3}
+  baseMass: 4
+  maxHealth: 380
+  collisionArmor: 0.5
+  explosionResistance: 0.25
+  damageProfileId: nd-civilian
+  explosionProfileId: nd-civilian
+  smokeHealthFraction01: 0.5
+  criticalHealthFraction01: 0.2

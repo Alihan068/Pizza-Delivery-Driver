@@ -23,5 +23,11 @@ public enum EndReason {
     /// Without this, force-quitting mid-shift skipped the repair bill entirely, which made killing
     /// the game strictly cheaper than any legitimate way out of a bad run.
     /// </remarks>
-    Interrupted
+    Interrupted,
+
+    /// <summary>
+    /// A live police contact held the player stationary for the authored arrest duration. Earnings
+    /// retain the Q05 share, while the player remains alive and is billed for actual damage.
+    /// </summary>
+    Arrested
 }

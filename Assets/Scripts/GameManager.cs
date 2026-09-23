@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour {
 
     const string LastSlotKey = "save.lastSlot";
     const string LegacySaveFileName = "save.json";
+    DevelopmentTestProfile developmentTestProfile;
+    int isolatedLastSlot;
 
     [Header("Configuration")]
     [SerializeField] GameConfig config;
@@ -20,6 +22,7 @@ public class GameManager : MonoBehaviour {
     [SerializeField] float repairCostPerHP = 0.7f;
     [SerializeField] float repairValueRate = 0.03f;
     [SerializeField] float deathEarningsKeep = 0.5f;
+    [SerializeField] float arrestEarningsKeep = 0.75f;
     [SerializeField] float repairBankSafetyRate = 0.5f;
 
     [Header("Upgrade Cost")]
@@ -96,6 +99,7 @@ public class GameManager : MonoBehaviour {
     bool frozenBuiltInVehicle;
     bool frozenCustomTuning;
     int frozenCompetitiveDuration;
+    TrafficSessionContext replayRequestedForSession;
 
     /// <summary>Scene-owned rules retained through settlement; cleared when that scene unloads.</summary>
     public TrafficSessionContext ActiveSession { get; private set; }
@@ -104,10 +108,12 @@ public class GameManager : MonoBehaviour {
     /// <param name="scene">Scene owning this run; different scene handles create independent runs.</param>
     /// <param name="map">Explicit authored binding when a traffic host is present.</param>
     /// <param name="explicitBinding">True forbids any fallback to currentMap, including for null bindings.</param>
-    public TrafficSessionContext PrepareSession(Scene scene, MapData map = null, bool explicitBinding = false) {
+    /// <param name="editorTestDifficultyId">Explicit test tier, honored only for direct editor scene starts; never changes saved selection.</param>
+    public TrafficSessionContext PrepareSession(Scene scene, MapData map = null, bool explicitBinding = false, string editorTestDifficultyId = null) {
         if (ActiveSession != null && sessionSceneHandle == scene.handle) return ActiveSession;
         if (ActiveSession != null) ReleaseSession(ActiveSession);
-        var context = SessionSceneRules.Create(this, map, explicitBinding, scene.name);
+        bool directEditorTest = Application.isEditor && (scene.handle == initialSceneHandle || !Application.isPlaying);
+        var context = SessionSceneRules.Create(this, map, explicitBinding, scene.name, directEditorTest ? editorTestDifficultyId : null);
         foreach (VehicleStatId stat in System.Enum.GetValues(typeof(VehicleStatId))) {
             float value = GetStatValue(stat) + context.Modifiers.GetStatDelta(stat);
             frozenShiftStats[stat] = stat == VehicleStatId.Armor || stat == VehicleStatId.Protection
@@ -230,17 +236,47 @@ public class GameManager : MonoBehaviour {
             return;
         }
 
+        // Fail before any career or preference I/O; never fall back after a benchmark rejection.
+        if (S12BenchmarkGate.BlockCareerStartup) { enabled = false; return; }
+        developmentTestProfile = DevelopmentTestProfile.Resolve(
+            System.Environment.GetCommandLineArgs(), Application.persistentDataPath);
+        if (developmentTestProfile.IsRequested && !developmentTestProfile.IsValid) {
+            Debug.LogError("Requested S12 development profile is invalid; career I/O is disabled.");
+            enabled = false;
+            return;
+        }
+        if (developmentTestProfile.IsRequested && !developmentTestProfile.EnsureDirectory()) {
+            Debug.LogError("Requested S12 development profile directory could not be created; career I/O is disabled.");
+            enabled = false;
+            return;
+        }
+
         Instance = this;
         initialSceneHandle = gameObject.scene.handle;
         SceneManager.sceneUnloaded += HandleSessionSceneUnloaded;
         DontDestroyOnLoad(gameObject);
 
         BuildContentRegistry();
-        Saves = new SaveSlotService(config, ResolveVehicleIdFromName);
+        Saves = new SaveSlotService(config, ResolveVehicleIdFromName, developmentTestProfile);
         Saves.AdoptLegacySave(LegacySaveFileName, 0);
         if (careerData != null) Career = new CareerManager(careerData);
 
-        LoadCareer(PlayerPrefs.GetInt(LastSlotKey, 0));
+        LoadCareer(ReadLastSlot());
+    }
+
+    int ReadLastSlot() {
+        return developmentTestProfile.IsRequested
+            ? isolatedLastSlot
+            : PlayerPrefs.GetInt(LastSlotKey, 0);
+    }
+
+    void WriteLastSlot(int slotIndex) {
+        if (developmentTestProfile.IsRequested) {
+            isolatedLastSlot = slotIndex;
+            return;
+        }
+        PlayerPrefs.SetInt(LastSlotKey, slotIndex);
+        PlayerPrefs.Save();
     }
 
     // ---------------------------------------------------------------- content
@@ -274,8 +310,7 @@ public class GameManager : MonoBehaviour {
         isFreeplayMode = false;
         selectedShiftDurationMinutes = Mathf.Max(1, defaultShiftDurationMinutes);
         ActiveSlot = Mathf.Clamp(slotIndex, 0, Saves.SlotCount - 1);
-        PlayerPrefs.SetInt(LastSlotKey, ActiveSlot);
-        PlayerPrefs.Save();
+        WriteLastSlot(ActiveSlot);
 
         var data = Saves.Load(ActiveSlot, out var status);
         if (data == null) StartFreshCareer();
@@ -295,8 +330,7 @@ public class GameManager : MonoBehaviour {
         isFreeplayMode = false;
         selectedShiftDurationMinutes = Mathf.Max(1, defaultShiftDurationMinutes);
         ActiveSlot = Mathf.Clamp(slotIndex, 0, Saves.SlotCount - 1);
-        PlayerPrefs.SetInt(LastSlotKey, ActiveSlot);
-        PlayerPrefs.Save();
+        WriteLastSlot(ActiveSlot);
 
         Saves.Delete(ActiveSlot);
         StartFreshCareer();
@@ -428,6 +462,57 @@ public class GameManager : MonoBehaviour {
         bool success = Saves.Save(ActiveSlot, BuildSaveData());
         GameSaved?.Invoke(success);
         return success;
+    }
+
+    /// <summary>
+    /// Replays the just-completed session directly on its authored map with the frozen session
+    /// selection. This copies the completed draft before loading so later profile selection state
+    /// or a stale <see cref="currentMap"/> cannot change the replay.
+    /// </summary>
+    /// <returns>True when the replay selection was restored and its gameplay scene was requested.</returns>
+    public bool ReplayLastSession() {
+        TrafficSessionContext completed = ActiveSession;
+        SessionSetupDraft draft = completed != null ? completed.Draft : null;
+        SessionRulesSnapshot snapshot = completed != null ? completed.Snapshot : null;
+        if (draft == null || Content == null || completed.Phase != TrafficSessionPhase.Ended ||
+            ReferenceEquals(replayRequestedForSession, completed)) return false;
+
+        string mapId = snapshot != null ? snapshot.mapId : draft.mapId;
+        string vehicleId = snapshot != null ? snapshot.vehicleId : draft.vehicleId;
+        MapData replayMap = Content.GetMap(mapId);
+        VehicleData replayVehicle = Content.GetVehicle(vehicleId);
+        if (replayMap == null || replayVehicle == null || string.IsNullOrEmpty(replayMap.sceneName)) return false;
+
+        currentMap = replayMap;
+        currentVehicle = replayVehicle;
+        currentDifficultyId = snapshot != null ? snapshot.difficultyId : draft.difficultyId;
+        selectedShiftDurationMinutes = Mathf.Max(1, draft.shiftDurationMinutes);
+        isFreeplayMode = draft.isFreeplay;
+        selectedModifierIds.Clear();
+        IReadOnlyList<string> replayModifierIds = snapshot != null
+            ? snapshot.resolvedModifierIds : draft.selectedModifierIds;
+        if (replayModifierIds != null) foreach (string id in replayModifierIds) {
+            if (string.IsNullOrEmpty(id)) continue;
+            foreach (var modifier in allModifiers ?? System.Array.Empty<ShiftModifierData>()) {
+                if (modifier == null || modifier.modifierId != id) continue;
+                selectedModifierIds.Add(id);
+                break;
+            }
+        }
+        currentModifier = null;
+        if (selectedModifierIds.Count > 0 && allModifiers != null) {
+            foreach (var modifier in allModifiers) {
+                if (modifier != null && modifier.modifierId == selectedModifierIds[0]) {
+                    currentModifier = modifier;
+                    break;
+                }
+            }
+        }
+
+        replayRequestedForSession = completed;
+        Time.timeScale = 1f;
+        if (Application.isPlaying) SceneManager.LoadScene(replayMap.sceneName);
+        return true;
     }
 
     /// <summary>
@@ -729,6 +814,8 @@ public class GameManager : MonoBehaviour {
             snapshot.playerDriftSteeringMultiplierMin, snapshot.playerDriftSteeringMultiplierMax);
         snapshot.gripEnterTime = VehicleTuningRules.ResolvePlayerValue(true, true, save.tunedGripEnterTime,
             snapshot.gripEnterTime, snapshot.playerGripEnterTimeMin, snapshot.playerGripEnterTimeMax);
+        snapshot.gripRecoverTime = VehicleTuningRules.ResolveOptionalPlayerValue(true, true, save.tunedGripRecoverTime,
+            snapshot.gripRecoverTime, snapshot.playerGripRecoverTimeMin, snapshot.playerGripRecoverTimeMax);
         return snapshot;
     }
 
@@ -740,9 +827,10 @@ public class GameManager : MonoBehaviour {
     /// <param name="driftGrip">Lateral grip used while handbraking.</param>
     /// <param name="driftSteeringMultiplier">Steering multiplier used while handbraking.</param>
     /// <param name="gripEnterTime">Time used to transition into drift grip.</param>
+    /// <param name="gripRecoverTime">Time a released slide takes to regain full grip.</param>
     /// <returns>True when a current vehicle record received and saved the snapshot.</returns>
     public bool SaveCurrentVehicleTuning(float selectedSpeed, float driftGrip,
-        float driftSteeringMultiplier, float gripEnterTime) {
+        float driftSteeringMultiplier, float gripEnterTime, float gripRecoverTime) {
         if (currentVehicle == null) return false;
         VehicleSaveData save = GetCurrentVehicleSave();
         if (save == null) return false;
@@ -759,6 +847,8 @@ public class GameManager : MonoBehaviour {
             settings.playerDriftSteeringMultiplierMax);
         save.tunedGripEnterTime = VehicleTuningRules.ClampPlayerValue(gripEnterTime,
             settings.playerGripEnterTimeMin, settings.playerGripEnterTimeMax);
+        save.tunedGripRecoverTime = VehicleTuningRules.ClampPlayerValue(gripRecoverTime,
+            settings.playerGripRecoverTimeMin, settings.playerGripRecoverTimeMax);
         save.hasCustomTuning = true;
         SaveGame();
         return true;
@@ -774,6 +864,7 @@ public class GameManager : MonoBehaviour {
         save.tunedDriftGrip = 0f;
         save.tunedDriftSteeringMultiplier = 0f;
         save.tunedGripEnterTime = 0f;
+        save.tunedGripRecoverTime = -1f;
         SaveGame();
         return true;
     }
@@ -880,16 +971,10 @@ public class GameManager : MonoBehaviour {
     public CompetitiveEligibilityStatus EvaluateCompetitiveEligibility(int durationMinutes,
         EndReason reason, bool freeplay) {
         if (ActiveSession != null && !ActiveSession.Integrity.IsValid) return CompetitiveEligibilityStatus.Unfinished;
-        if (ActiveSession != null) return CompetitiveRunRules.Evaluate(ActiveSession.Draft.isFreeplay,
-            frozenBuiltInMap, frozenBuiltInVehicle, frozenCustomTuning, ActiveSession.Draft.shiftDurationMinutes,
-            frozenCompetitiveDuration, reason == EndReason.TimeUp || reason == EndReason.Extracted);
-        bool builtInMap = Content != null && Content.GetMapProviderId(currentMap) == BuiltInContentProvider.SourceId;
-        bool builtInVehicle = Content != null && Content.GetVehicleProviderId(currentVehicle) == BuiltInContentProvider.SourceId;
-        VehicleSaveData vehicleSave = GetCurrentVehicleSave();
-        bool customTuning = vehicleSave != null && vehicleSave.hasCustomTuning;
-        bool completed = reason == EndReason.TimeUp || reason == EndReason.Extracted;
-        return CompetitiveRunRules.Evaluate(freeplay, builtInMap, builtInVehicle, customTuning,
-            durationMinutes, CompetitiveDurationMinutes, completed);
+        if (ActiveSession == null || ActiveSession.Snapshot == null)
+            return CompetitiveEligibilityStatus.MissingTrustedManifest;
+        return CompetitiveRunRules.Evaluate(ActiveSession.Snapshot.ContentEvidence, reason,
+            frozenCompetitiveDuration, null);
     }
 
     // --------------------------------------------------------------- upgrades
@@ -1085,7 +1170,7 @@ public class GameManager : MonoBehaviour {
     /// <returns>True when a best-score record was created or improved.</returns>
     public bool RecordDifficultyScore(int score, EndReason reason) {
         if ((ActiveSession != null ? ActiveSession.Draft.isFreeplay : IsFreeplayMode) ||
-            reason == EndReason.Abandoned || reason == EndReason.Interrupted) return false;
+            (reason != EndReason.TimeUp && reason != EndReason.Extracted)) return false;
         if (ActiveSession != null && !ActiveSession.Integrity.IsValid) return false;
         if (mapDifficultyProgress == null) return false;
         string mapId = ActiveSession != null ? ActiveSession.Draft.mapId : currentMap != null ? currentMap.mapId : null;
@@ -1176,7 +1261,7 @@ public class GameManager : MonoBehaviour {
         bool wasFinalShift = !freeplay && IsFinalShift;
         int bankBefore = totalMoney;
 
-        int kept = SessionSettlementMath.CalculateKeptEarnings(sessionEarnings, reason, deathEarningsKeep);
+        int kept = SessionSettlementMath.CalculateKeptEarnings(sessionEarnings, reason, deathEarningsKeep, arrestEarningsKeep);
 
         // An interrupted shift is billed like a wreck: the vehicle was left in the street, so the
         // full health bar is charged. The bank safety clamp below still caps the damage, which is
@@ -1199,6 +1284,13 @@ public class GameManager : MonoBehaviour {
         for (int i = 0; i < appliedModifierIds.Length; i++) appliedModifierIds[i] = appliedModifiers.Ids[i];
         int duration = ActiveSession != null ? ActiveSession.Draft.shiftDurationMinutes : SelectedShiftDurationMinutes;
 
+        SessionContentEvidence contentEvidence = ActiveSession != null && ActiveSession.Snapshot != null
+            ? ActiveSession.Snapshot.ContentEvidence : null;
+        CompetitiveSubmissionRecord competitiveSubmission = CompetitiveSubmissionRecord.CreateFromSettlement(
+            contentEvidence, reason, finalScore, frozenCompetitiveDuration, null,
+            ActiveSession != null && ActiveSession.Integrity.IsValid,
+            ActiveSession != null && ActiveSession.Integrity.InvalidationReasons.Count > 0
+                ? ActiveSession.Integrity.InvalidationReasons[0] : null);
         var result = new SessionResult {
             reason = reason,
             grossEarnings = sessionEarnings,
@@ -1211,12 +1303,13 @@ public class GameManager : MonoBehaviour {
             isFreeplay = freeplay,
             isFinalShift = wasFinalShift,
             shiftDurationMinutes = duration,
-            competitiveEligibility = EvaluateCompetitiveEligibility(duration, reason, freeplay),
+            competitiveEligibility = competitiveSubmission.eligibility,
             rawScore = score,
             scoreMultiplier = combinedScoreMultiplier,
             finalScore = finalScore,
             appliedModifierIds = appliedModifierIds
         };
+        result.competitiveSubmission = competitiveSubmission;
 
         // Rent is charged inside this same call, atomically with the day's last shift, rather than
         // as a separate check the garage could run later. Rent affects currency only and never rating.
